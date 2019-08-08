@@ -12,8 +12,6 @@ echo "USER: " + $USER
 echo "PATH: " + $PATH
 echo -e "${NC}"
 
-unset GOPATH
-
 ##
 # GO BUILD
 ##
