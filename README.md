@@ -14,17 +14,18 @@
 - `make build` to build the binary and run tests
 - `eval $(minikube docker-env)`
 - `make build-image` to build a docker image
+- Update the `patches` field in `config/crd/kustomization.yaml` and `config/default/kustomization.yaml` to `patchesStrategicMerge`
 - `make deploy` to deploy controller to the minikube
 
 ## Example CR structure:
 
 ```yaml
 ---
-application:
-  service:
-    name: foo-service
-    port: 8080
+service:
+  name: foo-service
+  port: 8080
   hostURL: https://foo.bar
+  external: true/false
 authentication:
   type: 
   - name: JWT

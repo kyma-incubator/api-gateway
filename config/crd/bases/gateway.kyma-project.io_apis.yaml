@@ -384,6 +384,39 @@ spec:
               type: string
           type: object
         spec:
+          properties:
+            application:
+              description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                Important: Run "make" to regenerate code after modifying this file'
+              properties:
+                external:
+                  type: boolean
+                hostURL:
+                  maxLength: 256
+                  minLength: 3
+                  pattern: ^(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/\n]+)
+                  type: string
+                name:
+                  type: string
+                port:
+                  format: int32
+                  maximum: 9999
+                  minimum: 1
+                  type: integer
+              required:
+              - name
+              - port
+              - hostURL
+              type: object
+            auth:
+              enum:
+              - JWT
+              - OAUTH
+              - PASSTHROUGH
+              type: string
+          required:
+          - application
+          - auth
           type: object
         status:
           type: object
