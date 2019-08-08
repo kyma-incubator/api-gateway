@@ -4,7 +4,7 @@ TAG = $(DOCKER_TAG)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
 .PHONY: build
-build:
+build: generate
 	./before-commit.sh ci
 
 .PHONY: pull-licenses
