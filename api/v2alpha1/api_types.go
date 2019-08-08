@@ -65,7 +65,7 @@ type ApiList struct {
 type Service struct {
 	Name *string `json:"name"`
 	// +kubebuilder:validation:Minimum=1
-	// +kubebuilder:validation:Maximum=9999
+	// +kubebuilder:validation:Maximum=99999
 	Port *int32 `json:"port"`
 	// +kubebuilder:validation:MinLength=3
 	// +kubebuilder:validation:MaxLength=256
