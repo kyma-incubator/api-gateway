@@ -26,8 +26,7 @@ service:
   port: 8080
   hostURL: https://foo.bar
   external: true/false
-authentication:
-  type: 
+auth: 
   - name: JWT
     config:
       issuer: http://dex.kyma.local

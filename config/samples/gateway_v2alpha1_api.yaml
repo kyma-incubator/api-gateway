@@ -3,9 +3,10 @@ kind: Api
 metadata:
   name: api-sample
 spec:
-  # Add fields here
   service:
     hostURL: https://imgur.com
     name: imgur
     port: 443
-  auth: PASSTHROUGH
+  auth: 
+    name: PASSTHROUGH
+    config: {}
