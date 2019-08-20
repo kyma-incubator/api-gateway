@@ -63,6 +63,7 @@ func fixApi() *gatewayv2alpha1.Api {
 	return &gatewayv2alpha1.Api{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test",
+			Generation: 1,
 		},
 		Spec: gatewayv2alpha1.ApiSpec{
 			Service: &gatewayv2alpha1.Service{
