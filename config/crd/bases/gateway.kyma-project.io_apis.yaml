@@ -402,7 +402,7 @@ spec:
               - name
               type: object
             service:
-              description: Definition of the service, application to expose
+              description: Definition of the service to expose
               properties:
                 external:
                   description: Defines if the service is internal (in cluster) or
@@ -434,6 +434,13 @@ spec:
           type: object
         status:
           properties:
+            APIStatus:
+              properties:
+                code:
+                  type: string
+                desc:
+                  type: string
+              type: object
             accessRuleStatus:
               properties:
                 code:

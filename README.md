@@ -53,7 +53,6 @@ auth:
             methods:
               - GET
   - name: PASSTHROUGH
-    config: {}  
   - name: OAUTH
     config:
       - path: '/a'

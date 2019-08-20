@@ -89,7 +89,7 @@ type Service struct {
 type AuthStrategy struct {
 	// +kubebuilder:validation:Enum=JWT;OAUTH;PASSTHROUGH
 	Name   *string               `json:"name"`
-	Config *runtime.RawExtension `json:"config,inline"`
+	Config *runtime.RawExtension `json:"config,inline,omitempty"`
 }
 
 type GatewayResourceStatus struct {

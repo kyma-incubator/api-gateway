@@ -1,7 +1,8 @@
+---
 apiVersion: gateway.kyma-project.io/v2alpha1
 kind: Api
 metadata:
-  name: sample-api
+  name: passthrough
 spec:
   service:
     hostURL: https://imgur.com
@@ -9,4 +10,32 @@ spec:
     port: 443
   auth: 
     name: PASSTHROUGH
-    config: {}
+    # config: {}
+---
+apiVersion: gateway.kyma-project.io/v2alpha1
+kind: Api
+metadata:
+  name: oauth
+spec:
+  service:
+    hostURL: https://imgur.com
+    name: imgur
+    port: 443
+  auth: 
+    name: OAUTH
+    config: 
+      foo: bar
+---
+apiVersion: gateway.kyma-project.io/v2alpha1
+kind: Api
+metadata:
+  name: oauth-bad
+spec:
+  service:
+    hostURL: https://imgur.com
+    name: imgur
+    port: 443
+  auth: 
+    name: OAUTH
+    config: 
+      bar: foo
