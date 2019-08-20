@@ -17,9 +17,7 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"time"
 
@@ -28,7 +26,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
-	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 )
 
 // ApiReconciler reconciles a Api object
@@ -65,22 +62,35 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		Description: "Skipped setting Oathkeeper Access Rule",
 	}
 
-	_, err = r.updateStatus(api, virtualServiceStatus, policyStatus, accessRuleStatus)
+	if api.Status.ObservedGeneration == 0 {
+		r.Log.Info("Api creating")
 
-	if err != nil {
-		return reconcile.Result{Requeue: true}, err
+		_, err = r.updateStatus(api, virtualServiceStatus, policyStatus, accessRuleStatus)
+
+		if err != nil {
+			return reconcile.Result{Requeue: true}, err
+		}
+
+	} else if api.Generation > api.Status.ObservedGeneration {
+		r.Log.Info("Api updating")
+
+		_, err = r.updateStatus(api, virtualServiceStatus, policyStatus, accessRuleStatus)
+
+		if err != nil {
+			return reconcile.Result{Requeue: true}, err
+		}
 	}
 
 	// demo sample fetching virtualservices
 
-	list := networkingv1alpha3.VirtualServiceList{}
-	err = r.Client.List(context.TODO(), &list, client.InNamespace(req.Namespace))
-	if err != nil {
-		fmt.Printf("ooops, error occured when fetching vs " + err.Error())
-		os.Exit(1)
-	}
-
-	fmt.Println(list)
+	//list := networkingv1alpha3.VirtualServiceList{}
+	//err = r.Client.List(context.TODO(), &list, client.InNamespace(req.Namespace))
+	//if err != nil {
+	//	fmt.Printf("ooops, error occured when fetching vs " + err.Error())
+	//	os.Exit(1)
+	//}
+	//
+	//fmt.Println(list)
 
 	return ctrl.Result{}, nil
 }
