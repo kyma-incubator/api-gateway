@@ -18,7 +18,10 @@ package controllers
 import (
 	"context"
 	"fmt"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"time"
 
 	"github.com/go-logr/logr"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -41,10 +44,37 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	_ = r.Log.WithValues("api", req.NamespacedName)
 
+	api := &gatewayv2alpha1.Api{}
+
+	err := r.Get(context.TODO(), req.NamespacedName, api)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	virtualServiceStatus := &gatewayv2alpha1.GatewayResourceStatus{
+		Code:gatewayv2alpha1.STATUS_SKIPPED,
+		Description: "Skipped setting Istio Virtual Service",
+	}
+	policyStatus := &gatewayv2alpha1.GatewayResourceStatus{
+		Code:gatewayv2alpha1.STATUS_SKIPPED,
+		Description: "Skipped setting Istio Policy",
+	}
+
+	accessRuleStatus := &gatewayv2alpha1.GatewayResourceStatus{
+		Code:gatewayv2alpha1.STATUS_SKIPPED,
+		Description: "Skipped setting Oathkeeper Access Rule",
+	}
+
+	_, err = r.updateStatus(api, virtualServiceStatus, policyStatus, accessRuleStatus)
+
+	if err != nil {
+		return reconcile.Result{Requeue: true}, err
+	}
+
 	// demo sample fetching virtualservices
 
 	list := networkingv1alpha3.VirtualServiceList{}
-	err := r.Client.List(context.TODO(), &list, client.InNamespace(req.Namespace))
+	err = r.Client.List(context.TODO(), &list, client.InNamespace(req.Namespace))
 	if err != nil {
 		fmt.Printf("ooops, error occured when fetching vs " + err.Error())
 		os.Exit(1)
@@ -59,4 +89,20 @@ func (r *ApiReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayv2alpha1.Api{}).
 		Complete(r)
+}
+
+func (r *ApiReconciler) updateStatus(api *gatewayv2alpha1.Api, virtualServiceStatus, policyStatus, accessRuleStatus *gatewayv2alpha1.GatewayResourceStatus) (*gatewayv2alpha1.Api, error) {
+	copy := api.DeepCopy()
+
+	copy.Status.ObservedGeneration = api.Generation
+	copy.Status.LastProcessedTime = &v1.Time{Time: time.Now()}
+	copy.Status.VirtualServiceStatus = virtualServiceStatus
+	copy.Status.PolicyServiceStatus = policyStatus
+	copy.Status.AccessRuleStatus = accessRuleStatus
+
+	err := r.Status().Update(context.TODO(), copy)
+	if err != nil {
+		return nil, err
+	}
+	return copy, nil
 }
