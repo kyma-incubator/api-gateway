@@ -33,7 +33,7 @@ const (
 
 // ApiSpec defines the desired state of Api
 type ApiSpec struct {
-	// Definition of the service, application to expose
+	// Definition of the service to expose
 	Service *Service `json:"service"`
 	// Auth strategy to be used
 	Auth *AuthStrategy `json:"auth"`

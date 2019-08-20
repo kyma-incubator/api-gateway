@@ -48,35 +48,26 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return reconcile.Result{}, err
 	}
 
-	APIStatus := &gatewayv2alpha1.GatewayResourceStatus{
-		Code:gatewayv2alpha1.STATUS_OK,
-	}
+	if api.DeletionTimestamp == nil {
+		r.Log.Info("Api processing")
 
-	virtualServiceStatus := &gatewayv2alpha1.GatewayResourceStatus{
-		Code:gatewayv2alpha1.STATUS_SKIPPED,
-		Description: "Skipped setting Istio Virtual Service",
-	}
-	policyStatus := &gatewayv2alpha1.GatewayResourceStatus{
-		Code:gatewayv2alpha1.STATUS_SKIPPED,
-		Description: "Skipped setting Istio Policy",
-	}
-
-	accessRuleStatus := &gatewayv2alpha1.GatewayResourceStatus{
-		Code:gatewayv2alpha1.STATUS_SKIPPED,
-		Description: "Skipped setting Oathkeeper Access Rule",
-	}
-
-	if api.Status.ObservedGeneration == 0 {
-		r.Log.Info("Api creating")
-
-		_, err = r.updateStatus(api, APIStatus, virtualServiceStatus, policyStatus, accessRuleStatus)
-
-		if err != nil {
-			return reconcile.Result{Requeue: true}, err
+		APIStatus := &gatewayv2alpha1.GatewayResourceStatus{
+			Code:gatewayv2alpha1.STATUS_OK,
 		}
 
-	} else if api.Generation > api.Status.ObservedGeneration {
-		r.Log.Info("Api updating")
+		virtualServiceStatus := &gatewayv2alpha1.GatewayResourceStatus{
+			Code:gatewayv2alpha1.STATUS_SKIPPED,
+			Description: "Skipped setting Istio Virtual Service",
+		}
+		policyStatus := &gatewayv2alpha1.GatewayResourceStatus{
+			Code:gatewayv2alpha1.STATUS_SKIPPED,
+			Description: "Skipped setting Istio Policy",
+		}
+
+		accessRuleStatus := &gatewayv2alpha1.GatewayResourceStatus{
+			Code:gatewayv2alpha1.STATUS_SKIPPED,
+			Description: "Skipped setting Oathkeeper Access Rule",
+		}
 
 		_, err = r.updateStatus(api, APIStatus, virtualServiceStatus, policyStatus, accessRuleStatus)
 
