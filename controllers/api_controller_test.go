@@ -13,6 +13,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
+	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -62,7 +63,7 @@ func fixApi() *gatewayv2alpha1.Api {
 
 	return &gatewayv2alpha1.Api{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "test",
+			Name:       "test",
 			Generation: 1,
 		},
 		Spec: gatewayv2alpha1.ApiSpec{
@@ -92,6 +93,11 @@ type testSuite struct {
 }
 
 func getTestSuite(objects ...runtime.Object) *testSuite {
+	err := gatewayv2alpha1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+	err = networkingv1alpha3.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
 	return &testSuite{
 		mgr: getFakeManager(fake.NewFakeClientWithScheme(scheme.Scheme, objects...), scheme.Scheme),
 	}
