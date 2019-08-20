@@ -48,6 +48,10 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return reconcile.Result{}, err
 	}
 
+	APIStatus := &gatewayv2alpha1.GatewayResourceStatus{
+		Code:gatewayv2alpha1.STATUS_OK,
+	}
+
 	virtualServiceStatus := &gatewayv2alpha1.GatewayResourceStatus{
 		Code:gatewayv2alpha1.STATUS_SKIPPED,
 		Description: "Skipped setting Istio Virtual Service",
@@ -65,7 +69,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if api.Status.ObservedGeneration == 0 {
 		r.Log.Info("Api creating")
 
-		_, err = r.updateStatus(api, virtualServiceStatus, policyStatus, accessRuleStatus)
+		_, err = r.updateStatus(api, APIStatus, virtualServiceStatus, policyStatus, accessRuleStatus)
 
 		if err != nil {
 			return reconcile.Result{Requeue: true}, err
@@ -74,7 +78,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	} else if api.Generation > api.Status.ObservedGeneration {
 		r.Log.Info("Api updating")
 
-		_, err = r.updateStatus(api, virtualServiceStatus, policyStatus, accessRuleStatus)
+		_, err = r.updateStatus(api, APIStatus, virtualServiceStatus, policyStatus, accessRuleStatus)
 
 		if err != nil {
 			return reconcile.Result{Requeue: true}, err
@@ -101,11 +105,12 @@ func (r *ApiReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *ApiReconciler) updateStatus(api *gatewayv2alpha1.Api, virtualServiceStatus, policyStatus, accessRuleStatus *gatewayv2alpha1.GatewayResourceStatus) (*gatewayv2alpha1.Api, error) {
+func (r *ApiReconciler) updateStatus(api *gatewayv2alpha1.Api, APIStatus, virtualServiceStatus, policyStatus, accessRuleStatus *gatewayv2alpha1.GatewayResourceStatus) (*gatewayv2alpha1.Api, error) {
 	copy := api.DeepCopy()
 
 	copy.Status.ObservedGeneration = api.Generation
 	copy.Status.LastProcessedTime = &v1.Time{Time: time.Now()}
+	copy.Status.APIStatus = APIStatus
 	copy.Status.VirtualServiceStatus = virtualServiceStatus
 	copy.Status.PolicyServiceStatus = policyStatus
 	copy.Status.AccessRuleStatus = accessRuleStatus

@@ -41,8 +41,9 @@ type ApiSpec struct {
 
 // ApiStatus defines the observed state of Api
 type ApiStatus struct {
-	LastProcessedTime    *metav1.Time          `json:"lastProcessedTime,omitempty"`
-	ObservedGeneration   int64                 `json:"observedGeneration,omitempty"`
+	LastProcessedTime    *metav1.Time           `json:"lastProcessedTime,omitempty"`
+	ObservedGeneration   int64                  `json:"observedGeneration,omitempty"`
+	APIStatus            *GatewayResourceStatus `json:"APIStatus,omitempty"`
 	VirtualServiceStatus *GatewayResourceStatus `json:"virtualServiceStatus,omitempty"`
 	PolicyServiceStatus  *GatewayResourceStatus `json:"policyStatus,omitempty"`
 	AccessRuleStatus     *GatewayResourceStatus `json:"accessRuleStatus,omitempty"`
