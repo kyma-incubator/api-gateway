@@ -47,6 +47,7 @@ var _ = Describe("Controller", func() {
 				Expect(res.Status.AccessRuleStatus.Code).To(Equal(gatewayv2alpha1.STATUS_SKIPPED))
 				Expect(res.Status.PolicyServiceStatus.Code).To(Equal(gatewayv2alpha1.STATUS_SKIPPED))
 				Expect(res.Status.VirtualServiceStatus.Code).To(Equal(gatewayv2alpha1.STATUS_SKIPPED))
+				Expect(res.Status.APIStatus.Code).To(Equal(gatewayv2alpha1.STATUS_OK))
 			})
 		})
 	})
