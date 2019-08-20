@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -45,29 +46,31 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	err := r.Get(context.TODO(), req.NamespacedName, api)
 	if err != nil {
-		return reconcile.Result{}, err
+		if !apierrs.IsNotFound(err) {
+			return reconcile.Result{}, err
+		}
 	}
 
-	if api.DeletionTimestamp == nil {
+	APIStatus := &gatewayv2alpha1.GatewayResourceStatus{
+		Code:gatewayv2alpha1.STATUS_OK,
+	}
+
+	virtualServiceStatus := &gatewayv2alpha1.GatewayResourceStatus{
+		Code:gatewayv2alpha1.STATUS_SKIPPED,
+		Description: "Skipped setting Istio Virtual Service",
+	}
+	policyStatus := &gatewayv2alpha1.GatewayResourceStatus{
+		Code:gatewayv2alpha1.STATUS_SKIPPED,
+		Description: "Skipped setting Istio Policy",
+	}
+
+	accessRuleStatus := &gatewayv2alpha1.GatewayResourceStatus{
+		Code:gatewayv2alpha1.STATUS_SKIPPED,
+		Description: "Skipped setting Oathkeeper Access Rule",
+	}
+
+	if api.DeletionTimestamp == nil && api.Generation != api.Status.ObservedGeneration {
 		r.Log.Info("Api processing")
-
-		APIStatus := &gatewayv2alpha1.GatewayResourceStatus{
-			Code:gatewayv2alpha1.STATUS_OK,
-		}
-
-		virtualServiceStatus := &gatewayv2alpha1.GatewayResourceStatus{
-			Code:gatewayv2alpha1.STATUS_SKIPPED,
-			Description: "Skipped setting Istio Virtual Service",
-		}
-		policyStatus := &gatewayv2alpha1.GatewayResourceStatus{
-			Code:gatewayv2alpha1.STATUS_SKIPPED,
-			Description: "Skipped setting Istio Policy",
-		}
-
-		accessRuleStatus := &gatewayv2alpha1.GatewayResourceStatus{
-			Code:gatewayv2alpha1.STATUS_SKIPPED,
-			Description: "Skipped setting Oathkeeper Access Rule",
-		}
 
 		_, err = r.updateStatus(api, APIStatus, virtualServiceStatus, policyStatus, accessRuleStatus)
 
