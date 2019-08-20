@@ -69,7 +69,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		Description: "Skipped setting Oathkeeper Access Rule",
 	}
 
-	if api.DeletionTimestamp == nil && api.Generation != api.Status.ObservedGeneration {
+	if api.Generation != api.Status.ObservedGeneration {
 		r.Log.Info("Api processing")
 
 		_, err = r.updateStatus(api, APIStatus, virtualServiceStatus, policyStatus, accessRuleStatus)
