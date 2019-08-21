@@ -7,6 +7,7 @@ type OauthModeConfig struct {
 }
 
 type Option struct {
+	// +kubebuilder:validation:Pattern=^/([0-9a-zA-Z./*]+)
 	Path    *string  `json:"path"`
 	Scopes  []string `json:"scopes,omitempty"`
 	Methods []string `json:"methods,omitempty"`

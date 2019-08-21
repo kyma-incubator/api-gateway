@@ -26,7 +26,7 @@ func (o *oauth) Validate(config *runtime.RawExtension) error {
 	// If not, the result is an empty template object.
 	// Check if template is empty
 	if len(template.Paths) == 0 {
-		return fmt.Errorf("Supplied config does not match internal template!\n%v", len(template.Paths))
+		return fmt.Errorf("supplied config does not match internal template\n")
 	}
 
 	return nil
