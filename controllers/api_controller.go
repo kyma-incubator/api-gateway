@@ -17,7 +17,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -72,27 +71,21 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	if api.Generation != api.Status.ObservedGeneration {
 		r.Log.Info("Api processing")
-		switch *api.Spec.Auth.Name {
-		case gatewayv2alpha1.PASSTHROUGH:
-			r.Log.Info("PASSTHROUGH mode detected")
-			err := validation.ValidatePassthroughMode(api.Spec.Auth.Config)
-			if err != nil {
-				r.updateStatus(api, &gatewayv2alpha1.GatewayResourceStatus{Code: gatewayv2alpha1.STATUS_ERROR}, virtualServiceStatus, policyStatus, accessRuleStatus)
-				return ctrl.Result{}, err
-			}
-		case gatewayv2alpha1.JWT:
-			r.Log.Info("JWT mode detected")
-		case gatewayv2alpha1.OAUTH:
-			r.Log.Info("OAUTH mode detected")
-			err := validation.ValidateOauthMode(api.Spec.Auth.Config)
-			if err != nil {
-				r.updateStatus(api, &gatewayv2alpha1.GatewayResourceStatus{Code: gatewayv2alpha1.STATUS_ERROR}, virtualServiceStatus, policyStatus, accessRuleStatus)
-				return ctrl.Result{}, err
-			}
-		default:
-			err := fmt.Errorf("Unsupported mode: %s", *api.Spec.Auth.Name)
+
+		factory := validation.NewValidationStrategyFactory()
+
+		authStrategy, err := factory.NewValidationStrategy(*api.Spec.Auth.Name)
+		if err != nil {
+			r.updateStatus(api, &gatewayv2alpha1.GatewayResourceStatus{Code: gatewayv2alpha1.STATUS_ERROR}, virtualServiceStatus, policyStatus, accessRuleStatus)
 			return ctrl.Result{}, err
 		}
+
+		err = authStrategy.Validate(api.Spec.Auth.Config)
+		if err != nil {
+			r.updateStatus(api, &gatewayv2alpha1.GatewayResourceStatus{Code: gatewayv2alpha1.STATUS_ERROR}, virtualServiceStatus, policyStatus, accessRuleStatus)
+			return ctrl.Result{}, err
+		}
+
 		_, err = r.updateStatus(api, APIStatus, virtualServiceStatus, policyStatus, accessRuleStatus)
 
 		if err != nil {
