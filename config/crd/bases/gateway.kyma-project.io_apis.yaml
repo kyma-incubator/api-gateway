@@ -389,7 +389,9 @@ spec:
           properties:
             auth:
               allOf:
-              - type: object
+              - description: Config configures the auth strategy. Configuration keys
+                  vary per strategy.
+                type: object
               description: Auth strategy to be used
               properties:
                 name:
@@ -412,7 +414,7 @@ spec:
                   description: Defines if the service is internal (in cluster) or
                     external
                   type: boolean
-                hostURL:
+                host:
                   description: URL on which the service will be visible
                   maxLength: 256
                   minLength: 3
@@ -430,7 +432,7 @@ spec:
               required:
               - name
               - port
-              - hostURL
+              - host
               type: object
           required:
           - service

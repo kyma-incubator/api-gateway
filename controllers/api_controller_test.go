@@ -2,6 +2,7 @@ package controllers_test
 
 import (
 	"context"
+
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
 	"github.com/kyma-incubator/api-gateway/controllers"
 	. "github.com/onsi/ginkgo"
@@ -28,6 +29,7 @@ var serviceName, hostURL string
 var servicePort int32
 var isExernal bool
 var authStrategy string
+var host string
 
 var _ = Describe("Controller", func() {
 	Describe("Reconcile", func() {
@@ -57,7 +59,7 @@ var _ = Describe("Controller", func() {
 func fixApi() *gatewayv2alpha1.Api {
 	serviceName = "test"
 	servicePort = 8000
-	hostURL = "https://foo.bar"
+	host = "foo.bar"
 	isExernal = false
 	authStrategy = gatewayv2alpha1.PASSTHROUGH
 
@@ -70,7 +72,7 @@ func fixApi() *gatewayv2alpha1.Api {
 			Service: &gatewayv2alpha1.Service{
 				Name:       &serviceName,
 				Port:       &servicePort,
-				HostURL:    &hostURL,
+				Host:       &host,
 				IsExternal: &isExernal,
 			},
 			Auth: &gatewayv2alpha1.AuthStrategy{

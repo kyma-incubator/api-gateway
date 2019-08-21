@@ -83,7 +83,7 @@ type Service struct {
 	// +kubebuilder:validation:MinLength=3
 	// +kubebuilder:validation:MaxLength=256
 	// +kubebuilder:validation:Pattern=^(?:[_a-z0-9](?:[_a-z0-9-]+[a-z0-9])?\.)+(?:[a-z](?:[a-z0-9-]+[a-z0-9])?)?$
-	Host *string `json:"hostURL"`
+	Host *string `json:"host"`
 	// Defines if the service is internal (in cluster) or external
 	// +optional
 	IsExternal *bool `json:"external,omitempty"`
@@ -92,6 +92,7 @@ type Service struct {
 type AuthStrategy struct {
 	// +kubebuilder:validation:Enum=JWT;OAUTH;PASSTHROUGH
 	Name *string `json:"name"`
+	// Config configures the auth strategy. Configuration keys vary per strategy.
 	// +kubebuilder:validation:Type=object
 	Config *runtime.RawExtension `json:"config,inline,omitempty"`
 }
