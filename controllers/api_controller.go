@@ -17,6 +17,7 @@ package controllers
 
 import (
 	"context"
+	"github.com/kyma-incubator/api-gateway/internal/processing"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -72,15 +73,29 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if api.Generation != api.Status.ObservedGeneration {
 		r.Log.Info("Api processing")
 
-		factory := validation.NewValidationStrategyFactory()
+		validationfactory := validation.NewValidationStrategyFactory()
 
-		authStrategy, err := factory.NewValidationStrategy(*api.Spec.Auth.Name)
+		validationStrategy, err := validationfactory.NewValidationStrategy(*api.Spec.Auth.Name)
 		if err != nil {
 			r.updateStatus(api, &gatewayv2alpha1.GatewayResourceStatus{Code: gatewayv2alpha1.STATUS_ERROR}, virtualServiceStatus, policyStatus, accessRuleStatus)
 			return ctrl.Result{}, err
 		}
 
-		err = authStrategy.Validate(api.Spec.Auth.Config)
+		err = validationStrategy.Validate(api.Spec.Auth.Config)
+		if err != nil {
+			r.updateStatus(api, &gatewayv2alpha1.GatewayResourceStatus{Code: gatewayv2alpha1.STATUS_ERROR}, virtualServiceStatus, policyStatus, accessRuleStatus)
+			return ctrl.Result{}, err
+		}
+
+		processFactory := processing.NewProcessingStrategyFactory(r.Client)
+
+		processingStrategy, err := processFactory.NewProcessingStrategy(*api.Spec.Auth.Name)
+		if err != nil {
+			r.updateStatus(api, &gatewayv2alpha1.GatewayResourceStatus{Code: gatewayv2alpha1.STATUS_ERROR}, virtualServiceStatus, policyStatus, accessRuleStatus)
+			return ctrl.Result{}, err
+		}
+
+		err = processingStrategy.Process(api)
 		if err != nil {
 			r.updateStatus(api, &gatewayv2alpha1.GatewayResourceStatus{Code: gatewayv2alpha1.STATUS_ERROR}, virtualServiceStatus, policyStatus, accessRuleStatus)
 			return ctrl.Result{}, err
