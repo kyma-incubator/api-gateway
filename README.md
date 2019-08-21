@@ -21,10 +21,11 @@
 
 ```yaml
 ---
+gateway: kyma-gateway.kyma-system.svc.cluster.local
 service:
   name: foo-service
   port: 8080
-  hostURL: https://foo.bar
+  host: https://foo.bar
   external: true/false
 auth: 
   name: JWT
@@ -53,18 +54,20 @@ auth:
             methods:
               - GET
 ---
+gateway: kyma-gateway.kyma-system.svc.cluster.local
 service:
   name: foo-service
   port: 8080
-  hostURL: https://foo.bar
+  host: https://foo.bar
   external: true/false
 auth:
   name: PASSTHROUGH
 ---
+gateway: kyma-gateway.kyma-system.svc.cluster.local
 service:
   name: foo-service
   port: 8080
-  hostURL: https://foo.bar
+  host: https://foo.bar
   external: true/false
 auth:
   name: OAUTH

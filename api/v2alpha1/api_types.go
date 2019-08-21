@@ -37,6 +37,9 @@ type ApiSpec struct {
 	Service *Service `json:"service"`
 	// Auth strategy to be used
 	Auth *AuthStrategy `json:"auth"`
+	// Gateway to be used
+	// +kubebuilder:validation:Pattern=^(?:[_a-z0-9](?:[_a-z0-9-]+[a-z0-9])?\.)+(?:[a-z](?:[a-z0-9-]+[a-z0-9])?)?$
+	Gateway *string `json:"gateway"`
 }
 
 // ApiStatus defines the observed state of Api
@@ -79,8 +82,8 @@ type Service struct {
 	// URL on which the service will be visible
 	// +kubebuilder:validation:MinLength=3
 	// +kubebuilder:validation:MaxLength=256
-	// +kubebuilder:validation:Pattern=^(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/\n]+)
-	HostURL *string `json:"hostURL"`
+	// +kubebuilder:validation:Pattern=^(?:[_a-z0-9](?:[_a-z0-9-]+[a-z0-9])?\.)+(?:[a-z](?:[a-z0-9-]+[a-z0-9])?)?$
+	Host *string `json:"hostURL"`
 	// Defines if the service is internal (in cluster) or external
 	// +optional
 	IsExternal *bool `json:"external,omitempty"`
@@ -88,7 +91,8 @@ type Service struct {
 
 type AuthStrategy struct {
 	// +kubebuilder:validation:Enum=JWT;OAUTH;PASSTHROUGH
-	Name   *string               `json:"name"`
+	Name *string `json:"name"`
+	// +kubebuilder:validation:Type=object
 	Config *runtime.RawExtension `json:"config,inline,omitempty"`
 }
 

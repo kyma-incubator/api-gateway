@@ -5,19 +5,21 @@ metadata:
   name: passthrough
 spec:
   service:
-    hostURL: https://imgur.com
+    host: imgur.com
     name: imgur
     port: 443
   auth: 
     name: PASSTHROUGH
+  gateway: kyma-gateway.kyma-system.svc.cluster.local
 ---
 apiVersion: gateway.kyma-project.io/v2alpha1
 kind: Api
 metadata:
   name: oauth
 spec:
+  gateway: kyma-gateway.kyma-system.svc.cluster.local
   service:
-    hostURL: https://imgur.com
+    host: imgur.com
     name: imgur
     port: 443
   auth: 
@@ -32,8 +34,9 @@ kind: Api
 metadata:
   name: oauth-bad
 spec:
+  gateway: kyma-gateway.kyma-system.svc.cluster.local
   service:
-    hostURL: https://imgur.com
+    host: imgur.com
     name: imgur
     port: 443
   auth: 

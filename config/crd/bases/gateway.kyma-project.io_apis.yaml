@@ -401,6 +401,10 @@ spec:
               required:
               - name
               type: object
+            gateway:
+              description: Gateway to be used
+              pattern: ^(?:[_a-z0-9](?:[_a-z0-9-]+[a-z0-9])?\.)+(?:[a-z](?:[a-z0-9-]+[a-z0-9])?)?$
+              type: string
             service:
               description: Definition of the service to expose
               properties:
@@ -412,7 +416,7 @@ spec:
                   description: URL on which the service will be visible
                   maxLength: 256
                   minLength: 3
-                  pattern: ^(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/\n]+)
+                  pattern: ^(?:[_a-z0-9](?:[_a-z0-9-]+[a-z0-9])?\.)+(?:[a-z](?:[a-z0-9-]+[a-z0-9])?)?$
                   type: string
                 name:
                   description: Name of the service
@@ -431,6 +435,7 @@ spec:
           required:
           - service
           - auth
+          - gateway
           type: object
         status:
           properties:
