@@ -3,6 +3,7 @@ package processing
 import (
 	"context"
 	"fmt"
+
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
 	k8sMeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis/istio/common/v1alpha1"
@@ -20,7 +21,7 @@ func (p *passthrough) Process(api *gatewayv2alpha1.Api) error {
 	//1. get VS
 
 	//2. create VS if needed
-
+	fmt.Sprintf("\nAPI: %v\n", *api)
 	return p.createVirtualService(api)
 }
 
@@ -48,10 +49,10 @@ func (p *passthrough) createVirtualService(api *gatewayv2alpha1.Api) error {
 	}
 
 	spec := &networkingv1alpha3.VirtualServiceSpec{
-		Hosts:    []string{*api.Spec.Service.HostURL},
-		Gateways: []string{"kyma-gateway"},
+		Hosts:    []string{*api.Spec.Service.Host},
+		Gateways: []string{*api.Spec.Gateway},
 		HTTP: []networkingv1alpha3.HTTPRoute{
-			networkingv1alpha3.HTTPRoute{
+			{
 				Match: []networkingv1alpha3.HTTPMatchRequest{*match},
 				Route: []networkingv1alpha3.HTTPRouteDestination{*route},
 			},

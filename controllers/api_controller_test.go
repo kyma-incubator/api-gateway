@@ -24,28 +24,28 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
-var ts *testSuite
-var serviceName, hostURL string
-var servicePort int32
-var isExernal bool
-var authStrategy string
-var host string
+var (
+	ts                                       *testSuite
+	serviceName, host, authStrategy, gateway string
+	servicePort                              int32
+	isExernal                                bool
+)
 
 var _ = Describe("Controller", func() {
 	Describe("Reconcile", func() {
 		Context("API", func() {
 			It("should update status", func() {
-				testApi := fixApi()
+				testAPI := fixAPI()
 
-				ts = getTestSuite(testApi)
-				reconciler := getApiReconciler(ts.mgr)
+				ts = getTestSuite(testAPI)
+				reconciler := getAPIReconciler(ts.mgr)
 
-				result, err := reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Name: testApi.Name}})
+				result, err := reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Name: testAPI.Name}})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(result.Requeue).To(BeFalse())
 
 				res := gatewayv2alpha1.Api{}
-				err = ts.mgr.GetClient().Get(context.Background(), types.NamespacedName{Namespace: testApi.Namespace, Name: testApi.Name}, &res)
+				err = ts.mgr.GetClient().Get(context.Background(), types.NamespacedName{Namespace: testAPI.Namespace, Name: testAPI.Name}, &res)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.Status.AccessRuleStatus.Code).To(Equal(gatewayv2alpha1.STATUS_SKIPPED))
 				Expect(res.Status.PolicyServiceStatus.Code).To(Equal(gatewayv2alpha1.STATUS_SKIPPED))
@@ -56,12 +56,13 @@ var _ = Describe("Controller", func() {
 	})
 })
 
-func fixApi() *gatewayv2alpha1.Api {
+func fixAPI() *gatewayv2alpha1.Api {
 	serviceName = "test"
 	servicePort = 8000
 	host = "foo.bar"
 	isExernal = false
 	authStrategy = gatewayv2alpha1.PASSTHROUGH
+	gateway = "some-gateway.some-namespace.foo"
 
 	return &gatewayv2alpha1.Api{
 		ObjectMeta: metav1.ObjectMeta{
@@ -79,11 +80,12 @@ func fixApi() *gatewayv2alpha1.Api {
 				Name:   &authStrategy,
 				Config: nil,
 			},
+			Gateway: &gateway,
 		},
 	}
 }
 
-func getApiReconciler(mgr manager.Manager) reconcile.Reconciler {
+func getAPIReconciler(mgr manager.Manager) reconcile.Reconciler {
 	return &controllers.ApiReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Api"),
