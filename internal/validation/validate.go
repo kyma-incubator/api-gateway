@@ -2,11 +2,12 @@ package validation
 
 import (
 	"fmt"
+
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-type factory struct {}
+type factory struct{}
 
 type Factory interface {
 	NewValidationStrategy(strategyName string) (ValidationStrategy, error)
@@ -37,23 +38,13 @@ func (f *factory) NewValidationStrategy(strategyName string) (ValidationStrategy
 	}
 }
 
-type passthrough struct {}
-
-func (p *passthrough) Validate(config *runtime.RawExtension) error {
-	if config != nil {
-		return fmt.Errorf("passthrough mode requires empty configuration")
+//configNotEmpty Verify if the config object is not empty
+func configNotEmpty(config *runtime.RawExtension) bool {
+	if config == nil {
+		return false
 	}
-	return nil
-}
-
-type oauth struct {}
-
-func (o *oauth) Validate(config *runtime.RawExtension) error {
-	return nil
-}
-
-type jwt struct {}
-
-func (j *jwt) Validate(config *runtime.RawExtension) error {
-	return nil
+	if len(config.Raw) == 0 {
+		return false
+	}
+	return true
 }

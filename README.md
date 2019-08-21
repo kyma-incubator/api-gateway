@@ -27,11 +27,11 @@ service:
   hostURL: https://foo.bar
   external: true/false
 auth: 
-  - name: JWT
-    config:
-      issuer: http://dex.kyma.local
-      jwks: []
-      mode: 
+  name: JWT
+  config:
+    issuer: http://dex.kyma.local
+    jwks: []
+    mode: 
       - name: ALL
         config:
           scopes: []
@@ -52,16 +52,30 @@ auth:
           - path: '/b'
             methods:
               - GET
-  - name: PASSTHROUGH
-  - name: OAUTH
-    config:
-      - path: '/a'
-        scopes: 
-          - write
-        methods:
-          - POST
-      # Invalid or takes priority
-      - path: '/*' 
-        scopes: []
-        methods: []
+---
+service:
+  name: foo-service
+  port: 8080
+  hostURL: https://foo.bar
+  external: true/false
+auth:
+  name: PASSTHROUGH
+---
+service:
+  name: foo-service
+  port: 8080
+  hostURL: https://foo.bar
+  external: true/false
+auth:
+  name: OAUTH
+  config:
+    - path: '/a'
+      scopes: 
+        - write
+      methods:
+        - POST
+    # Invalid or takes priority
+    - path: '/*' 
+      scopes: []
+      methods: []
 ```

@@ -10,7 +10,6 @@ spec:
     port: 443
   auth: 
     name: PASSTHROUGH
-    # config: {}
 ---
 apiVersion: gateway.kyma-project.io/v2alpha1
 kind: Api
@@ -23,8 +22,10 @@ spec:
     port: 443
   auth: 
     name: OAUTH
-    config: 
-      foo: bar
+    config:
+      - path: /foo
+        scopes: [foo, bar]
+        methods: [GET]
 ---
 apiVersion: gateway.kyma-project.io/v2alpha1
 kind: Api
@@ -38,4 +39,3 @@ spec:
   auth: 
     name: OAUTH
     config: 
-      bar: foo
