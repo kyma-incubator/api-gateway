@@ -21,17 +21,46 @@ func (p *passthrough) Process(api *gatewayv2alpha1.Api) error {
 	//1. get VS
 
 	//2. create VS if needed
-	fmt.Sprintf("\nAPI: %v\n", *api)
-	return p.createVirtualService(api)
+	vs := p.createVirtualService(api)
+
+	return p.saveVirtualService(vs)
 }
 
-func (p *passthrough) createVirtualService(api *gatewayv2alpha1.Api) error {
+func (p *passthrough) getVirtualService(api *gatewayv2alpha1.Api) error {
+	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
+	namespacedName := client.ObjectKey{Namespace: api.GetNamespace(), Name: virtualServiceName}
+
+	vs := &networkingv1alpha3.VirtualService{}
+
+	p.Client.Get(context.TODO(), namespacedName, vs)
+
+	fmt.Printf("\nVS: %v\n", *vs)
+
+	return nil
+}
+
+func (p *passthrough) saveVirtualService(vs *networkingv1alpha3.VirtualService) error {
+	return p.Client.Create(context.TODO(), vs)
+}
+
+func (p *passthrough) createVirtualService(api *gatewayv2alpha1.Api) *networkingv1alpha3.VirtualService {
 	var virtualServiceName string
 	virtualServiceName = fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
+	var controller bool
+	controller = true
+
+	ownerRef := &k8sMeta.OwnerReference{
+		Name:       api.ObjectMeta.Name,
+		APIVersion: api.TypeMeta.APIVersion,
+		Kind:       api.TypeMeta.Kind,
+		UID:        api.ObjectMeta.UID,
+		Controller: &controller,
+	}
 
 	objectMeta := k8sMeta.ObjectMeta{
-		Name:      virtualServiceName,
-		Namespace: api.ObjectMeta.Namespace,
+		Name:            virtualServiceName,
+		Namespace:       api.ObjectMeta.Namespace,
+		OwnerReferences: []k8sMeta.OwnerReference{*ownerRef},
 	}
 
 	match := &networkingv1alpha3.HTTPMatchRequest{
@@ -64,5 +93,5 @@ func (p *passthrough) createVirtualService(api *gatewayv2alpha1.Api) error {
 		Spec:       *spec,
 	}
 
-	return p.Client.Create(context.TODO(), vs)
+	return vs
 }
