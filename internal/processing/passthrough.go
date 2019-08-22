@@ -55,7 +55,7 @@ func (p *passthrough) createVirtualService(vs *networkingv1alpha3.VirtualService
 	return p.Client.Create(context.TODO(), vs)
 }
 
-func (p * passthrough) prepareVirtualService (api *gatewayv2alpha1.Api, vs *networkingv1alpha3.VirtualService) *networkingv1alpha3.VirtualService{
+func (p *passthrough) prepareVirtualService(api *gatewayv2alpha1.Api, vs *networkingv1alpha3.VirtualService) *networkingv1alpha3.VirtualService {
 	var virtualServiceName string
 	virtualServiceName = fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	var controller bool
