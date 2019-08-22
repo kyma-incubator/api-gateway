@@ -28,7 +28,7 @@ spec:
 apiVersion: gateway.kyma-project.io/v2alpha1
 kind: Api
 metadata:
-  name: oauth-bad
+  name: oauth-no-paths
 spec:
   gateway: kyma-gateway.kyma-system.svc.cluster.local
   service:
@@ -38,3 +38,25 @@ spec:
   auth: 
     name: OAUTH
     config:
+      paths: []
+---
+apiVersion: gateway.kyma-project.io/v2alpha1
+kind: Api
+metadata:
+  name: oauth-bad-paths
+spec:
+  gateway: kyma-gateway.kyma-system.svc.cluster.local
+  service:
+    host: imgur.com
+    name: imgur
+    port: 443
+  auth: 
+    name: OAUTH
+    config:
+      paths:
+      - path: /foo
+        scopes: [foo, bar]
+        methods: [GET]
+      - path: /foo
+        scopes: [foo]
+        methods: [POST]

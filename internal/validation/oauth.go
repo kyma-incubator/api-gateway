@@ -15,19 +15,39 @@ func (o *oauth) Validate(config *runtime.RawExtension) error {
 	template := &gatewayv2alpha1.OauthModeConfig{}
 
 	if !configNotEmpty(config) {
-		return fmt.Errorf("Config empty!")
+		return fmt.Errorf("supplied config cannot be empty")
 	}
 
 	//Check if the supplied data is castable to OauthModeConfig
-	err := json.Unmarshal(config.Raw, &template.Paths)
+	err := json.Unmarshal(config.Raw, &template)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 	// If not, the result is an empty template object.
 	// Check if template is empty
 	if len(template.Paths) == 0 {
-		return fmt.Errorf("supplied config does not match internal template\n")
+		return fmt.Errorf("supplied config does not match internal template")
 	}
-
+	if hasDuplicates(template.Paths) {
+		return fmt.Errorf("supplied config is invalid: multiple definitions of the same path detected")
+	}
 	return nil
+}
+
+func hasDuplicates(elements []gatewayv2alpha1.Option) bool {
+	encountered := map[string]bool{}
+	// Create a map of all unique elements.
+	for v := range elements {
+		encountered[elements[v].Path] = true
+	}
+	// Place all keys from the map into a slice.
+	result := []gatewayv2alpha1.Option{}
+	for key := range encountered {
+		tmp := &gatewayv2alpha1.Option{Path: key}
+		result = append(result, *tmp)
+	}
+	if len(result) != len(elements) {
+		return true
+	}
+	return false
 }

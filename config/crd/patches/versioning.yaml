@@ -6,7 +6,7 @@ spec:
   versions:
   - name: v1alpha2
     served: true
-    storage: true
+    storage: false
   - name: v2alpha1
     served: true
-    storage: false
+    storage: true

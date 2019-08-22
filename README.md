@@ -25,7 +25,7 @@ gateway: kyma-gateway.kyma-system.svc.cluster.local
 service:
   name: foo-service
   port: 8080
-  host: https://foo.bar
+  host: foo.bar
   external: true/false
 auth: 
   name: JWT
@@ -33,32 +33,58 @@ auth:
     issuer: http://dex.kyma.local
     jwks: []
     mode: 
-      - name: ALL
-        config:
-          scopes: []
-      - name: EXCLUDE
-        config:
-          - pathSuffix: '/c'
-          - pathRegex: '/d/*'
-          - pathPrefix: ''
-          - pathExact: '/f/foobar.png'
-      - name: INCLUDE
-        config:
-          - path: '/a'
-            scopes: 
-              - read
-            methods:
-              - GET
-              - POST
-          - path: '/b'
-            methods:
-              - GET
+      name: ALL
+      config:
+        scopes: []
 ---
 gateway: kyma-gateway.kyma-system.svc.cluster.local
 service:
   name: foo-service
   port: 8080
-  host: https://foo.bar
+  host: foo.bar
+  external: true/false
+auth: 
+  name: JWT
+  config:
+    issuer: http://dex.kyma.local
+    jwks: []
+    mode: 
+      name: EXCLUDE
+      config:
+        - pathSuffix: '/c'
+        - pathRegex: '/d/*'
+        - pathPrefix: ''
+        - pathExact: '/f/foobar.png'
+---
+gateway: kyma-gateway.kyma-system.svc.cluster.local
+service:
+  name: foo-service
+  port: 8080
+  host: foo.bar
+  external: true/false
+auth: 
+  name: JWT
+  config:
+    issuer: http://dex.kyma.local
+    jwks: []
+    mode: 
+      name: INCLUDE
+      config:
+        - path: '/a'
+          scopes: 
+            - read
+          methods:
+            - GET
+            - POST
+        - path: '/b'
+          methods:
+            - GET
+---
+gateway: kyma-gateway.kyma-system.svc.cluster.local
+service:
+  name: foo-service
+  port: 8080
+  host: foo.bar
   external: true/false
 auth:
   name: PASSTHROUGH
@@ -67,7 +93,7 @@ gateway: kyma-gateway.kyma-system.svc.cluster.local
 service:
   name: foo-service
   port: 8080
-  host: https://foo.bar
+  host: foo.bar
   external: true/false
 auth:
   name: OAUTH

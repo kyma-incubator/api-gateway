@@ -80,8 +80,10 @@ samples-clean:
 .PHONY: samples
 samples: samples-valid
 
+.PHONY: samples-valid
 samples-valid: samples-clean
 	kubectl apply -f config/samples/valid.yaml
 
+.PHONY: samples-invalid
 samples-invalid: samples-clean
 	kubectl apply -f config/samples/invalid.yaml

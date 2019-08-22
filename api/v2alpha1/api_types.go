@@ -52,6 +52,7 @@ type ApiStatus struct {
 	AccessRuleStatus     *GatewayResourceStatus `json:"accessRuleStatus,omitempty"`
 }
 
+// +kubebuilder:storageversion
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // Api is the Schema for the apis API
