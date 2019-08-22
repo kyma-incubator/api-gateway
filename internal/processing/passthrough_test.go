@@ -21,15 +21,6 @@ var (
 	servicePort   int32     = 8080
 )
 
-// spec:
-//   service:
-//     host: imgur.com
-//     name: imgur
-//     port: 443
-//   auth:
-//     name: PASSTHROUGH
-//   gateway: kyma-gateway.kyma-system.svc.cluster.local
-
 func TestGenerateVirtualService(t *testing.T) {
 	exampleAPI := &gatewayv2alpha1.Api{
 		ObjectMeta: metav1.ObjectMeta{
@@ -61,8 +52,10 @@ func TestGenerateVirtualService(t *testing.T) {
 
 	assert.Equal(t, len(vs.Spec.HTTP), 1)
 	assert.Equal(t, len(vs.Spec.HTTP[0].Route), 1)
+	assert.Equal(t, len(vs.Spec.HTTP[0].Match), 1)
 	assert.Equal(t, vs.Spec.HTTP[0].Route[0].Destination.Host, serviceName+"."+apiNamespace+".svc.cluster.local")
 	assert.Equal(t, vs.Spec.HTTP[0].Route[0].Destination.Port.Number, uint32(servicePort))
+	assert.Equal(t, vs.Spec.HTTP[0].Match[0].URI.Regex, "/.*")
 
 	assert.Equal(t, vs.ObjectMeta.Name, apiName+"-"+serviceName)
 	assert.Equal(t, vs.ObjectMeta.Namespace, apiNamespace)
