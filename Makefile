@@ -70,5 +70,18 @@ CONTROLLER_GEN=$(shell go env GOPATH)/bin/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
+
 run: build
 	go run .
+
+samples-clean:
+	kubectl delete api --all --ignore-not-found=true
+
+.PHONY: samples
+samples: samples-valid
+
+samples-valid: samples-clean
+	kubectl apply -f config/samples/valid.yaml
+
+samples-invalid: samples-clean
+	kubectl apply -f config/samples/invalid.yaml
