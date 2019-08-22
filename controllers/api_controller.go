@@ -106,6 +106,10 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			return ctrl.Result{}, err
 		}
 
+		virtualServiceStatus := &gatewayv2alpha1.GatewayResourceStatus{
+			Code:        gatewayv2alpha1.STATUS_OK,
+		}
+
 		_, err = r.updateStatus(api, APIStatus, virtualServiceStatus, policyStatus, accessRuleStatus)
 
 		if err != nil {

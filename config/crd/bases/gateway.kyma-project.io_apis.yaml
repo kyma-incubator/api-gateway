@@ -388,12 +388,12 @@ spec:
         spec:
           properties:
             auth:
-              allOf:
-              - description: Config configures the auth strategy. Configuration keys
-                  vary per strategy.
-                type: object
               description: Auth strategy to be used
               properties:
+                config:
+                  description: Config configures the auth strategy. Configuration
+                    keys vary per strategy.
+                  type: object
                 name:
                   enum:
                   - JWT

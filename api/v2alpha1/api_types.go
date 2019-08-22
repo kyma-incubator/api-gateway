@@ -94,7 +94,7 @@ type AuthStrategy struct {
 	Name *string `json:"name"`
 	// Config configures the auth strategy. Configuration keys vary per strategy.
 	// +kubebuilder:validation:Type=object
-	Config *runtime.RawExtension `json:"config,inline,omitempty"`
+	Config *runtime.RawExtension `json:"config,omitempty"`
 }
 
 type GatewayResourceStatus struct {
