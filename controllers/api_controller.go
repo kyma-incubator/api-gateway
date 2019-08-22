@@ -77,13 +77,13 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 		validationStrategy, err := validationfactory.NewValidationStrategy(*api.Spec.Auth.Name)
 		if err != nil {
-			r.updateStatus(api, &gatewayv2alpha1.GatewayResourceStatus{Code: gatewayv2alpha1.STATUS_ERROR}, virtualServiceStatus, policyStatus, accessRuleStatus)
+			r.updateStatus(api, generateErrorStatus(err), virtualServiceStatus, policyStatus, accessRuleStatus)
 			return ctrl.Result{}, err
 		}
 
 		err = validationStrategy.Validate(api.Spec.Auth.Config)
 		if err != nil {
-			r.updateStatus(api, &gatewayv2alpha1.GatewayResourceStatus{Code: gatewayv2alpha1.STATUS_ERROR}, virtualServiceStatus, policyStatus, accessRuleStatus)
+			r.updateStatus(api, generateErrorStatus(err), virtualServiceStatus, policyStatus, accessRuleStatus)
 			return ctrl.Result{}, err
 		}
 
@@ -91,13 +91,18 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 		processingStrategy, err := processFactory.NewProcessingStrategy(*api.Spec.Auth.Name)
 		if err != nil {
-			r.updateStatus(api, &gatewayv2alpha1.GatewayResourceStatus{Code: gatewayv2alpha1.STATUS_ERROR}, virtualServiceStatus, policyStatus, accessRuleStatus)
+			r.updateStatus(api, generateErrorStatus(err), virtualServiceStatus, policyStatus, accessRuleStatus)
 			return ctrl.Result{}, err
 		}
 
 		err = processingStrategy.Process(api)
 		if err != nil {
-			r.updateStatus(api, &gatewayv2alpha1.GatewayResourceStatus{Code: gatewayv2alpha1.STATUS_ERROR}, virtualServiceStatus, policyStatus, accessRuleStatus)
+			virtualServiceStatus := &gatewayv2alpha1.GatewayResourceStatus{
+				Code:        gatewayv2alpha1.STATUS_ERROR,
+				Description: err.Error(),
+			}
+
+			r.updateStatus(api, generateErrorStatus(err), virtualServiceStatus, policyStatus, accessRuleStatus)
 			return ctrl.Result{}, err
 		}
 
@@ -143,4 +148,11 @@ func (r *ApiReconciler) updateStatus(api *gatewayv2alpha1.Api, APIStatus, virtua
 		return nil, err
 	}
 	return copy, nil
+}
+
+func generateErrorStatus(err error) *gatewayv2alpha1.GatewayResourceStatus {
+	return &gatewayv2alpha1.GatewayResourceStatus{
+		Code:        gatewayv2alpha1.STATUS_ERROR,
+		Description: err.Error(),
+	}
 }
