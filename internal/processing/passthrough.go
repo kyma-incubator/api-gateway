@@ -21,9 +21,9 @@ func (p *passthrough) Process(api *gatewayv2alpha1.Api) error {
 	//1. get VS
 
 	//2. create VS if needed
-	vs := p.createVirtualService(api)
+	vs := p.generateVirtualService(api)
 
-	return p.saveVirtualService(vs)
+	return p.createVirtualService(vs)
 }
 
 func (p *passthrough) getVirtualService(api *gatewayv2alpha1.Api) error {
@@ -39,11 +39,11 @@ func (p *passthrough) getVirtualService(api *gatewayv2alpha1.Api) error {
 	return nil
 }
 
-func (p *passthrough) saveVirtualService(vs *networkingv1alpha3.VirtualService) error {
+func (p *passthrough) createVirtualService(vs *networkingv1alpha3.VirtualService) error {
 	return p.Client.Create(context.TODO(), vs)
 }
 
-func (p *passthrough) createVirtualService(api *gatewayv2alpha1.Api) *networkingv1alpha3.VirtualService {
+func (p *passthrough) generateVirtualService(api *gatewayv2alpha1.Api) *networkingv1alpha3.VirtualService {
 	var virtualServiceName string
 	virtualServiceName = fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	var controller bool
