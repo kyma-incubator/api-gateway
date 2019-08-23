@@ -2,31 +2,36 @@ package validation
 
 import (
 	"fmt"
+	"github.com/go-logr/logr"
 
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-type factory struct{}
+type factory struct{
+	Log logr.Logger
+}
 
 type ValidationStrategy interface {
 	Validate(config *runtime.RawExtension) error
 }
 
-func NewValidationStrategyFactory() *factory {
-	return &factory{}
+func NewValidationStrategyFactory(logger logr.Logger) *factory {
+	return &factory{
+		Log: logger,
+	}
 }
 
 func (f *factory) NewValidationStrategy(strategyName string) (ValidationStrategy, error) {
 	switch strategyName {
 	case gatewayv2alpha1.PASSTHROUGH:
-		fmt.Println("PASSTHROUGH mode detected")
+		f.Log.Info("PASSTHROUGH validation mode detected")
 		return &passthrough{}, nil
 	case gatewayv2alpha1.JWT:
-		fmt.Println("JWT mode detected")
+		f.Log.Info("JWT validation mode detected")
 		return &jwt{}, nil
 	case gatewayv2alpha1.OAUTH:
-		fmt.Println("OAUTH mode detected")
+		f.Log.Info("OAUTH validation mode detected")
 		return &oauth{}, nil
 	default:
 		err := fmt.Errorf("Unsupported mode: %s", strategyName)
