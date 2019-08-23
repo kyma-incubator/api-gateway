@@ -7,6 +7,7 @@ import (
 	"github.com/kyma-incubator/api-gateway/internal/validation"
 	"gotest.tools/assert"
 	"k8s.io/apimachinery/pkg/runtime"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
 var (
@@ -15,10 +16,11 @@ var (
 config:
   foo: bar
 `
+	log = logf.Log.WithName("passthrough-validate-test")
 )
 
 func TestPassthroughValidate(t *testing.T) {
-	factory := validation.NewValidationStrategyFactory()
+	factory := validation.NewValidationStrategyFactory(log)
 	strategy, err := factory.NewValidationStrategy(gatewayv2alpha1.PASSTHROUGH)
 	assert.NilError(t, err)
 
