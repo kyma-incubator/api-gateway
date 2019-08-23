@@ -146,20 +146,18 @@ func (r *ApiReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *ApiReconciler) updateStatus(ctx context.Context, api *gatewayv2alpha1.Gate, APIStatus, virtualServiceStatus, policyStatus, accessRuleStatus *gatewayv2alpha1.GatewayResourceStatus) (*gatewayv2alpha1.Gate, error) {
-	copy := api.DeepCopy()
+	api.Status.ObservedGeneration = api.Generation
+	api.Status.LastProcessedTime = &v1.Time{Time: time.Now()}
+	api.Status.GateStatus = APIStatus
+	api.Status.VirtualServiceStatus = virtualServiceStatus
+	api.Status.PolicyServiceStatus = policyStatus
+	api.Status.AccessRuleStatus = accessRuleStatus
 
-	copy.Status.ObservedGeneration = api.Generation
-	copy.Status.LastProcessedTime = &v1.Time{Time: time.Now()}
-	copy.Status.GateStatus = APIStatus
-	copy.Status.VirtualServiceStatus = virtualServiceStatus
-	copy.Status.PolicyServiceStatus = policyStatus
-	copy.Status.AccessRuleStatus = accessRuleStatus
-
-	err := r.Status().Update(ctx, copy)
+	err := r.Status().Update(ctx, api)
 	if err != nil {
 		return nil, err
 	}
-	return copy, nil
+	return api, nil
 }
 
 func generateErrorStatus(err error) *gatewayv2alpha1.GatewayResourceStatus {
