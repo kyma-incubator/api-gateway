@@ -15,7 +15,7 @@ type passthrough struct {
 	client.Client
 }
 
-func (p *passthrough) Process(api *gatewayv2alpha1.Api) error {
+func (p *passthrough) Process(api *gatewayv2alpha1.Gate) error {
 	fmt.Println("Processing API")
 
 	oldVS, err := p.getVirtualService(api)
@@ -31,11 +31,9 @@ func (p *passthrough) Process(api *gatewayv2alpha1.Api) error {
 	} else {
 		return p.createVirtualService(vs)
 	}
-
-	return nil
 }
 
-func (p *passthrough) getVirtualService(api *gatewayv2alpha1.Api) (*networkingv1alpha3.VirtualService, error) {
+func (p *passthrough) getVirtualService(api *gatewayv2alpha1.Gate) (*networkingv1alpha3.VirtualService, error) {
 	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	namespacedName := client.ObjectKey{Namespace: api.GetNamespace(), Name: virtualServiceName}
 	vs := &networkingv1alpha3.VirtualService{}
@@ -55,7 +53,7 @@ func (p *passthrough) createVirtualService(vs *networkingv1alpha3.VirtualService
 	return p.Client.Create(context.TODO(), vs)
 }
 
-func (p *passthrough) prepareVirtualService(api *gatewayv2alpha1.Api, vs *networkingv1alpha3.VirtualService) *networkingv1alpha3.VirtualService {
+func (p *passthrough) prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv1alpha3.VirtualService) *networkingv1alpha3.VirtualService {
 	var virtualServiceName string
 	virtualServiceName = fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	var controller bool
@@ -108,7 +106,7 @@ func (p *passthrough) updateVirtualService(vs *networkingv1alpha3.VirtualService
 	return p.Client.Update(context.TODO(), vs)
 }
 
-func (p *passthrough) generateVirtualService(api *gatewayv2alpha1.Api) *networkingv1alpha3.VirtualService {
+func (p *passthrough) generateVirtualService(api *gatewayv2alpha1.Gate) *networkingv1alpha3.VirtualService {
 	var virtualServiceName string
 	virtualServiceName = fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	var controller bool

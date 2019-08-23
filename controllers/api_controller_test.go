@@ -33,7 +33,7 @@ var (
 
 var _ = Describe("Controller", func() {
 	Describe("Reconcile", func() {
-		Context("API", func() {
+		Context("Gate", func() {
 			It("should update status", func() {
 				testAPI := fixAPI()
 
@@ -44,19 +44,19 @@ var _ = Describe("Controller", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(result.Requeue).To(BeFalse())
 
-				res := gatewayv2alpha1.Api{}
+				res := gatewayv2alpha1.Gate{}
 				err = ts.mgr.GetClient().Get(context.Background(), types.NamespacedName{Namespace: testAPI.Namespace, Name: testAPI.Name}, &res)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.Status.AccessRuleStatus.Code).To(Equal(gatewayv2alpha1.STATUS_SKIPPED))
 				Expect(res.Status.PolicyServiceStatus.Code).To(Equal(gatewayv2alpha1.STATUS_SKIPPED))
 				Expect(res.Status.VirtualServiceStatus.Code).To(Equal(gatewayv2alpha1.STATUS_OK))
-				Expect(res.Status.APIStatus.Code).To(Equal(gatewayv2alpha1.STATUS_OK))
+				Expect(res.Status.GateStatus.Code).To(Equal(gatewayv2alpha1.STATUS_OK))
 			})
 		})
 	})
 })
 
-func fixAPI() *gatewayv2alpha1.Api {
+func fixAPI() *gatewayv2alpha1.Gate {
 	serviceName = "test"
 	servicePort = 8000
 	host = "foo.bar"
@@ -64,12 +64,12 @@ func fixAPI() *gatewayv2alpha1.Api {
 	authStrategy = gatewayv2alpha1.PASSTHROUGH
 	gateway = "some-gateway.some-namespace.foo"
 
-	return &gatewayv2alpha1.Api{
+	return &gatewayv2alpha1.Gate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       "test",
 			Generation: 1,
 		},
-		Spec: gatewayv2alpha1.ApiSpec{
+		Spec: gatewayv2alpha1.GateSpec{
 			Service: &gatewayv2alpha1.Service{
 				Name:       &serviceName,
 				Port:       &servicePort,

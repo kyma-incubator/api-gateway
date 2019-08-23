@@ -43,7 +43,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	_ = r.Log.WithValues("api", req.NamespacedName)
 
-	api := &gatewayv2alpha1.Api{}
+	api := &gatewayv2alpha1.Gate{}
 
 	err := r.Get(context.TODO(), req.NamespacedName, api)
 	if err != nil {
@@ -129,16 +129,16 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 func (r *ApiReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&gatewayv2alpha1.Api{}).
+		For(&gatewayv2alpha1.Gate{}).
 		Complete(r)
 }
 
-func (r *ApiReconciler) updateStatus(api *gatewayv2alpha1.Api, APIStatus, virtualServiceStatus, policyStatus, accessRuleStatus *gatewayv2alpha1.GatewayResourceStatus) (*gatewayv2alpha1.Api, error) {
+func (r *ApiReconciler) updateStatus(api *gatewayv2alpha1.Gate, APIStatus, virtualServiceStatus, policyStatus, accessRuleStatus *gatewayv2alpha1.GatewayResourceStatus) (*gatewayv2alpha1.Gate, error) {
 	copy := api.DeepCopy()
 
 	copy.Status.ObservedGeneration = api.Generation
 	copy.Status.LastProcessedTime = &v1.Time{Time: time.Now()}
-	copy.Status.APIStatus = APIStatus
+	copy.Status.GateStatus = APIStatus
 	copy.Status.VirtualServiceStatus = virtualServiceStatus
 	copy.Status.PolicyServiceStatus = policyStatus
 	copy.Status.AccessRuleStatus = accessRuleStatus

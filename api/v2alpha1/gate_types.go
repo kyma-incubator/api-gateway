@@ -31,8 +31,8 @@ const (
 	STATUS_ERROR   StatusCode = "ERROR"
 )
 
-// ApiSpec defines the desired state of Api
-type ApiSpec struct {
+// GateSpec defines the desired state of Gate
+type GateSpec struct {
 	// Definition of the service to expose
 	Service *Service `json:"service"`
 	// Auth strategy to be used
@@ -42,11 +42,11 @@ type ApiSpec struct {
 	Gateway *string `json:"gateway"`
 }
 
-// ApiStatus defines the observed state of Api
-type ApiStatus struct {
+// GateStatus defines the observed state of Gate
+type GateStatus struct {
 	LastProcessedTime    *metav1.Time           `json:"lastProcessedTime,omitempty"`
 	ObservedGeneration   int64                  `json:"observedGeneration,omitempty"`
-	APIStatus            *GatewayResourceStatus `json:"APIStatus,omitempty"`
+	GateStatus           *GatewayResourceStatus `json:"GateStatus,omitempty"`
 	VirtualServiceStatus *GatewayResourceStatus `json:"virtualServiceStatus,omitempty"`
 	PolicyServiceStatus  *GatewayResourceStatus `json:"policyStatus,omitempty"`
 	AccessRuleStatus     *GatewayResourceStatus `json:"accessRuleStatus,omitempty"`
@@ -55,22 +55,22 @@ type ApiStatus struct {
 // +kubebuilder:storageversion
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// Api is the Schema for the apis API
-type Api struct {
+// Gate is the Schema for the apis Gate
+type Gate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ApiSpec   `json:"spec,omitempty"`
-	Status ApiStatus `json:"status,omitempty"`
+	Spec   GateSpec   `json:"spec,omitempty"`
+	Status GateStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// ApiList contains a list of Api
-type ApiList struct {
+// GateList contains a list of Gate
+type GateList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Api `json:"items"`
+	Items           []Gate `json:"items"`
 }
 
 type Service struct {
@@ -104,5 +104,5 @@ type GatewayResourceStatus struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&Api{}, &ApiList{})
+	SchemeBuilder.Register(&Gate{}, &GateList{})
 }

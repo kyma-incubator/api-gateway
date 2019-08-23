@@ -75,7 +75,7 @@ run: build
 	go run .
 
 samples-clean:
-	kubectl delete api --all --ignore-not-found=true
+	kubectl delete gate --all --ignore-not-found=true
 
 .PHONY: samples
 samples: samples-valid

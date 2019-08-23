@@ -14,7 +14,7 @@ var (
 	apiUID        types.UID = "eab0f1c8-c417-11e9-bf11-4ac644044351"
 	apiNamespace            = "some-namespace"
 	apiAPIVersion           = "gateway.kyma-project.io/v2alpha1"
-	apiKind                 = "Api"
+	apiKind                 = "Gate"
 	apiGateway              = "some-gateway"
 	serviceName             = "example-service"
 	serviceHost             = "myService.myDomain.com"
@@ -22,7 +22,7 @@ var (
 )
 
 func TestGenerateVirtualService(t *testing.T) {
-	exampleAPI := &gatewayv2alpha1.Api{
+	exampleAPI := &gatewayv2alpha1.Gate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      apiName,
 			UID:       apiUID,
@@ -32,7 +32,7 @@ func TestGenerateVirtualService(t *testing.T) {
 			APIVersion: apiAPIVersion,
 			Kind:       apiKind,
 		},
-		Spec: gatewayv2alpha1.ApiSpec{
+		Spec: gatewayv2alpha1.GateSpec{
 			Gateway: &apiGateway,
 			Service: &gatewayv2alpha1.Service{
 				Name: &serviceName,

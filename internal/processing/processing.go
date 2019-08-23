@@ -10,17 +10,17 @@ import (
 
 type factory struct {
 	Client client.Client
-	Log logr.Logger
+	Log    logr.Logger
 }
 
 type ProcessingStrategy interface {
-	Process(api *gatewayv2alpha1.Api) error
+	Process(api *gatewayv2alpha1.Gate) error
 }
 
 func NewProcessingStrategyFactory(client client.Client, logger logr.Logger) *factory {
 	return &factory{
 		Client: client,
-		Log: logger,
+		Log:    logger,
 	}
 }
 

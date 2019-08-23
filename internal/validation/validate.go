@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-type factory struct{
+type factory struct {
 	Log logr.Logger
 }
 

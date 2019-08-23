@@ -2,11 +2,11 @@
 # since it depends on service name and namespace that are out of this kustomize package.
 # It should be run by config/default
 resources:
-- bases/gateway.kyma-project.io_apis.yaml
+- bases/gateway.kyma-project.io_gates.yaml
+- bases/networking.istio.io_virtualservice.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:
-- patches/versioning.yaml
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix.
 # patches here are for enabling the conversion webhook for each CRD
 #- patches/webhook_in_apis.yaml
