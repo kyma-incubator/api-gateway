@@ -17,14 +17,14 @@ type ProcessingStrategy interface {
 	Process(api *gatewayv2alpha1.Gate) error
 }
 
-func NewProcessingStrategyFactory(client client.Client, logger logr.Logger) *factory {
+func NewFactory(client client.Client, logger logr.Logger) *factory {
 	return &factory{
 		Client: client,
 		Log:    logger,
 	}
 }
 
-func (f *factory) NewProcessingStrategy(strategyName string) (ProcessingStrategy, error) {
+func (f *factory) ProcessingStrategyFor(strategyName string) (ProcessingStrategy, error) {
 	switch strategyName {
 	case gatewayv2alpha1.PASSTHROUGH:
 		f.Log.Info("PASSTHROUGH processing mode detected")

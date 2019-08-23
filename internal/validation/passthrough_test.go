@@ -20,8 +20,7 @@ config:
 )
 
 func TestPassthroughValidate(t *testing.T) {
-	factory := validation.NewValidationStrategyFactory(log)
-	strategy, err := factory.NewValidationStrategy(gatewayv2alpha1.PASSTHROUGH)
+	strategy, err := validation.NewFactory(log).ValidationStrategyFor(gatewayv2alpha1.PASSTHROUGH)
 	assert.NilError(t, err)
 
 	valid := &runtime.RawExtension{Raw: []byte(validYaml)}

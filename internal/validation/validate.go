@@ -16,13 +16,13 @@ type ValidationStrategy interface {
 	Validate(config *runtime.RawExtension) error
 }
 
-func NewValidationStrategyFactory(logger logr.Logger) *factory {
+func NewFactory(logger logr.Logger) *factory {
 	return &factory{
 		Log: logger,
 	}
 }
 
-func (f *factory) NewValidationStrategy(strategyName string) (ValidationStrategy, error) {
+func (f *factory) ValidationStrategyFor(strategyName string) (ValidationStrategy, error) {
 	switch strategyName {
 	case gatewayv2alpha1.PASSTHROUGH:
 		f.Log.Info("PASSTHROUGH validation mode detected")

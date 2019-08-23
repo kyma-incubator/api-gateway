@@ -73,7 +73,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if api.Generation != api.Status.ObservedGeneration {
 		r.Log.Info("Api processing")
 
-		validationStrategy, err := validation.NewValidationStrategyFactory(r.Log).NewValidationStrategy(*api.Spec.Auth.Name)
+		validationStrategy, err := validation.NewFactory(r.Log).ValidationStrategyFor(*api.Spec.Auth.Name)
 		if err != nil {
 			r.updateStatus(api, generateErrorStatus(err), virtualServiceStatus, policyStatus, accessRuleStatus)
 			return ctrl.Result{}, err
@@ -85,7 +85,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			return ctrl.Result{}, err
 		}
 
-		processingStrategy, err := processing.NewProcessingStrategyFactory(r.Client, r.Log).NewProcessingStrategy(*api.Spec.Auth.Name)
+		processingStrategy, err := processing.NewFactory(r.Client, r.Log).ProcessingStrategyFor(*api.Spec.Auth.Name)
 		if err != nil {
 			r.updateStatus(api, generateErrorStatus(err), virtualServiceStatus, policyStatus, accessRuleStatus)
 			return ctrl.Result{}, err
