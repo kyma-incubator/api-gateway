@@ -23,12 +23,11 @@ func (p *passthrough) Process(api *gatewayv2alpha1.Gate) error {
 		return err
 	}
 
-	vs := p.generateVirtualService(api)
-
 	if oldVS != nil {
 		newVS := p.prepareVirtualService(api, oldVS)
 		return p.updateVirtualService(newVS)
 	} else {
+		vs := p.generateVirtualService(api)
 		return p.createVirtualService(vs)
 	}
 }

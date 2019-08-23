@@ -2,7 +2,7 @@ package v2alpha1
 
 // OauthModeConfig Config for Oauth mode
 type OauthModeConfig struct {
-	// Array of paths. Each path creates an oathpeeker AccessRule
+	// Array of paths. Each path creates an oathkeeper AccessRule
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:UniqueItems=true
 	Paths []Option `json:"paths"`
