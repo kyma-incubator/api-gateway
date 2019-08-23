@@ -9,15 +9,11 @@ import (
 
 type factory struct{}
 
-type Factory interface {
-	NewValidationStrategy(strategyName string) (ValidationStrategy, error)
-}
-
 type ValidationStrategy interface {
 	Validate(config *runtime.RawExtension) error
 }
 
-func NewValidationStrategyFactory() Factory {
+func NewValidationStrategyFactory() *factory {
 	return &factory{}
 }
 

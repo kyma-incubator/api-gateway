@@ -11,15 +11,11 @@ type factory struct {
 	Client client.Client
 }
 
-type Factory interface {
-	NewProcessingStrategy(strategyName string) (ProcessingStrategy, error)
-}
-
 type ProcessingStrategy interface {
 	Process(api *gatewayv2alpha1.Api) error
 }
 
-func NewProcessingStrategyFactory(client client.Client) Factory {
+func NewProcessingStrategyFactory(client client.Client) *factory {
 	return &factory{Client: client}
 }
 
