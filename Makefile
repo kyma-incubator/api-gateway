@@ -42,10 +42,6 @@ ci-release: build build-image push-image
 clean:
 	rm -rf bin
 
-.PHONY: path-to-referenced-charts
-path-to-referenced-charts:
-	@echo "resources/core"
-
 # Install CRDs into a cluster
 install: manifests
 	kustomize build config/crd | kubectl apply -f -

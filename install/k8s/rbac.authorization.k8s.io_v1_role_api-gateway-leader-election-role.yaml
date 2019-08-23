@@ -1,15 +1,13 @@
-
----
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: Role
 metadata:
-  creationTimestamp: null
-  name: manager-role
+  name: api-gateway-leader-election-role
+  namespace: api-gateway-system
 rules:
 - apiGroups:
-  - gateway.kyma-project.io
+  - ""
   resources:
-  - gates
+  - configmaps
   verbs:
   - get
   - list
@@ -19,10 +17,16 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - gateway.kyma-project.io
+  - ""
   resources:
-  - gates/status
+  - configmaps/status
   verbs:
   - get
   - update
   - patch
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
