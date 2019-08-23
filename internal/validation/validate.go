@@ -44,8 +44,5 @@ func configNotEmpty(config *runtime.RawExtension) bool {
 	if config == nil {
 		return false
 	}
-	if len(config.Raw) == 0 {
-		return false
-	}
-	return true
+	return len(config.Raw) != 0
 }
