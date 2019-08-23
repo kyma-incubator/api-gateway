@@ -2,6 +2,7 @@ APP_NAME = api-gateway-controller
 IMG = $(DOCKER_PUSH_REPOSITORY)$(DOCKER_PUSH_DIRECTORY)/$(APP_NAME)
 TAG = $(DOCKER_TAG)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
+SHELL = /bin/bash
 
 .EXPORT_ALL_VARIABLES:
 GO111MODULE = on
@@ -48,6 +49,7 @@ path-to-referenced-charts:
 # Install CRDs into a cluster
 install: manifests
 	kustomize build config/crd | kubectl apply -f -
+	@if ! kubectl get crd virtualservices.networking.istio.io > /dev/null 2>&1 ; then kubectl apply -f hack/networking.istio.io_virtualservice.yaml; fi;
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests
