@@ -40,14 +40,5 @@ func hasDuplicates(elements []gatewayv2alpha1.Option) bool {
 	for v := range elements {
 		encountered[elements[v].Path] = true
 	}
-	// Place all keys from the map into a slice.
-	result := []gatewayv2alpha1.Option{}
-	for key := range encountered {
-		tmp := &gatewayv2alpha1.Option{Path: key}
-		result = append(result, *tmp)
-	}
-	if len(result) != len(elements) {
-		return true
-	}
-	return false
+	return len(encountered) != len(elements)
 }
