@@ -12,7 +12,7 @@ import (
 type oauth struct{}
 
 func (o *oauth) Validate(config *runtime.RawExtension) error {
-	template := &gatewayv2alpha1.OauthModeConfig{}
+	var template gatewayv2alpha1.OauthModeConfig
 
 	if !configNotEmpty(config) {
 		return fmt.Errorf("supplied config cannot be empty")

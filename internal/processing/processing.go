@@ -1,6 +1,7 @@
 package processing
 
 import (
+	"context"
 	"fmt"
 	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -14,7 +15,7 @@ type factory struct {
 }
 
 type ProcessingStrategy interface {
-	Process(api *gatewayv2alpha1.Gate) error
+	Process(ctx context.Context, api *gatewayv2alpha1.Gate) error
 }
 
 func NewFactory(client client.Client, logger logr.Logger) *factory {
@@ -24,13 +25,12 @@ func NewFactory(client client.Client, logger logr.Logger) *factory {
 	}
 }
 
-func (f *factory) ProcessingStrategyFor(strategyName string) (ProcessingStrategy, error) {
+func (f *factory) StrategyFor(strategyName string) (ProcessingStrategy, error) {
 	switch strategyName {
 	case gatewayv2alpha1.PASSTHROUGH:
 		f.Log.Info("PASSTHROUGH processing mode detected")
 		return &passthrough{Client: f.Client}, nil
 	default:
-		err := fmt.Errorf("Unsupported mode: %s", strategyName)
-		return nil, err
+		return nil, fmt.Errorf("Unsupported mode: %s", strategyName)
 	}
 }

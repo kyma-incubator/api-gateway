@@ -22,6 +22,8 @@ var (
 )
 
 func TestGenerateVirtualService(t *testing.T) {
+	assert := assert.New(t)
+
 	exampleAPI := &gatewayv2alpha1.Gate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      apiName,
@@ -44,25 +46,25 @@ func TestGenerateVirtualService(t *testing.T) {
 	strategyPassthrough := &passthrough{}
 	vs := strategyPassthrough.generateVirtualService(exampleAPI)
 
-	assert.Equal(t, len(vs.Spec.Gateways), 1)
-	assert.Equal(t, vs.Spec.Gateways[0], apiGateway)
+	assert.Equal(len(vs.Spec.Gateways), 1)
+	assert.Equal(vs.Spec.Gateways[0], apiGateway)
 
-	assert.Equal(t, len(vs.Spec.Hosts), 1)
-	assert.Equal(t, vs.Spec.Hosts[0], serviceHost)
+	assert.Equal(len(vs.Spec.Hosts), 1)
+	assert.Equal(vs.Spec.Hosts[0], serviceHost)
 
-	assert.Equal(t, len(vs.Spec.HTTP), 1)
-	assert.Equal(t, len(vs.Spec.HTTP[0].Route), 1)
-	assert.Equal(t, len(vs.Spec.HTTP[0].Match), 1)
-	assert.Equal(t, vs.Spec.HTTP[0].Route[0].Destination.Host, serviceName+"."+apiNamespace+".svc.cluster.local")
-	assert.Equal(t, vs.Spec.HTTP[0].Route[0].Destination.Port.Number, uint32(servicePort))
-	assert.Equal(t, vs.Spec.HTTP[0].Match[0].URI.Regex, "/.*")
+	assert.Equal(len(vs.Spec.HTTP), 1)
+	assert.Equal(len(vs.Spec.HTTP[0].Route), 1)
+	assert.Equal(len(vs.Spec.HTTP[0].Match), 1)
+	assert.Equal(vs.Spec.HTTP[0].Route[0].Destination.Host, serviceName+"."+apiNamespace+".svc.cluster.local")
+	assert.Equal(vs.Spec.HTTP[0].Route[0].Destination.Port.Number, uint32(servicePort))
+	assert.Equal(vs.Spec.HTTP[0].Match[0].URI.Regex, "/.*")
 
-	assert.Equal(t, vs.ObjectMeta.Name, apiName+"-"+serviceName)
-	assert.Equal(t, vs.ObjectMeta.Namespace, apiNamespace)
+	assert.Equal(vs.ObjectMeta.Name, apiName+"-"+serviceName)
+	assert.Equal(vs.ObjectMeta.Namespace, apiNamespace)
 
-	assert.Equal(t, vs.ObjectMeta.OwnerReferences[0].APIVersion, apiAPIVersion)
-	assert.Equal(t, vs.ObjectMeta.OwnerReferences[0].Kind, apiKind)
-	assert.Equal(t, vs.ObjectMeta.OwnerReferences[0].Name, apiName)
-	assert.Equal(t, vs.ObjectMeta.OwnerReferences[0].UID, apiUID)
+	assert.Equal(vs.ObjectMeta.OwnerReferences[0].APIVersion, apiAPIVersion)
+	assert.Equal(vs.ObjectMeta.OwnerReferences[0].Kind, apiKind)
+	assert.Equal(vs.ObjectMeta.OwnerReferences[0].Name, apiName)
+	assert.Equal(vs.ObjectMeta.OwnerReferences[0].UID, apiUID)
 
 }

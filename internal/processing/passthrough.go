@@ -15,29 +15,29 @@ type passthrough struct {
 	client.Client
 }
 
-func (p *passthrough) Process(api *gatewayv2alpha1.Gate) error {
+func (p *passthrough) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	fmt.Println("Processing API")
 
-	oldVS, err := p.getVirtualService(api)
+	oldVS, err := p.getVirtualService(ctx, api)
 	if err != nil {
 		return err
 	}
 
 	if oldVS != nil {
 		newVS := p.prepareVirtualService(api, oldVS)
-		return p.updateVirtualService(newVS)
+		return p.updateVirtualService(ctx, newVS)
 	} else {
 		vs := p.generateVirtualService(api)
-		return p.createVirtualService(vs)
+		return p.createVirtualService(ctx, vs)
 	}
 }
 
-func (p *passthrough) getVirtualService(api *gatewayv2alpha1.Gate) (*networkingv1alpha3.VirtualService, error) {
+func (p *passthrough) getVirtualService(ctx context.Context, api *gatewayv2alpha1.Gate) (*networkingv1alpha3.VirtualService, error) {
 	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	namespacedName := client.ObjectKey{Namespace: api.GetNamespace(), Name: virtualServiceName}
-	vs := &networkingv1alpha3.VirtualService{}
+	var vs networkingv1alpha3.VirtualService
 
-	err := p.Client.Get(context.TODO(), namespacedName, vs)
+	err := p.Client.Get(ctx, namespacedName, &vs)
 	if err != nil {
 		if apierrs.IsNotFound(err) {
 			return nil, nil
@@ -45,18 +45,16 @@ func (p *passthrough) getVirtualService(api *gatewayv2alpha1.Gate) (*networkingv
 		return nil, err
 	}
 
-	return vs, nil
+	return &vs, nil
 }
 
-func (p *passthrough) createVirtualService(vs *networkingv1alpha3.VirtualService) error {
-	return p.Client.Create(context.TODO(), vs)
+func (p *passthrough) createVirtualService(ctx context.Context, vs *networkingv1alpha3.VirtualService) error {
+	return p.Client.Create(ctx, vs)
 }
 
 func (p *passthrough) prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv1alpha3.VirtualService) *networkingv1alpha3.VirtualService {
-	var virtualServiceName string
-	virtualServiceName = fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
-	var controller bool
-	controller = true
+	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
+	controller := true
 
 	ownerRef := &k8sMeta.OwnerReference{
 		Name:       api.ObjectMeta.Name,
@@ -101,15 +99,13 @@ func (p *passthrough) prepareVirtualService(api *gatewayv2alpha1.Gate, vs *netwo
 
 }
 
-func (p *passthrough) updateVirtualService(vs *networkingv1alpha3.VirtualService) error {
-	return p.Client.Update(context.TODO(), vs)
+func (p *passthrough) updateVirtualService(ctx context.Context, vs *networkingv1alpha3.VirtualService) error {
+	return p.Client.Update(ctx, vs)
 }
 
 func (p *passthrough) generateVirtualService(api *gatewayv2alpha1.Gate) *networkingv1alpha3.VirtualService {
-	var virtualServiceName string
-	virtualServiceName = fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
-	var controller bool
-	controller = true
+	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
+	controller := true
 
 	ownerRef := &k8sMeta.OwnerReference{
 		Name:       api.ObjectMeta.Name,

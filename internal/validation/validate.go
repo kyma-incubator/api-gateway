@@ -22,7 +22,7 @@ func NewFactory(logger logr.Logger) *factory {
 	}
 }
 
-func (f *factory) ValidationStrategyFor(strategyName string) (ValidationStrategy, error) {
+func (f *factory) StrategyFor(strategyName string) (ValidationStrategy, error) {
 	switch strategyName {
 	case gatewayv2alpha1.PASSTHROUGH:
 		f.Log.Info("PASSTHROUGH validation mode detected")
@@ -34,8 +34,7 @@ func (f *factory) ValidationStrategyFor(strategyName string) (ValidationStrategy
 		f.Log.Info("OAUTH validation mode detected")
 		return &oauth{}, nil
 	default:
-		err := fmt.Errorf("Unsupported mode: %s", strategyName)
-		return nil, err
+		return nil, fmt.Errorf("Unsupported mode: %s", strategyName)
 	}
 }
 
