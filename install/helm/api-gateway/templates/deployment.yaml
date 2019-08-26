@@ -2,10 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "api-gateway.name" . }}
-  {{- if .Release.Namespace }}
-  namespace: {{ .Release.Namespace }}
-  {{- end }}
+  name: {{ include "api-gateway.fullname" . }}
   labels:
 {{ include "api-gateway.labels" . | indent 4 }}
 spec:

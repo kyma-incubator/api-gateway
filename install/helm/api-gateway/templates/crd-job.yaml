@@ -17,7 +17,7 @@ spec:
       serviceAccountName: {{ .Release.Name }}-crd-init
       containers:
       - name: {{ .Release.Name }}-crd-gates
-        image: "bitnami/kubectl:latest"
+        image: "{{ .Values.rbacJob.image.repository }}:{{ .Values.rbacJob.image.tag }}"
         volumeMounts:
         - name: crd-gates
           mountPath: /etc/crd
