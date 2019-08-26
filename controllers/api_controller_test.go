@@ -90,7 +90,7 @@ func getAPIReconciler(mgr manager.Manager) reconcile.Reconciler {
 	crClient := mgr.GetClient()
 	return &controllers.ApiReconciler{
 		Client:     mgr.GetClient(),
-		CRDClients: crdClients.New(crClient),
+		CRDClients: crdClients.New(mgr.GetClient()),
 		Log:        ctrl.Log.WithName("controllers").WithName("Api"),
 	}
 }
