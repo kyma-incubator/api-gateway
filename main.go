@@ -21,7 +21,7 @@ import (
 
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
 	"github.com/kyma-incubator/api-gateway/controllers"
-	crdClients "github.com/kyma-incubator/api-gateway/internal/clients"
+	crClients "github.com/kyma-incubator/api-gateway/internal/clients"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -63,12 +63,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	crClient := mgr.GetClient()
-
 	if err = (&controllers.ApiReconciler{
-		Client:     crClient,
-		CRDClients: crdClients.New(crClient),
-		Log:        ctrl.Log.WithName("controllers").WithName("Api"),
+		Client:       mgr.GetClient(),
+		ExtCRClients: crClients.New(mgr.GetClient()),
+		Log:          ctrl.Log.WithName("controllers").WithName("Api"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Api")
 		os.Exit(1)
