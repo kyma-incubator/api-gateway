@@ -87,7 +87,6 @@ func fixAPI() *gatewayv2alpha1.Gate {
 }
 
 func getAPIReconciler(mgr manager.Manager) reconcile.Reconciler {
-	crClient := mgr.GetClient()
 	return &controllers.ApiReconciler{
 		Client:     mgr.GetClient(),
 		CRDClients: crdClients.New(mgr.GetClient()),
