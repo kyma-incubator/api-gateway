@@ -9,7 +9,7 @@ rules:
 - apiGroups:
   - gateway.kyma-project.io
   resources:
-  - gates
+  - apis
   verbs:
   - get
   - list
@@ -21,7 +21,7 @@ rules:
 - apiGroups:
   - gateway.kyma-project.io
   resources:
-  - gates/status
+  - apis/status
   verbs:
   - get
   - update

@@ -31,7 +31,7 @@ spec:
         - --enable-leader-election
         command:
         - /manager
-        image: api-gateway-controller:latest
+        image: eu.gcr.io/kyma-project/incubator/develop/api-gateway-controller:1669a1f9
         imagePullPolicy: IfNotPresent
         name: manager
         resources:
@@ -41,4 +41,5 @@ spec:
           requests:
             cpu: 100m
             memory: 20Mi
+      serviceAccountName: api-gateway-api-gateway-sa
       terminationGracePeriodSeconds: 10

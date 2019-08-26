@@ -1,9 +1,7 @@
 replicaCount: 1
 
 image:
-  # ORY Oathkeeper Rule Controller image
   repository: eu.gcr.io/kyma-project/incubator/develop/api-gateway-controller
-  # ORY Oathkeeper Rule Controller version
   tag: "1669a1f9"
   # Image pull policy
   pullPolicy: IfNotPresent
