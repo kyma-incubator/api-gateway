@@ -12,12 +12,27 @@ kubectl apply -f k8s
 
 ## Helm chart
 The `helm` directory contains a helm chart for the Gateway controller. It consists of the following elements:
-- CustomResourceDefinition managed by a job (for installation and upgrade)
+- CustomResourceDefinition(CRD) managed by a job (for installation and upgrade)
 - Controller deployment
 - RBAC settings
 
 To install simply run:
 
 ```bash
-helm install --name gatekeeper --namespace some-namespace helm/api-gateway
+helm install --name gatekeeper --namespace default helm/api-gateway
 ```
+
+>**NOTE:** This CRD requires and uses the following applications/CRD, which should be installed beforehand:
+> - Istio [VirtualService](https://istio.io/docs/reference/config/networking/v1alpha3/virtual-service/)
+> - Istio [Policy](https://istio.io/docs/reference/config/istio.authentication.v1alpha1/)
+> - Oathkeeper [AccessRule](https://www.ory.sh/docs/oathkeeper/)
+>     + Oathkeeper CRD resources are available as charts in [this repo](https://github.com/ory/k8s)
+
+## HowTo
+Installation example (required tools: `minikube`, `kubectl`, `helm`): 
+- Create a k8s cluster using minikube (`minikube start --memory=8192 --cpus=4`)
+- Installer tiller on the cluster (`helm init`)
+- Apply required CRDs (`kubectl apply -f hack/`)
+- Install the Gatekeeper chart (`helm install --name gatekeeper --namespace some-namespace install/helm/api-gateway`)
+- Create sample resource (`kubectl apply -f config/samples/valid.yaml`)
+- Check controller logs (`kubectl logs -n default -lapp.kubernetes.io/name=api-gateway -c api-gateway`)
