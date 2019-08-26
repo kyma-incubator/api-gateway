@@ -9,7 +9,7 @@ import (
 	crClient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func NewVirtualService(crClient crClient.Client) *VirtualService {
+func ForVirtualService(crClient crClient.Client) *VirtualService {
 	return &VirtualService{
 		crClient: crClient,
 	}

@@ -7,7 +7,7 @@ import (
 
 func New(crClient client.Client) *ExternalCRD {
 	return &ExternalCRD{
-		virtualService: istioClient.NewVirtualService(crClient),
+		virtualService: istioClient.ForVirtualService(crClient),
 	}
 }
 
@@ -16,6 +16,6 @@ type ExternalCRD struct {
 	virtualService *istioClient.VirtualService
 }
 
-func (c *ExternalCRD) VirtualService() *istioClient.VirtualService {
+func (c *ExternalCRD) ForVirtualService() *istioClient.VirtualService {
 	return c.virtualService
 }
