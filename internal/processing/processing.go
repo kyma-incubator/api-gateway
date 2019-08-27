@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	istioClient "github.com/kyma-incubator/api-gateway/internal/clients/istio"
+	oryClient "github.com/kyma-incubator/api-gateway/internal/clients/ory"
 
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
 )
@@ -13,6 +14,7 @@ import (
 type factory struct {
 	vsClient *istioClient.VirtualService
 	apClient *istioClient.AuthenticationPolicy
+	arClient *oryClient.AccessRule
 	Log      logr.Logger
 }
 
@@ -20,10 +22,11 @@ type ProcessingStrategy interface {
 	Process(ctx context.Context, api *gatewayv2alpha1.Gate) error
 }
 
-func NewFactory(vsClient *istioClient.VirtualService, apClient *istioClient.AuthenticationPolicy, logger logr.Logger) *factory {
+func NewFactory(vsClient *istioClient.VirtualService, apClient *istioClient.AuthenticationPolicy, arClient *oryClient.AccessRule, logger logr.Logger) *factory {
 	return &factory{
 		vsClient: vsClient,
 		apClient: apClient,
+		arClient: arClient,
 		Log:      logger,
 	}
 }
@@ -38,7 +41,7 @@ func (f *factory) StrategyFor(strategyName string) (ProcessingStrategy, error) {
 		return &jwt{vsClient: f.vsClient, apClient: f.apClient}, nil
 	case gatewayv2alpha1.OAUTH:
 		f.Log.Info("OAUTH processing mode detected")
-		return &oauth{Client: f.Client}, nil
+		return &oauth{vsClient: f.vsClient, arClient: f.arClient}, nil
 	default:
 		return nil, fmt.Errorf("Unsupported mode: %s", strategyName)
 	}

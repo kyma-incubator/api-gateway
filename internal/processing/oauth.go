@@ -5,19 +5,21 @@ import (
 	"encoding/json"
 	"fmt"
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
+	istioClient "github.com/kyma-incubator/api-gateway/internal/clients/istio"
+	accessRuleClient "github.com/kyma-incubator/api-gateway/internal/clients/ory"
+	internalTypes "github.com/kyma-incubator/api-gateway/internal/types/ory"
 	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
 	"github.com/pkg/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	k8sMeta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	internalTypes "github.com/kyma-incubator/api-gateway/internal/types/ory"
 	"k8s.io/apimachinery/pkg/runtime"
 	"knative.dev/pkg/apis/istio/common/v1alpha1"
 	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type oauth struct {
-	client.Client
+	arClient *accessRuleClient.AccessRule
+	vsClient *istioClient.VirtualService
 }
 
 func (o *oauth) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
@@ -37,25 +39,21 @@ func (o *oauth) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	//}
 
 	oauthConfig, err := generateOauthConfig(api)
-	if err!=nil {
+	if err != nil {
 		return err
 	}
 
 	requiredScopesJSON, err := generateRequiredScopesJSON(oauthConfig)
-	if err!=nil {
+	if err != nil {
 		return err
 	}
 
 	ar := generateAccessRule(api, oauthConfig, requiredScopesJSON)
-	return o.create(ctx, ar)
+	return o.createAccessRule(ctx, ar)
 }
 
 func (o *oauth) getVirtualService(ctx context.Context, api *gatewayv2alpha1.Gate) (*networkingv1alpha3.VirtualService, error) {
-	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
-	namespacedName := client.ObjectKey{Namespace: api.GetNamespace(), Name: virtualServiceName}
-	var vs networkingv1alpha3.VirtualService
-
-	err := o.Client.Get(ctx, namespacedName, &vs)
+	vs, err := o.vsClient.GetForAPI(ctx, api)
 	if err != nil {
 		if apierrs.IsNotFound(err) {
 			return nil, nil
@@ -63,11 +61,15 @@ func (o *oauth) getVirtualService(ctx context.Context, api *gatewayv2alpha1.Gate
 		return nil, err
 	}
 
-	return &vs, nil
+	return vs, nil
 }
 
-func (o *oauth) create(ctx context.Context, obj runtime.Object) error {
-	return o.Client.Create(ctx, obj)
+func (o *oauth) createVirtualService(ctx context.Context, vs *networkingv1alpha3.VirtualService) error {
+	return o.vsClient.Create(ctx, vs)
+}
+
+func (o *oauth) createAccessRule(ctx context.Context, ar *rulev1alpha1.Rule) error {
+	return o.arClient.Create(ctx, ar)
 }
 
 func (o *oauth) prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv1alpha3.VirtualService) *networkingv1alpha3.VirtualService {
@@ -117,8 +119,12 @@ func (o *oauth) prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv
 
 }
 
-func (o *oauth) update(ctx context.Context, obj runtime.Object) error {
-	return o.Client.Update(ctx, obj)
+func (o *oauth) updateVirtualService(ctx context.Context, vs *networkingv1alpha3.VirtualService) error {
+	return o.vsClient.Update(ctx, vs)
+}
+
+func (o *oauth) updateAccessRule(ctx context.Context, ar *rulev1alpha1.Rule) error {
+	return o.arClient.Update(ctx, ar)
 }
 
 func generateObjectMeta(api *gatewayv2alpha1.Gate) k8sMeta.ObjectMeta {
@@ -178,12 +184,13 @@ func generateVirtualService(api *gatewayv2alpha1.Gate) *networkingv1alpha3.Virtu
 	return vs
 }
 
-func generateRequiredScopesJSON(config *gatewayv2alpha1.OauthModeConfig) ([]byte, error){
-	requiredScopes := &internalTypes.OauthIntrospectionConfig{config.Paths[0].Scopes}
+func generateRequiredScopesJSON(config *gatewayv2alpha1.OauthModeConfig) ([]byte, error) {
+	requiredScopes := &internalTypes.OauthIntrospectionConfig{
+		RequiredScope: config.Paths[0].Scopes}
 	return json.Marshal(requiredScopes)
 }
 
-func generateOauthConfig(api *gatewayv2alpha1.Gate)(*gatewayv2alpha1.OauthModeConfig, error){
+func generateOauthConfig(api *gatewayv2alpha1.Gate) (*gatewayv2alpha1.OauthModeConfig, error) {
 	apiConfig := api.Spec.Auth.Config
 	var oauthConfig gatewayv2alpha1.OauthModeConfig
 
@@ -202,22 +209,22 @@ func generateAccessRule(api *gatewayv2alpha1.Gate, config *gatewayv2alpha1.Oauth
 	}
 
 	spec := &rulev1alpha1.RuleSpec{
-		Upstream:&rulev1alpha1.Upstream{
+		Upstream: &rulev1alpha1.Upstream{
 			URL: fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", *api.Spec.Service.Name, api.ObjectMeta.Namespace, int(*api.Spec.Service.Port)),
 		},
-		Match:&rulev1alpha1.Match{
+		Match: &rulev1alpha1.Match{
 			Methods: config.Paths[0].Methods,
-			URL: fmt.Sprintf("<http|https>://%s/<.*>", *api.Spec.Service.Host),
+			URL:     fmt.Sprintf("<http|https>://%s/<.*>", *api.Spec.Service.Host),
 		},
-		Authorizer:&rulev1alpha1.Authorizer{
+		Authorizer: &rulev1alpha1.Authorizer{
 			Handler: &rulev1alpha1.Handler{
 				Name: "allow",
 			},
 		},
-		Authenticators:[]*rulev1alpha1.Authenticator{
+		Authenticators: []*rulev1alpha1.Authenticator{
 			{
 				Handler: &rulev1alpha1.Handler{
-					Name:"oauth2_introspection",
+					Name:   "oauth2_introspection",
 					Config: rawConfig,
 				},
 			},
