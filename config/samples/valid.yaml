@@ -11,24 +11,6 @@ spec:
   auth: 
     name: PASSTHROUGH
   gateway: kyma-gateway.kyma-system.svc.cluster.local
-#---
-#apiVersion: gateway.kyma-project.io/v2alpha1
-#kind: Gate
-#metadata:
-#  name: oauth
-#spec:
-#  gateway: kyma-gateway.kyma-system.svc.cluster.local
-#  service:
-#    host: imgur.com
-#    name: imgur
-#    port: 443
-#  auth:
-#    name: OAUTH
-#    config:
-#      paths:
-#      - path: /foo
-#        scopes: [foo, bar]
-#        methods: [GET]
 ---
 apiVersion: gateway.kyma-project.io/v2alpha1
 kind: Gate
@@ -49,3 +31,21 @@ spec:
         name: ALL
         config:
           scopes: ["foo", "bar"]
+---
+apiVersion: gateway.kyma-project.io/v2alpha1
+kind: Gate
+metadata:
+  name: oauth
+spec:
+  gateway: kyma-gateway.kyma-system.svc.cluster.local
+  service:
+    host: imgur.com
+    name: imgur
+    port: 443
+  auth:
+    name: OAUTH
+    config:
+      paths:
+      - path: /foo
+        scopes: [foo, bar]
+        methods: [GET]

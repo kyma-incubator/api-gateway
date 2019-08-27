@@ -22,6 +22,7 @@ import (
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
 	"github.com/kyma-incubator/api-gateway/controllers"
 	crClients "github.com/kyma-incubator/api-gateway/internal/clients"
+	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -40,6 +41,7 @@ func init() {
 
 	_ = gatewayv2alpha1.AddToScheme(scheme)
 	_ = networkingv1alpha3.AddToScheme(scheme)
+	_ = rulev1alpha1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 

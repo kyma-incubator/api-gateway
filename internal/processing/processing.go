@@ -36,6 +36,9 @@ func (f *factory) StrategyFor(strategyName string) (ProcessingStrategy, error) {
 	case gatewayv2alpha1.JWT:
 		f.Log.Info("JWT processing mode detected")
 		return &jwt{vsClient: f.vsClient, apClient: f.apClient}, nil
+	case gatewayv2alpha1.OAUTH:
+		f.Log.Info("OAUTH processing mode detected")
+		return &oauth{Client: f.Client}, nil
 	default:
 		return nil, fmt.Errorf("Unsupported mode: %s", strategyName)
 	}
