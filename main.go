@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	authenticationv1alpha1 "knative.dev/pkg/apis/istio/authentication/v1alpha1"
 	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -37,7 +38,7 @@ var (
 
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
-
+	_ = authenticationv1alpha1.AddToScheme(scheme)
 	_ = gatewayv2alpha1.AddToScheme(scheme)
 	_ = networkingv1alpha3.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
