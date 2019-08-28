@@ -5,8 +5,8 @@ metadata:
   name: passthrough
 spec:
   service:
-    host: imgur.com
-    name: imgur
+    host: httpbin.org
+    name: httpbin
     port: 443
   auth: 
     name: PASSTHROUGH
@@ -39,8 +39,8 @@ metadata:
 spec:
   gateway: kyma-gateway.kyma-system.svc.cluster.local
   service:
-    host: imgur.com
-    name: imgur
+    host: httpbin.org
+    name: httpbin
     port: 443
   auth:
     name: OAUTH
