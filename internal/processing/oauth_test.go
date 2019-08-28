@@ -12,7 +12,6 @@ import (
 func TestOauthGenerateVirtualService(t *testing.T) {
 	assert := assert.New(t)
 
-
 	gate := getGate()
 	oauthConfig := getOauthConfig()
 	oauthStrategy := &oauth{oathkeeperSvc: "test-oathkeeper"}
@@ -44,7 +43,6 @@ func TestOauthGenerateVirtualService(t *testing.T) {
 
 func TestOauthPrepareVirtualService(t *testing.T) {
 	assert := assert.New(t)
-
 
 	gate := getGate()
 	oauthConfig := getOauthConfig()
@@ -91,7 +89,7 @@ func TestOauthGenerateAccessRule(t *testing.T) {
 
 	ar := generateAccessRule(gate, &oauthConfig.Paths[0], requiredScopes)
 
-	assert.Equal(len(ar.Spec.Authenticators),1)
+	assert.Equal(len(ar.Spec.Authenticators), 1)
 	assert.NotEmpty(ar.Spec.Authenticators[0].Config)
 	assert.Equal(string(ar.Spec.Authenticators[0].Config.Raw), string(requiredScopes))
 
@@ -127,11 +125,11 @@ func TestOauthPrepareAccessRule(t *testing.T) {
 	oldAR.ObjectMeta.Generation = int64(15)
 	oldAR.ObjectMeta.Name = "mst"
 
-	newAR := oauthStrategy.prepareAccessRule(gate, oldAR,&oauthConfig.Paths[0], requiredScopes)
+	newAR := oauthStrategy.prepareAccessRule(gate, oldAR, &oauthConfig.Paths[0], requiredScopes)
 
 	assert.Equal(newAR.ObjectMeta.Generation, int64(15))
 
-	assert.Equal(len(oldAR.Spec.Authenticators),1)
+	assert.Equal(len(oldAR.Spec.Authenticators), 1)
 	assert.NotEmpty(oldAR.Spec.Authenticators[0].Config)
 	assert.Equal(string(oldAR.Spec.Authenticators[0].Config.Raw), string(requiredScopes))
 
@@ -193,4 +191,3 @@ func getOauthConfig() *gatewayv2alpha1.OauthModeConfig {
 		},
 	}
 }
-

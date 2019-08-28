@@ -67,7 +67,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.ApiReconciler{
+	if err = (&controllers.APIReconciler{
 		Client:        mgr.GetClient(),
 		ExtCRClients:  crClients.New(mgr.GetClient()),
 		Log:           ctrl.Log.WithName("controllers").WithName("Api"),
