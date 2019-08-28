@@ -25,31 +25,52 @@ type oauth struct {
 func (o *oauth) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	fmt.Println("Processing API")
 
-	//oldVS, err := o.getVirtualService(ctx, api)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//if oldVS != nil {
-	//	newVS := o.prepareVirtualService(api, oldVS)
-	//	return o.update(ctx, newVS)
-	//} else {
-	//	vs := generateVirtualService(api)
-	//	return o.create(ctx, vs)
-	//}
-
 	oauthConfig, err := generateOauthConfig(api)
 	if err != nil {
 		return err
 	}
 
-	requiredScopesJSON, err := generateRequiredScopesJSON(oauthConfig)
+	oldVS, err := o.getVirtualService(ctx, api)
 	if err != nil {
 		return err
 	}
 
-	ar := generateAccessRule(api, oauthConfig, requiredScopesJSON)
-	return o.createAccessRule(ctx, ar)
+	if oldVS != nil {
+		newVS := o.prepareVirtualService(api, oldVS, oauthConfig)
+		err = o.updateVirtualService(ctx, newVS)
+		if err != nil {
+			return err
+		}
+	} else {
+		vs := generateVirtualService(api, oauthConfig)
+		err = o.createVirtualService(ctx, vs)
+		if err != nil {
+			return err
+		}
+	}
+
+	oldAR, err := o.getAccessRule(ctx, api)
+	if err != nil {
+		return err
+	}
+
+	requiredScopesJSON, err := generateRequiredScopesJSON(&oauthConfig.Paths[0])
+	if err != nil {
+		return err
+	}
+
+	if oldAR != nil {
+		newAR := o.prepareAccessRule(api, oldAR, &oauthConfig.Paths[0], requiredScopesJSON)
+		err = o.updateAccessRule(ctx, newAR)
+		if err != nil {
+			return err
+		}
+	} else {
+		ar := generateAccessRule(api, &oauthConfig.Paths[0], requiredScopesJSON)
+		err = o.createAccessRule(ctx, ar)
+	}
+
+	return nil
 }
 
 func (o *oauth) getVirtualService(ctx context.Context, api *gatewayv2alpha1.Gate) (*networkingv1alpha3.VirtualService, error) {
@@ -64,6 +85,18 @@ func (o *oauth) getVirtualService(ctx context.Context, api *gatewayv2alpha1.Gate
 	return vs, nil
 }
 
+func (o *oauth) getAccessRule(ctx context.Context, api *gatewayv2alpha1.Gate) (*rulev1alpha1.Rule, error) {
+	ar, err := o.arClient.GetForAPI(ctx, api)
+	if err != nil {
+		if apierrs.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return ar, nil
+}
+
 func (o *oauth) createVirtualService(ctx context.Context, vs *networkingv1alpha3.VirtualService) error {
 	return o.vsClient.Create(ctx, vs)
 }
@@ -72,7 +105,7 @@ func (o *oauth) createAccessRule(ctx context.Context, ar *rulev1alpha1.Rule) err
 	return o.arClient.Create(ctx, ar)
 }
 
-func (o *oauth) prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv1alpha3.VirtualService) *networkingv1alpha3.VirtualService {
+func (o *oauth) prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv1alpha3.VirtualService, oauthConfig *gatewayv2alpha1.OauthModeConfig) *networkingv1alpha3.VirtualService {
 	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	controller := true
 
@@ -90,7 +123,7 @@ func (o *oauth) prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv
 
 	match := &networkingv1alpha3.HTTPMatchRequest{
 		URI: &v1alpha1.StringMatch{
-			Regex: "/.*",
+			Regex: oauthConfig.Paths[0].Path,
 		},
 	}
 	route := &networkingv1alpha3.HTTPRouteDestination{
@@ -148,12 +181,12 @@ func generateObjectMeta(api *gatewayv2alpha1.Gate) k8sMeta.ObjectMeta {
 	return objectMeta
 }
 
-func generateVirtualService(api *gatewayv2alpha1.Gate) *networkingv1alpha3.VirtualService {
+func generateVirtualService(api *gatewayv2alpha1.Gate, oauthConfig *gatewayv2alpha1.OauthModeConfig) *networkingv1alpha3.VirtualService {
 	objectMeta := generateObjectMeta(api)
 
 	match := &networkingv1alpha3.HTTPMatchRequest{
 		URI: &v1alpha1.StringMatch{
-			Regex: "/.*",
+			Regex: oauthConfig.Paths[0].Path,
 		},
 	}
 	route := &networkingv1alpha3.HTTPRouteDestination{
@@ -184,9 +217,9 @@ func generateVirtualService(api *gatewayv2alpha1.Gate) *networkingv1alpha3.Virtu
 	return vs
 }
 
-func generateRequiredScopesJSON(config *gatewayv2alpha1.OauthModeConfig) ([]byte, error) {
+func generateRequiredScopesJSON(path *gatewayv2alpha1.Option) ([]byte, error) {
 	requiredScopes := &internalTypes.OauthIntrospectionConfig{
-		RequiredScope: config.Paths[0].Scopes}
+		RequiredScope: path.Scopes}
 	return json.Marshal(requiredScopes)
 }
 
@@ -201,7 +234,7 @@ func generateOauthConfig(api *gatewayv2alpha1.Gate) (*gatewayv2alpha1.OauthModeC
 	return &oauthConfig, nil
 }
 
-func generateAccessRule(api *gatewayv2alpha1.Gate, config *gatewayv2alpha1.OauthModeConfig, requiredScopes []byte) *rulev1alpha1.Rule {
+func generateAccessRule(api *gatewayv2alpha1.Gate, path *gatewayv2alpha1.Option, requiredScopes []byte) *rulev1alpha1.Rule {
 	objectMeta := generateObjectMeta(api)
 
 	rawConfig := &runtime.RawExtension{
@@ -213,8 +246,8 @@ func generateAccessRule(api *gatewayv2alpha1.Gate, config *gatewayv2alpha1.Oauth
 			URL: fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", *api.Spec.Service.Name, api.ObjectMeta.Namespace, int(*api.Spec.Service.Port)),
 		},
 		Match: &rulev1alpha1.Match{
-			Methods: config.Paths[0].Methods,
-			URL:     fmt.Sprintf("<http|https>://%s/<.*>", *api.Spec.Service.Host),
+			Methods: path.Methods,
+			URL:     fmt.Sprintf("<http|https>://%s%s", *api.Spec.Service.Host, path.Path),
 		},
 		Authorizer: &rulev1alpha1.Authorizer{
 			Handler: &rulev1alpha1.Handler{
@@ -237,4 +270,53 @@ func generateAccessRule(api *gatewayv2alpha1.Gate, config *gatewayv2alpha1.Oauth
 	}
 
 	return rule
+}
+
+func (o *oauth) prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Rule, path *gatewayv2alpha1.Option, requiredScopes []byte) *rulev1alpha1.Rule {
+	accessRuleName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
+	controller := true
+
+	ownerRef := &k8sMeta.OwnerReference{
+		Name:       api.ObjectMeta.Name,
+		APIVersion: api.TypeMeta.APIVersion,
+		Kind:       api.TypeMeta.Kind,
+		UID:        api.ObjectMeta.UID,
+		Controller: &controller,
+	}
+
+	ar.ObjectMeta.OwnerReferences = []k8sMeta.OwnerReference{*ownerRef}
+	ar.ObjectMeta.Name = accessRuleName
+	ar.ObjectMeta.Namespace = api.ObjectMeta.Namespace
+
+	rawConfig := &runtime.RawExtension{
+		Raw: requiredScopes,
+	}
+
+	spec := &rulev1alpha1.RuleSpec{
+		Upstream: &rulev1alpha1.Upstream{
+			URL: fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", *api.Spec.Service.Name, api.ObjectMeta.Namespace, int(*api.Spec.Service.Port)),
+		},
+		Match: &rulev1alpha1.Match{
+			Methods: path.Methods,
+			URL:     fmt.Sprintf("<http|https>://%s%s", *api.Spec.Service.Host, path.Path),
+		},
+		Authorizer: &rulev1alpha1.Authorizer{
+			Handler: &rulev1alpha1.Handler{
+				Name: "allow",
+			},
+		},
+		Authenticators: []*rulev1alpha1.Authenticator{
+			{
+				Handler: &rulev1alpha1.Handler{
+					Name:   "oauth2_introspection",
+					Config: rawConfig,
+				},
+			},
+		},
+	}
+
+	ar.Spec = *spec
+
+	return ar
+
 }

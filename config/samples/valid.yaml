@@ -46,6 +46,6 @@ spec:
     name: OAUTH
     config:
       paths:
-      - path: /foo
+      - path: /.*
         scopes: [foo, bar]
         methods: [GET]
