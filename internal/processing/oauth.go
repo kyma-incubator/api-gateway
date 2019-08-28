@@ -18,8 +18,9 @@ import (
 )
 
 type oauth struct {
-	arClient *accessRuleClient.AccessRule
-	vsClient *istioClient.VirtualService
+	arClient      *accessRuleClient.AccessRule
+	vsClient      *istioClient.VirtualService
+	oathkeeperSvc string
 }
 
 func (o *oauth) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
@@ -42,7 +43,7 @@ func (o *oauth) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 			return err
 		}
 	} else {
-		vs := generateVirtualService(api, oauthConfig)
+		vs := o.generateVirtualService(api, oauthConfig)
 		err = o.createVirtualService(ctx, vs)
 		if err != nil {
 			return err
@@ -128,7 +129,7 @@ func (o *oauth) prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv
 	}
 	route := &networkingv1alpha3.HTTPRouteDestination{
 		Destination: networkingv1alpha3.Destination{
-			Host: fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace),
+			Host: o.oathkeeperSvc,
 			Port: networkingv1alpha3.PortSelector{
 				Number: uint32(*api.Spec.Service.Port),
 			},
@@ -181,7 +182,7 @@ func generateObjectMeta(api *gatewayv2alpha1.Gate) k8sMeta.ObjectMeta {
 	return objectMeta
 }
 
-func generateVirtualService(api *gatewayv2alpha1.Gate, oauthConfig *gatewayv2alpha1.OauthModeConfig) *networkingv1alpha3.VirtualService {
+func (o *oauth) generateVirtualService(api *gatewayv2alpha1.Gate, oauthConfig *gatewayv2alpha1.OauthModeConfig) *networkingv1alpha3.VirtualService {
 	objectMeta := generateObjectMeta(api)
 
 	match := &networkingv1alpha3.HTTPMatchRequest{
@@ -191,7 +192,7 @@ func generateVirtualService(api *gatewayv2alpha1.Gate, oauthConfig *gatewayv2alp
 	}
 	route := &networkingv1alpha3.HTTPRouteDestination{
 		Destination: networkingv1alpha3.Destination{
-			Host: fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace),
+			Host: o.oathkeeperSvc,
 			Port: networkingv1alpha3.PortSelector{
 				Number: uint32(*api.Spec.Service.Port),
 			},
