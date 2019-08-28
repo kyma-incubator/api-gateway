@@ -47,7 +47,9 @@ func init() {
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
+	var jwksURI string
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
+	flag.StringVar(&jwksURI, "jwksURI", "http://dex-service.namespace.svc.cluster.local:5556/keys", "URL of the provider's public key set to validate signature of the JWT")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	flag.Parse()
@@ -68,6 +70,7 @@ func main() {
 		Client:       mgr.GetClient(),
 		ExtCRClients: crClients.New(mgr.GetClient()),
 		Log:          ctrl.Log.WithName("controllers").WithName("Api"),
+		JWKSURI:      jwksURI,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Api")
 		os.Exit(1)

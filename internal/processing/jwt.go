@@ -2,12 +2,15 @@ package processing
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
 	istioClient "github.com/kyma-incubator/api-gateway/internal/clients/istio"
+	"github.com/pkg/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	k8sMeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	authenticationv1alpha1 "knative.dev/pkg/apis/istio/authentication/v1alpha1"
 	"knative.dev/pkg/apis/istio/common/v1alpha1"
 	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
@@ -16,10 +19,43 @@ import (
 type jwt struct {
 	vsClient *istioClient.VirtualService
 	apClient *istioClient.AuthenticationPolicy
+	JWKSURI  string
 }
 
 func (j *jwt) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
-	fmt.Println("Processing API for JWT")
+	jwtConfig, err := j.toJWTConfig(api.Spec.Auth.Config)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Processing API for JWT in mode: %s\n", jwtConfig.Mode.Name)
+	// This process needs to be updated to use MODE
+
+	switch jwtConfig.Mode.Name {
+	case gatewayv2alpha1.JWT_MODE_ALL:
+		{
+			modeConfig, err := j.toJWTModeALLConfig(jwtConfig.Mode.Config)
+			if err != nil {
+				return err
+			}
+			if len(modeConfig.Scopes) == 0 {
+				oldAP, err := j.getAuthenticationPolicy(ctx, api)
+				if err != nil {
+					return err
+				}
+				if oldAP != nil {
+					return j.updateAuthenticationPolicy(ctx, j.prepareAuthenticationPolicy(api, jwtConfig, oldAP))
+				}
+				err = j.createAuthenticationPolicy(ctx, j.generateAuthenticationPolicy(api, jwtConfig))
+				if err != nil {
+					return err
+				}
+			} else {
+				return fmt.Errorf("scope support not yet implemented")
+			}
+		}
+	default:
+		return fmt.Errorf("unsupported mode: %s", jwtConfig.Mode.Name)
+	}
 
 	oldVS, err := j.getVirtualService(ctx, api)
 	if err != nil {
@@ -32,19 +68,6 @@ func (j *jwt) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	if err != nil {
 		return err
 	}
-
-	oldAP, err := j.getAuthenticationPolicy(ctx, api)
-	if err != nil {
-		return err
-	}
-	if oldAP != nil {
-		return j.updateAuthenticationPolicy(ctx, j.prepareAuthenticationPolicy(api, oldAP))
-	}
-	err = j.createAuthenticationPolicy(ctx, j.generateAuthenticationPolicy(api))
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -166,43 +189,6 @@ func (j *jwt) generateVirtualService(api *gatewayv2alpha1.Gate) *networkingv1alp
 	return vs
 }
 
-// ---
-// apiVersion: networking.istio.io/v1alpha3
-// kind: VirtualService
-// metadata:
-//   name: httpbin-httpbin-proxy
-//   namespace: default
-// spec:
-//   gateways:
-//   - kyma-gateway.kyma-system.svc.cluster.local
-//   hosts:
-//   - httpbin-proxy.kyma.local
-//   http:
-//     - match:
-//       - uri:
-//         regex: /.*
-//     route:
-//     - destination:
-//         host: httpbin.default.svc.cluster.local
-//         port:
-//           number: 8000
-// ---
-// apiVersion: authentication.istio.io/v1alpha1
-// kind: Policy
-// metadata:
-//   name: httpbin-httpbin-proxy
-//   namespace: default
-// spec:
-//   origins:
-//   - jwt:
-//       issuer: https://dex.kyma.local
-//       jwksUri: http://dex-service.kyma-system.svc.cluster.local:5556/keys
-//   peers:
-//   - mtls: {}
-//   principalBinding: USE_ORIGIN
-//   targets:
-//   - name: httpbin
-
 func (j *jwt) getAuthenticationPolicy(ctx context.Context, api *gatewayv2alpha1.Gate) (*authenticationv1alpha1.Policy, error) {
 	ap, err := j.apClient.GetForAPI(ctx, api)
 	if err != nil {
@@ -223,7 +209,7 @@ func (j *jwt) updateAuthenticationPolicy(ctx context.Context, ap *authentication
 	return j.apClient.Update(ctx, ap)
 }
 
-func (j *jwt) prepareAuthenticationPolicy(api *gatewayv2alpha1.Gate, ap *authenticationv1alpha1.Policy) *authenticationv1alpha1.Policy {
+func (j *jwt) prepareAuthenticationPolicy(api *gatewayv2alpha1.Gate, config *gatewayv2alpha1.JWTModeConfig, ap *authenticationv1alpha1.Policy) *authenticationv1alpha1.Policy {
 	authenticationPolicyName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	controller := true
 
@@ -249,20 +235,25 @@ func (j *jwt) prepareAuthenticationPolicy(api *gatewayv2alpha1.Gate, ap *authent
 			Mtls: &authenticationv1alpha1.MutualTLS{},
 		},
 	}
-
+	origins := []authenticationv1alpha1.OriginAuthenticationMethod{
+		{
+			Jwt: &authenticationv1alpha1.Jwt{
+				Issuer:  config.Issuer,
+				JwksURI: j.JWKSURI,
+			},
+		},
+	}
 	spec := &authenticationv1alpha1.PolicySpec{
 		Targets:          targets,
 		PrincipalBinding: authenticationv1alpha1.PrincipalBindingUserOrigin,
 		Peers:            peers,
+		Origins:          origins,
 	}
-
 	ap.Spec = *spec
-
 	return ap
-
 }
 
-func (j *jwt) generateAuthenticationPolicy(api *gatewayv2alpha1.Gate) *authenticationv1alpha1.Policy {
+func (j *jwt) generateAuthenticationPolicy(api *gatewayv2alpha1.Gate, config *gatewayv2alpha1.JWTModeConfig) *authenticationv1alpha1.Policy {
 	authenticationPolicyName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	controller := true
 
@@ -289,16 +280,41 @@ func (j *jwt) generateAuthenticationPolicy(api *gatewayv2alpha1.Gate) *authentic
 			Mtls: &authenticationv1alpha1.MutualTLS{},
 		},
 	}
-
+	origins := []authenticationv1alpha1.OriginAuthenticationMethod{
+		{
+			Jwt: &authenticationv1alpha1.Jwt{
+				Issuer:  config.Issuer,
+				JwksURI: j.JWKSURI,
+			},
+		},
+	}
 	spec := &authenticationv1alpha1.PolicySpec{
 		Targets:          targets,
 		PrincipalBinding: authenticationv1alpha1.PrincipalBindingUserOrigin,
 		Peers:            peers,
+		Origins:          origins,
 	}
-
 	ap := &authenticationv1alpha1.Policy{
 		ObjectMeta: objectMeta,
 		Spec:       *spec,
 	}
 	return ap
+}
+
+func (j *jwt) toJWTConfig(config *runtime.RawExtension) (*gatewayv2alpha1.JWTModeConfig, error) {
+	var template gatewayv2alpha1.JWTModeConfig
+	err := json.Unmarshal(config.Raw, &template)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return &template, nil
+}
+
+func (j *jwt) toJWTModeALLConfig(config *runtime.RawExtension) (*gatewayv2alpha1.JWTModeALL, error) {
+	var template gatewayv2alpha1.JWTModeALL
+	err := json.Unmarshal(config.Raw, &template)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return &template, nil
 }
