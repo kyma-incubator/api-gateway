@@ -28,7 +28,6 @@ func (j *jwt) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 		return err
 	}
 	fmt.Printf("Processing API for JWT in mode: %s\n", jwtConfig.Mode.Name)
-	// This process needs to be updated to use MODE
 
 	switch jwtConfig.Mode.Name {
 	case gatewayv2alpha1.JWT_MODE_ALL:
