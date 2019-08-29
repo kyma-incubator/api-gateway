@@ -23,6 +23,7 @@ import (
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
 	"github.com/kyma-incubator/api-gateway/controllers"
 	crClients "github.com/kyma-incubator/api-gateway/internal/clients"
+	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -42,6 +43,7 @@ func init() {
 	_ = authenticationv1alpha1.AddToScheme(scheme)
 	_ = gatewayv2alpha1.AddToScheme(scheme)
 	_ = networkingv1alpha3.AddToScheme(scheme)
+	_ = rulev1alpha1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -49,6 +51,11 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var jwksURI string
+	var oathkeeperSvcAddr string
+	var oathkeeperSvcPort uint
+
+	flag.StringVar(&oathkeeperSvcAddr, "oathkeeper-svc-address", "", "Oathkeeper proxy service")
+	flag.UintVar(&oathkeeperSvcPort, "oathkeeper-svc-port", 0, "Oathkeeper proxy service port")
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&jwksURI, "jwksURI", "", "URL of the provider's public key set to validate signature of the JWT")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
@@ -59,6 +66,14 @@ func main() {
 
 	if jwksURI == "" {
 		setupLog.Error(fmt.Errorf("jwksURI required, but not supplied"), "unable to create controller", "controller", "Api")
+		os.Exit(1)
+	}
+	if oathkeeperSvcAddr == "" {
+		setupLog.Error(fmt.Errorf("oathkeeper service address can't be empty"), "unable to create controller", "controller", "Api")
+		os.Exit(1)
+	}
+	if oathkeeperSvcPort == 0 {
+		setupLog.Error(fmt.Errorf("oathkeeper service port can't be empty"), "unable to create controller", "controller", "Api")
 		os.Exit(1)
 	}
 
@@ -72,11 +87,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.ApiReconciler{
-		Client:       mgr.GetClient(),
-		ExtCRClients: crClients.New(mgr.GetClient()),
-		Log:          ctrl.Log.WithName("controllers").WithName("Api"),
-		JWKSURI:      jwksURI,
+	if err = (&controllers.APIReconciler{
+		Client:            mgr.GetClient(),
+		ExtCRClients:      crClients.New(mgr.GetClient()),
+		Log:               ctrl.Log.WithName("controllers").WithName("Api"),
+		OathkeeperSvc:     oathkeeperSvcAddr,
+		OathkeeperSvcPort: uint32(oathkeeperSvcPort),
+		JWKSURI:           jwksURI,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Api")
 		os.Exit(1)

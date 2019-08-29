@@ -30,7 +30,7 @@ func (j *jwt) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	fmt.Printf("Processing API for JWT in mode: %s\n", jwtConfig.Mode.Name)
 
 	switch jwtConfig.Mode.Name {
-	case gatewayv2alpha1.JWT_MODE_ALL:
+	case gatewayv2alpha1.JWTAll:
 		{
 			modeConfig, err := j.toJWTModeALLConfig(jwtConfig.Mode.Config)
 			if err != nil {

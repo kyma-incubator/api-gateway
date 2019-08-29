@@ -11,7 +11,7 @@ import (
 	authenticationv1alpha1 "knative.dev/pkg/apis/istio/authentication/v1alpha1"
 )
 
-func getGate() *gatewayv2alpha1.Gate {
+func getGate4JWT() *gatewayv2alpha1.Gate {
 	var apiUID types.UID = "eab0f1c8-c417-11e9-bf11-4ac644044351"
 	var apiGateway = "some-gateway"
 	var serviceName = "test-service"
@@ -43,7 +43,7 @@ func getJWTConfig() *gatewayv2alpha1.JWTModeConfig {
 	return &gatewayv2alpha1.JWTModeConfig{
 		Issuer: "http://dex.someDomain.local",
 		Mode: gatewayv2alpha1.InternalConfig{
-			Name:   gatewayv2alpha1.JWT_MODE_ALL,
+			Name:   gatewayv2alpha1.JWTAll,
 			Config: &runtime.RawExtension{},
 		},
 	}
@@ -53,7 +53,7 @@ func TestGenerateAuthenticationPolicy(t *testing.T) {
 	assert := assert.New(t)
 
 	jwtStrategy := &jwt{JWKSURI: "http://dex-service.namespace.svc.cluster.local:5556/keys"}
-	ap := jwtStrategy.generateAuthenticationPolicy(getGate(), getJWTConfig())
+	ap := jwtStrategy.generateAuthenticationPolicy(getGate4JWT(), getJWTConfig())
 
 	assert.Equal(ap.ObjectMeta.OwnerReferences[0].APIVersion, "gateway.kyma-project.io/v2alpha1")
 	assert.Equal(ap.ObjectMeta.OwnerReferences[0].Kind, "Gate")
@@ -72,11 +72,11 @@ func TestGenerateAuthenticationPolicy(t *testing.T) {
 	assert.Equal(ap.Spec.Origins[0].Jwt.JwksURI, "http://dex-service.namespace.svc.cluster.local:5556/keys")
 }
 
-func TestOauthGenerateVirtualService(t *testing.T) {
+func TestOauthGenerateVirtualService4JWT(t *testing.T) {
 	assert := assert.New(t)
 
 	jwtStrategy := &jwt{JWKSURI: "http://dex-service.namespace.svc.cluster.local:5556/keys"}
-	vs := jwtStrategy.generateVirtualService(getGate())
+	vs := jwtStrategy.generateVirtualService(getGate4JWT())
 
 	assert.Equal(len(vs.Spec.Gateways), 1)
 	assert.Equal(vs.Spec.Gateways[0], apiGateway)
@@ -105,7 +105,7 @@ func TestPrepareAuthenticationPolicy(t *testing.T) {
 	assert := assert.New(t)
 
 	jwtStrategy := &jwt{JWKSURI: "http://dex-service.namespace.svc.cluster.local:5556/keys"}
-	gate := getGate()
+	gate := getGate4JWT()
 	jwtConfig := getJWTConfig()
 	jwtConfig.Issuer = "http://someIssuer.someDomain.com"
 

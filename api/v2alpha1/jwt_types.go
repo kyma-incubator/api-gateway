@@ -33,7 +33,10 @@ type IncludePath struct {
 }
 
 const (
-	JWT_MODE_ALL     string = "ALL"
-	JWT_MODE_INCLUDE string = "INCLUDE"
-	JWT_MODE_EXCLUDE string = "EXCLUDE"
+	// JWTAll ?
+	JWTAll string = "ALL"
+	// JWTInclude ?
+	JWTInclude string = "INCLUDE"
+	// JWTExclude ?
+	JWTExclude string = "EXCLUDE"
 )

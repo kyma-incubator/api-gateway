@@ -32,18 +32,23 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-// ApiReconciler reconciles a Api object
-type ApiReconciler struct {
+//APIReconciler reconciles a Api object
+type APIReconciler struct {
 	ExtCRClients *clients.ExternalCRClients
 	client.Client
-	Log     logr.Logger
-	JWKSURI string
+	Log               logr.Logger
+	OathkeeperSvc     string
+	OathkeeperSvcPort uint32
+	JWKSURI           string
 }
 
-// +kubebuilder:rbac:groups=gateway.kyma-project.io,resources=apis,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=gateway.kyma-project.io,resources=apis/status,verbs=get;update;patch
-
-func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+//Reconcile .
+// +kubebuilder:rbac:groups=gateway.kyma-project.io,resources=gates,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=gateway.kyma-project.io,resources=gates/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=networking.istio.io,resources=virtualservices,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=authentication.istio.io,resources=policies,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=oathkeeper.ory.sh,resources=rules,verbs=get;list;watch;create;update;patch;delete
+func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	_ = r.Log.WithValues("api", req.NamespacedName)
 
@@ -57,20 +62,20 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	APIStatus := &gatewayv2alpha1.GatewayResourceStatus{
-		Code: gatewayv2alpha1.STATUS_OK,
+		Code: gatewayv2alpha1.StatusOK,
 	}
 
 	virtualServiceStatus := &gatewayv2alpha1.GatewayResourceStatus{
-		Code:        gatewayv2alpha1.STATUS_SKIPPED,
+		Code:        gatewayv2alpha1.StatusSkipped,
 		Description: "Skipped setting Istio Virtual Service",
 	}
 	policyStatus := &gatewayv2alpha1.GatewayResourceStatus{
-		Code:        gatewayv2alpha1.STATUS_SKIPPED,
+		Code:        gatewayv2alpha1.StatusSkipped,
 		Description: "Skipped setting Istio Policy",
 	}
 
 	accessRuleStatus := &gatewayv2alpha1.GatewayResourceStatus{
-		Code:        gatewayv2alpha1.STATUS_SKIPPED,
+		Code:        gatewayv2alpha1.StatusSkipped,
 		Description: "Skipped setting Oathkeeper Access Rule",
 	}
 
@@ -95,7 +100,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			return ctrl.Result{}, err
 		}
 
-		processingStrategy, err := processing.NewFactory(r.ExtCRClients.ForVirtualService(), r.ExtCRClients.ForAuthenticationPolicy(), r.Log, r.JWKSURI).StrategyFor(*api.Spec.Auth.Name)
+		processingStrategy, err := processing.NewFactory(r.ExtCRClients.ForVirtualService(), r.ExtCRClients.ForAuthenticationPolicy(), r.ExtCRClients.ForAccessRule(), r.Log, r.OathkeeperSvc, r.OathkeeperSvcPort, r.JWKSURI).StrategyFor(*api.Spec.Auth.Name)
 		if err != nil {
 			_, updateStatErr := r.updateStatus(ctx, api, generateErrorStatus(err), virtualServiceStatus, policyStatus, accessRuleStatus)
 			if updateStatErr != nil {
@@ -107,7 +112,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		err = processingStrategy.Process(ctx, api)
 		if err != nil {
 			virtualServiceStatus := &gatewayv2alpha1.GatewayResourceStatus{
-				Code:        gatewayv2alpha1.STATUS_ERROR,
+				Code:        gatewayv2alpha1.StatusError,
 				Description: err.Error(),
 			}
 
@@ -119,7 +124,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 
 		virtualServiceStatus := &gatewayv2alpha1.GatewayResourceStatus{
-			Code: gatewayv2alpha1.STATUS_OK,
+			Code: gatewayv2alpha1.StatusOK,
 		}
 
 		_, err = r.updateStatus(ctx, api, APIStatus, virtualServiceStatus, policyStatus, accessRuleStatus)
@@ -129,27 +134,17 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
-	// demo sample fetching virtualservices
-
-	//list := networkingv1alpha3.VirtualServiceList{}
-	//err = r.Client.List(context.TODO(), &list, client.InNamespace(req.Namespace))
-	//if err != nil {
-	//	fmt.Printf("ooops, error occured when fetching vs " + err.Error())
-	//	os.Exit(1)
-	//}
-	//
-	//fmt.Println(list)
-
 	return ctrl.Result{}, nil
 }
 
-func (r *ApiReconciler) SetupWithManager(mgr ctrl.Manager) error {
+//SetupWithManager .
+func (r *APIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayv2alpha1.Gate{}).
 		Complete(r)
 }
 
-func (r *ApiReconciler) updateStatus(ctx context.Context, api *gatewayv2alpha1.Gate, APIStatus, virtualServiceStatus, policyStatus, accessRuleStatus *gatewayv2alpha1.GatewayResourceStatus) (*gatewayv2alpha1.Gate, error) {
+func (r *APIReconciler) updateStatus(ctx context.Context, api *gatewayv2alpha1.Gate, APIStatus, virtualServiceStatus, policyStatus, accessRuleStatus *gatewayv2alpha1.GatewayResourceStatus) (*gatewayv2alpha1.Gate, error) {
 	api.Status.ObservedGeneration = api.Generation
 	api.Status.LastProcessedTime = &v1.Time{Time: time.Now()}
 	api.Status.GateStatus = APIStatus
@@ -166,7 +161,7 @@ func (r *ApiReconciler) updateStatus(ctx context.Context, api *gatewayv2alpha1.G
 
 func generateErrorStatus(err error) *gatewayv2alpha1.GatewayResourceStatus {
 	return &gatewayv2alpha1.GatewayResourceStatus{
-		Code:        gatewayv2alpha1.STATUS_ERROR,
+		Code:        gatewayv2alpha1.StatusError,
 		Description: err.Error(),
 	}
 }
