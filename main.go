@@ -59,6 +59,8 @@ func main() {
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	flag.Parse()
 
+	ctrl.SetLogger(zap.Logger(true))
+
 	if oathkeeperSvcAddr == "" {
 		setupLog.Error(fmt.Errorf("oathkeeper service address can't be empty"), "unable to create controller", "controller", "Api")
 		os.Exit(1)
@@ -68,8 +70,6 @@ func main() {
 		setupLog.Error(fmt.Errorf("oathkeeper service port can't be empty"), "unable to create controller", "controller", "Api")
 		os.Exit(1)
 	}
-
-	ctrl.SetLogger(zap.Logger(true))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
