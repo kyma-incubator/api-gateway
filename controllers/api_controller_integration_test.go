@@ -238,7 +238,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 func testInstance(name, namespace, serviceName, serviceHost string, servicePort int32, path string, methods, scopes []string) *gatewayv2alpha1.Gate {
 
-	toJSONList := func(input []string) string {
+	toCSVList := func(input []string) string {
 		if len(input) == 0 {
 			return ""
 		}
@@ -261,7 +261,7 @@ func testInstance(name, namespace, serviceName, serviceHost string, servicePort 
 			"methods": [%s]
 		}
 	]
-}`, path, toJSONList(scopes), toJSONList(methods))
+}`, path, toCSVList(scopes), toCSVList(methods))
 
 	rawCfg := &runtime.RawExtension{
 		Raw: []byte(configJSON),
