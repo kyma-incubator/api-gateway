@@ -17,6 +17,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
@@ -49,12 +50,17 @@ func main() {
 	var enableLeaderElection bool
 	var jwksURI string
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
-	flag.StringVar(&jwksURI, "jwksURI", "http://dex-service.namespace.svc.cluster.local:5556/keys", "URL of the provider's public key set to validate signature of the JWT")
+	flag.StringVar(&jwksURI, "jwksURI", "", "URL of the provider's public key set to validate signature of the JWT")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.Logger(true))
+
+	if jwksURI == "" {
+		setupLog.Error(fmt.Errorf("jwksURI required, but not supplied"), "unable to create controller", "controller", "Api")
+		os.Exit(1)
+	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,

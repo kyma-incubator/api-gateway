@@ -226,7 +226,7 @@ func (j *jwt) prepareAuthenticationPolicy(api *gatewayv2alpha1.Gate, config *gat
 
 	targets := []authenticationv1alpha1.TargetSelector{
 		{
-			Name: fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace),
+			Name: fmt.Sprintf("%s", *api.Spec.Service.Name),
 		},
 	}
 	peers := []authenticationv1alpha1.PeerAuthenticationMethod{
@@ -271,7 +271,7 @@ func (j *jwt) generateAuthenticationPolicy(api *gatewayv2alpha1.Gate, config *ga
 	}
 	targets := []authenticationv1alpha1.TargetSelector{
 		{
-			Name: fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace),
+			Name: fmt.Sprintf("%s", *api.Spec.Service.Name),
 		},
 	}
 	peers := []authenticationv1alpha1.PeerAuthenticationMethod{

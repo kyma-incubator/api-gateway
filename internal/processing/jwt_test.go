@@ -63,7 +63,7 @@ func TestGenerateAuthenticationPolicy(t *testing.T) {
 	assert.Equal(ap.ObjectMeta.Namespace, "test-namespace")
 
 	assert.Equal(len(ap.Spec.Targets), 1)
-	assert.Equal(ap.Spec.Targets[0].Name, "test-service.test-namespace.svc.cluster.local")
+	assert.Equal(ap.Spec.Targets[0].Name, "test-service")
 	assert.Equal(ap.Spec.PrincipalBinding, authenticationv1alpha1.PrincipalBindingUserOrigin)
 	assert.Equal(len(ap.Spec.Peers), 1)
 	assert.Equal(*ap.Spec.Peers[0].Mtls, authenticationv1alpha1.MutualTLS{})
