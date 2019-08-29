@@ -47,6 +47,7 @@ fi
 #  GO LINT
 ##
 
+go install golang.org/x/lint/golint
 golint ./...
 
 ##
