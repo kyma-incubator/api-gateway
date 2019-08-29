@@ -108,15 +108,7 @@ func (o *oauth) createAccessRule(ctx context.Context, ar *rulev1alpha1.Rule) err
 }
 
 func (o *oauth) prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv1alpha3.VirtualService, oauthConfig *gatewayv2alpha1.OauthModeConfig) *networkingv1alpha3.VirtualService {
-	ownerRef := &k8sMeta.OwnerReference{
-		Name:       api.ObjectMeta.Name,
-		APIVersion: api.TypeMeta.APIVersion,
-		Kind:       api.TypeMeta.Kind,
-		UID:        api.ObjectMeta.UID,
-		Controller: pointer.BoolPtr(true),
-	}
-
-	vs.ObjectMeta.OwnerReferences = []k8sMeta.OwnerReference{*ownerRef}
+	vs.ObjectMeta.OwnerReferences = []k8sMeta.OwnerReference{generateOwnerRef(api)}
 	vs.ObjectMeta.Name = fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	vs.ObjectMeta.Namespace = api.ObjectMeta.Namespace
 
@@ -159,27 +151,27 @@ func (o *oauth) updateAccessRule(ctx context.Context, ar *rulev1alpha1.Rule) err
 	return o.arClient.Update(ctx, ar)
 }
 
-func generateObjectMeta(api *gatewayv2alpha1.Gate) k8sMeta.ObjectMeta {
-	ownerRef := &k8sMeta.OwnerReference{
+func generateOwnerRef(api *gatewayv2alpha1.Gate) k8sMeta.OwnerReference {
+	return k8sMeta.OwnerReference{
 		Name:       api.ObjectMeta.Name,
 		APIVersion: api.TypeMeta.APIVersion,
 		Kind:       api.TypeMeta.Kind,
 		UID:        api.ObjectMeta.UID,
 		Controller: pointer.BoolPtr(true),
 	}
+}
 
+func generateObjectMeta(api *gatewayv2alpha1.Gate) k8sMeta.ObjectMeta {
 	objectMeta := k8sMeta.ObjectMeta{
 		Name:            fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name),
 		Namespace:       api.ObjectMeta.Namespace,
-		OwnerReferences: []k8sMeta.OwnerReference{*ownerRef},
+		OwnerReferences: []k8sMeta.OwnerReference{generateOwnerRef(api)},
 	}
 
 	return objectMeta
 }
 
 func (o *oauth) generateVirtualService(api *gatewayv2alpha1.Gate, oauthConfig *gatewayv2alpha1.OauthModeConfig) *networkingv1alpha3.VirtualService {
-	objectMeta := generateObjectMeta(api)
-
 	match := &networkingv1alpha3.HTTPMatchRequest{
 		URI: &v1alpha1.StringMatch{
 			Regex: oauthConfig.Paths[0].Path,
@@ -206,7 +198,7 @@ func (o *oauth) generateVirtualService(api *gatewayv2alpha1.Gate, oauthConfig *g
 	}
 
 	vs := &networkingv1alpha3.VirtualService{
-		ObjectMeta: objectMeta,
+		ObjectMeta: generateObjectMeta(api),
 		Spec:       *spec,
 	}
 
@@ -269,15 +261,7 @@ func generateAccessRule(api *gatewayv2alpha1.Gate, path *gatewayv2alpha1.Option,
 }
 
 func (o *oauth) prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Rule, path *gatewayv2alpha1.Option, requiredScopes []byte) *rulev1alpha1.Rule {
-	ownerRef := &k8sMeta.OwnerReference{
-		Name:       api.ObjectMeta.Name,
-		APIVersion: api.TypeMeta.APIVersion,
-		Kind:       api.TypeMeta.Kind,
-		UID:        api.ObjectMeta.UID,
-		Controller: pointer.BoolPtr(true),
-	}
-
-	ar.ObjectMeta.OwnerReferences = []k8sMeta.OwnerReference{*ownerRef}
+	ar.ObjectMeta.OwnerReferences = []k8sMeta.OwnerReference{generateOwnerRef(api)}
 	ar.ObjectMeta.Name = fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	ar.ObjectMeta.Namespace = api.ObjectMeta.Namespace
 
