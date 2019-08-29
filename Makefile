@@ -75,7 +75,8 @@ CONTROLLER_GEN=$(shell which controller-gen)
 endif
 
 run: build
-	go run .
+# 	make run GOARGS="--oathkeeper-svc-address=ory-oathkeeper --oathkeeper-svc-port=4455 --jwksURI=https://example.com/.well-known/jwks.json"
+	go run . ${GOARGS}
 
 samples-clean:
 	kubectl delete -f config/samples/valid.yaml --ignore-not-found=true
