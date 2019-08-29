@@ -49,6 +49,6 @@ func (f *Factory) StrategyFor(strategyName string) (Strategy, error) {
 		f.Log.Info("OAUTH processing mode detected")
 		return &oauth{vsClient: f.vsClient, arClient: f.arClient, oathkeeperSvc: f.oathkeeperSvc}, nil
 	default:
-		return nil, fmt.Errorf("Unsupported mode: %s", strategyName)
+		return nil, fmt.Errorf("unsupported mode: %s", strategyName)
 	}
 }

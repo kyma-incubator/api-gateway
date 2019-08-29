@@ -48,8 +48,8 @@ func init() {
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
-	var oathkeeper string
-	flag.StringVar(&oathkeeper, "oathkeeper", "ory-oathkeeper-proxy.ory.svc.cluster.local", "Oathkeeper proxy service")
+	var oathkeeperSvcAddr string
+	flag.StringVar(&oathkeeperSvcAddr, "oathkeeper service address", "ory-oathkeeper-proxy.ory.svc.cluster.local", "Oathkeeper proxy service")
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
@@ -71,7 +71,7 @@ func main() {
 		Client:        mgr.GetClient(),
 		ExtCRClients:  crClients.New(mgr.GetClient()),
 		Log:           ctrl.Log.WithName("controllers").WithName("Api"),
-		OathkeeperSvc: oathkeeper,
+		OathkeeperSvc: oathkeeperSvcAddr,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Api")
 		os.Exit(1)
