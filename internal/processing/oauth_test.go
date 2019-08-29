@@ -14,7 +14,7 @@ func TestOauthGenerateVirtualService(t *testing.T) {
 
 	gate := getGate()
 	oauthConfig := getOauthConfig()
-	oauthStrategy := &oauth{oathkeeperSvc: "test-oathkeeper"}
+	oauthStrategy := &oauth{oathkeeperSvc: "test-oathkeeper", oathkeeperSvcPort: uint32(4455)}
 
 	vs := oauthStrategy.generateVirtualService(gate, oauthConfig)
 
@@ -28,7 +28,7 @@ func TestOauthGenerateVirtualService(t *testing.T) {
 	assert.Equal(len(vs.Spec.HTTP[0].Route), 1)
 	assert.Equal(len(vs.Spec.HTTP[0].Match), 1)
 	assert.Equal(vs.Spec.HTTP[0].Route[0].Destination.Host, "test-oathkeeper")
-	assert.Equal(int(vs.Spec.HTTP[0].Route[0].Destination.Port.Number), 8080)
+	assert.Equal(int(vs.Spec.HTTP[0].Route[0].Destination.Port.Number), 4455)
 	assert.Equal(vs.Spec.HTTP[0].Match[0].URI.Regex, "/foo")
 
 	assert.Equal(vs.ObjectMeta.Name, "test-gate-test-service")
@@ -46,7 +46,7 @@ func TestOauthPrepareVirtualService(t *testing.T) {
 
 	gate := getGate()
 	oauthConfig := getOauthConfig()
-	oauthStrategy := &oauth{oathkeeperSvc: "test-oathkeeper"}
+	oauthStrategy := &oauth{oathkeeperSvc: "test-oathkeeper", oathkeeperSvcPort: uint32(4455)}
 
 	oldVS := oauthStrategy.generateVirtualService(gate, oauthConfig)
 
@@ -67,7 +67,7 @@ func TestOauthPrepareVirtualService(t *testing.T) {
 	assert.Equal(len(newVS.Spec.HTTP[0].Route), 1)
 	assert.Equal(len(newVS.Spec.HTTP[0].Match), 1)
 	assert.Equal(newVS.Spec.HTTP[0].Route[0].Destination.Host, "test-oathkeeper")
-	assert.Equal(int(newVS.Spec.HTTP[0].Route[0].Destination.Port.Number), 8080)
+	assert.Equal(int(newVS.Spec.HTTP[0].Route[0].Destination.Port.Number), 4455)
 	assert.Equal(newVS.Spec.HTTP[0].Match[0].URI.Regex, "/foo")
 
 	assert.Equal(newVS.ObjectMeta.Name, "test-gate-test-service")
@@ -95,7 +95,7 @@ func TestOauthGenerateAccessRule(t *testing.T) {
 
 	assert.Equal(len(ar.Spec.Match.Methods), 1)
 	assert.Equal(ar.Spec.Match.Methods[0], "GET")
-	assert.Equal(ar.Spec.Match.URL, "<http|https>://myService.myDomain.com/foo")
+	assert.Equal(ar.Spec.Match.URL, "<http|https>://myService.myDomain.com</foo>")
 
 	assert.Equal(ar.Spec.Authorizer.Name, "allow")
 	assert.Empty(ar.Spec.Authorizer.Config)
@@ -135,7 +135,7 @@ func TestOauthPrepareAccessRule(t *testing.T) {
 
 	assert.Equal(len(oldAR.Spec.Match.Methods), 1)
 	assert.Equal(oldAR.Spec.Match.Methods[0], "GET")
-	assert.Equal(oldAR.Spec.Match.URL, "<http|https>://myService.myDomain.com/foo")
+	assert.Equal(oldAR.Spec.Match.URL, "<http|https>://myService.myDomain.com</foo>")
 
 	assert.Equal(oldAR.Spec.Authorizer.Name, "allow")
 	assert.Empty(oldAR.Spec.Authorizer.Config)

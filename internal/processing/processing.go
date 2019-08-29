@@ -13,11 +13,12 @@ import (
 
 //Factory .
 type Factory struct {
-	vsClient      *istioClient.VirtualService
-	apClient      *istioClient.AuthenticationPolicy
-	arClient      *oryClient.AccessRule
-	Log           logr.Logger
-	oathkeeperSvc string
+	vsClient          *istioClient.VirtualService
+	apClient          *istioClient.AuthenticationPolicy
+	arClient          *oryClient.AccessRule
+	Log               logr.Logger
+	oathkeeperSvc     string
+	oathkeeperSvcPort uint32
 }
 
 //Strategy .
@@ -26,13 +27,14 @@ type Strategy interface {
 }
 
 //NewFactory .
-func NewFactory(vsClient *istioClient.VirtualService, apClient *istioClient.AuthenticationPolicy, arClient *oryClient.AccessRule, logger logr.Logger, oathkeeperSvc string) *Factory {
+func NewFactory(vsClient *istioClient.VirtualService, apClient *istioClient.AuthenticationPolicy, arClient *oryClient.AccessRule, logger logr.Logger, oathkeeperSvc string, oathkeeperSvcPort uint32) *Factory {
 	return &Factory{
-		vsClient:      vsClient,
-		apClient:      apClient,
-		arClient:      arClient,
-		Log:           logger,
-		oathkeeperSvc: oathkeeperSvc,
+		vsClient:          vsClient,
+		apClient:          apClient,
+		arClient:          arClient,
+		Log:               logger,
+		oathkeeperSvc:     oathkeeperSvc,
+		oathkeeperSvcPort: oathkeeperSvcPort,
 	}
 }
 
@@ -47,7 +49,7 @@ func (f *Factory) StrategyFor(strategyName string) (Strategy, error) {
 		return &jwt{vsClient: f.vsClient, apClient: f.apClient}, nil
 	case gatewayv2alpha1.Oauth:
 		f.Log.Info("OAUTH processing mode detected")
-		return &oauth{vsClient: f.vsClient, arClient: f.arClient, oathkeeperSvc: f.oathkeeperSvc}, nil
+		return &oauth{vsClient: f.vsClient, arClient: f.arClient, oathkeeperSvc: f.oathkeeperSvc, oathkeeperSvcPort: f.oathkeeperSvcPort}, nil
 	default:
 		return nil, fmt.Errorf("unsupported mode: %s", strategyName)
 	}

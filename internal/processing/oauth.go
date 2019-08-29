@@ -19,9 +19,10 @@ import (
 )
 
 type oauth struct {
-	arClient      *accessRuleClient.AccessRule
-	vsClient      *istioClient.VirtualService
-	oathkeeperSvc string
+	arClient          *accessRuleClient.AccessRule
+	vsClient          *istioClient.VirtualService
+	oathkeeperSvc     string
+	oathkeeperSvcPort uint32
 }
 
 func (o *oauth) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
@@ -121,7 +122,7 @@ func (o *oauth) prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv
 		Destination: networkingv1alpha3.Destination{
 			Host: o.oathkeeperSvc,
 			Port: networkingv1alpha3.PortSelector{
-				Number: uint32(*api.Spec.Service.Port),
+				Number: o.oathkeeperSvcPort,
 			},
 		},
 	}
@@ -181,7 +182,7 @@ func (o *oauth) generateVirtualService(api *gatewayv2alpha1.Gate, oauthConfig *g
 		Destination: networkingv1alpha3.Destination{
 			Host: o.oathkeeperSvc,
 			Port: networkingv1alpha3.PortSelector{
-				Number: uint32(*api.Spec.Service.Port),
+				Number: o.oathkeeperSvcPort,
 			},
 		},
 	}
@@ -235,7 +236,7 @@ func generateAccessRule(api *gatewayv2alpha1.Gate, path *gatewayv2alpha1.Option,
 		},
 		Match: &rulev1alpha1.Match{
 			Methods: path.Methods,
-			URL:     fmt.Sprintf("<http|https>://%s%s", *api.Spec.Service.Host, path.Path),
+			URL:     fmt.Sprintf("<http|https>://%s<%s>", *api.Spec.Service.Host, path.Path),
 		},
 		Authorizer: &rulev1alpha1.Authorizer{
 			Handler: &rulev1alpha1.Handler{
@@ -275,7 +276,7 @@ func (o *oauth) prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Ru
 		},
 		Match: &rulev1alpha1.Match{
 			Methods: path.Methods,
-			URL:     fmt.Sprintf("<http|https>://%s%s", *api.Spec.Service.Host, path.Path),
+			URL:     fmt.Sprintf("<http|https>://%s<%s>", *api.Spec.Service.Host, path.Path),
 		},
 		Authorizer: &rulev1alpha1.Authorizer{
 			Handler: &rulev1alpha1.Handler{

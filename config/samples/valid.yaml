@@ -8,7 +8,7 @@ spec:
     host: httpbin.org
     name: httpbin
     port: 443
-  auth: 
+  auth:
     name: PASSTHROUGH
   gateway: kyma-gateway.kyma-system.svc.cluster.local
 ---
@@ -22,12 +22,12 @@ spec:
     name: foo-service
     port: 8080
     host: foo.bar
-  auth: 
+  auth:
     name: JWT
     config:
       issuer: http://dex.kyma.local
       jwks: []
-      mode: 
+      mode:
         name: ALL
         config:
           scopes: ["foo", "bar"]
@@ -39,13 +39,13 @@ metadata:
 spec:
   gateway: kyma-gateway.kyma-system.svc.cluster.local
   service:
-    host: httpbin.org
+    host: httpbin.kyma.local
     name: httpbin
-    port: 443
+    port: 8000
   auth:
     name: OAUTH
     config:
       paths:
       - path: /.*
-        scopes: [foo, bar]
+        scopes: [read]
         methods: [GET]

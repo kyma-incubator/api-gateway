@@ -17,6 +17,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
@@ -49,11 +50,24 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var oathkeeperSvcAddr string
-	flag.StringVar(&oathkeeperSvcAddr, "oathkeeper service address", "ory-oathkeeper-proxy.ory.svc.cluster.local", "Oathkeeper proxy service")
+	var oathkeeperSvcPort uint
+
+	flag.StringVar(&oathkeeperSvcAddr, "oathkeeper-svc-address", "", "Oathkeeper proxy service")
+	flag.UintVar(&oathkeeperSvcPort, "oathkeeper-svc-port", 0, "Oathkeeper proxy service port")
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	flag.Parse()
+
+	if oathkeeperSvcAddr == "" {
+		setupLog.Error(fmt.Errorf("oathkeeper service address can't be empty"), "unable to create controller", "controller", "Api")
+		os.Exit(1)
+	}
+
+	if oathkeeperSvcPort == 0 {
+		setupLog.Error(fmt.Errorf("oathkeeper service port can't be empty"), "unable to create controller", "controller", "Api")
+		os.Exit(1)
+	}
 
 	ctrl.SetLogger(zap.Logger(true))
 
@@ -68,10 +82,11 @@ func main() {
 	}
 
 	if err = (&controllers.APIReconciler{
-		Client:        mgr.GetClient(),
-		ExtCRClients:  crClients.New(mgr.GetClient()),
-		Log:           ctrl.Log.WithName("controllers").WithName("Api"),
-		OathkeeperSvc: oathkeeperSvcAddr,
+		Client:            mgr.GetClient(),
+		ExtCRClients:      crClients.New(mgr.GetClient()),
+		Log:               ctrl.Log.WithName("controllers").WithName("Api"),
+		OathkeeperSvc:     oathkeeperSvcAddr,
+		OathkeeperSvcPort: uint32(oathkeeperSvcPort),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Api")
 		os.Exit(1)
