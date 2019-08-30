@@ -30,7 +30,8 @@ import (
 const timeout = time.Second * 5
 
 const tstGateway = "kyma-gateway.kyma-system.svc.cluster.local"
-const tstOathkeeperSvc = "oathkeeper.kyma-system.svc.cluster.local:1234"
+const tstOathkeeperSvc = "oathkeeper.kyma-system.svc.cluster.local"
+const tstOathkeeperPort = uint32(1234)
 const tstNamespace = "padu-system"
 const tstName = "test"
 
@@ -64,11 +65,12 @@ var _ = Describe("Gate Controller", func() {
 			Expect(err).NotTo(HaveOccurred())
 			c := mgr.GetClient()
 
-			reconciler := &controllers.ApiReconciler{
-				Client:        mgr.GetClient(),
-				ExtCRClients:  crClients.New(mgr.GetClient()),
-				Log:           ctrl.Log.WithName("controllers").WithName("Gate"),
-				OathkeeperSvc: tstOathkeeperSvc,
+			reconciler := &controllers.APIReconciler{
+				Client:            mgr.GetClient(),
+				ExtCRClients:      crClients.New(mgr.GetClient()),
+				Log:               ctrl.Log.WithName("controllers").WithName("Gate"),
+				OathkeeperSvc:     tstOathkeeperSvc,
+				OathkeeperSvcPort: tstOathkeeperPort,
 			}
 
 			recFn, requests := SetupTestReconcile(reconciler)
@@ -141,7 +143,7 @@ var _ = Describe("Gate Controller", func() {
 			Expect(vs.Spec.HTTP[0].Route[0].Destination.Host).To(Equal(tstOathkeeperSvc))
 			Expect(vs.Spec.HTTP[0].Route[0].Destination.Subset).To(Equal(""))
 			Expect(vs.Spec.HTTP[0].Route[0].Destination.Port.Name).To(Equal(""))
-			Expect(vs.Spec.HTTP[0].Route[0].Destination.Port.Number).To(Equal(tstServicePort))
+			Expect(vs.Spec.HTTP[0].Route[0].Destination.Port.Number).To(Equal(tstOathkeeperPort))
 			Expect(vs.Spec.HTTP[0].Route[0].Weight).To(BeZero())
 			Expect(vs.Spec.HTTP[0].Route[0].Headers).To(BeNil())
 			//Others
@@ -183,7 +185,7 @@ var _ = Describe("Gate Controller", func() {
 			Expect(rl.Spec.Upstream.PreserveHost).To(BeNil())
 			//Spec.Match
 			Expect(rl.Spec.Match).NotTo(BeNil())
-			Expect(rl.Spec.Match.URL).To(Equal(fmt.Sprintf("<http|https>://%s%s", tstServiceHost, tstPath)))
+			Expect(rl.Spec.Match.URL).To(Equal(fmt.Sprintf("<http|https>://%s<%s>", tstServiceHost, tstPath)))
 			Expect(rl.Spec.Match.Methods).To(Equal(tstMethods))
 			//Spec.Authenticators
 			Expect(rl.Spec.Authenticators).To(HaveLen(1))
@@ -268,7 +270,7 @@ func testInstance(name, namespace, serviceName, serviceHost string, servicePort 
 	}
 
 	var gateway = tstGateway
-	var authStrategyName = gatewayv2alpha1.OAUTH
+	var authStrategyName = gatewayv2alpha1.Oauth
 
 	return &gatewayv2alpha1.Gate{
 		ObjectMeta: metav1.ObjectMeta{

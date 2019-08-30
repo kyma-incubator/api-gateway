@@ -50,17 +50,12 @@ func init() {
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
-<<<<<<< HEAD
 	var jwksURI string
 	var oathkeeperSvcAddr string
 	var oathkeeperSvcPort uint
 
 	flag.StringVar(&oathkeeperSvcAddr, "oathkeeper-svc-address", "", "Oathkeeper proxy service")
 	flag.UintVar(&oathkeeperSvcPort, "oathkeeper-svc-port", 0, "Oathkeeper proxy service port")
-=======
-	var oathkeeper string
-	flag.StringVar(&oathkeeper, "oathkeeper", "ory-oathkeeper-proxy.ory.svc.cluster.local", "Oathkeeper proxy service")
->>>>>>> Almost there.
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&jwksURI, "jwks-uri", "", "URL of the provider's public key set to validate signature of the JWT")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
@@ -92,7 +87,6 @@ func main() {
 		os.Exit(1)
 	}
 
-<<<<<<< HEAD
 	if err = (&controllers.APIReconciler{
 		Client:            mgr.GetClient(),
 		ExtCRClients:      crClients.New(mgr.GetClient()),
@@ -100,13 +94,6 @@ func main() {
 		OathkeeperSvc:     oathkeeperSvcAddr,
 		OathkeeperSvcPort: uint32(oathkeeperSvcPort),
 		JWKSURI:           jwksURI,
-=======
-	if err = (&controllers.ApiReconciler{
-		Client:        mgr.GetClient(),
-		ExtCRClients:  crClients.New(mgr.GetClient()),
-		Log:           ctrl.Log.WithName("controllers").WithName("Api"),
-		OathkeeperSvc: oathkeeper,
->>>>>>> Almost there.
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Api")
 		os.Exit(1)
