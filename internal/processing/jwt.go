@@ -79,7 +79,6 @@ func (j *jwt) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 						return err
 					}
 				} else {
-					fmt.Println("widzę cię")
 					ar := j.generateAccessRule(api, jwtConfJSON)
 					err = j.createAccessRule(ctx, ar)
 					if err != nil {
@@ -127,7 +126,7 @@ func (j *jwt) generateAccessRule(api *gatewayv2alpha1.Gate, jwtConfig []byte) *r
 		},
 		Match: &rulev1alpha1.Match{
 			Methods: methods,
-			URL: fmt.Sprintf("<http|https>://%s<%s>", *api.Spec.Service.Host, "/.*"),
+			URL:     fmt.Sprintf("<http|https>://%s<%s>", *api.Spec.Service.Host, "/.*"),
 		},
 		Authorizer: &rulev1alpha1.Authorizer{
 			Handler: &rulev1alpha1.Handler{
@@ -439,7 +438,7 @@ func (j *jwt) prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Rule
 		},
 		Match: &rulev1alpha1.Match{
 			Methods: methods,
-			URL: fmt.Sprintf("<http|https>://%s<%s>", *api.Spec.Service.Host, "/.*"),
+			URL:     fmt.Sprintf("<http|https>://%s<%s>", *api.Spec.Service.Host, "/.*"),
 		},
 		Authorizer: &rulev1alpha1.Authorizer{
 			Handler: &rulev1alpha1.Handler{
