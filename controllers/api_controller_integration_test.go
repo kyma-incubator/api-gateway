@@ -59,8 +59,6 @@ var _ = Describe("Gate Controller", func() {
 			err = networkingv1alpha3.AddToScheme(s)
 			Expect(err).NotTo(HaveOccurred())
 
-			// Setup the Manager and Controller.  Wrap the Controller Reconcile function so it writes each request to a
-			// channel when it is finished.
 			mgr, err := manager.New(cfg, manager.Options{Scheme: s})
 			Expect(err).NotTo(HaveOccurred())
 			c := mgr.GetClient()
@@ -77,10 +75,7 @@ var _ = Describe("Gate Controller", func() {
 
 			Expect(add(mgr, recFn)).To(Succeed())
 
-			//Start the manager and the controller
 			stopMgr, mgrStopped := StartTestManager(mgr)
-
-			//Ensure manager is stopped properly
 			defer func() {
 				close(stopMgr)
 				mgrStopped.Wait()
@@ -89,8 +84,6 @@ var _ = Describe("Gate Controller", func() {
 			instance := testInstance(tstName, tstNamespace, tstServiceName, tstServiceHost, int32(tstServicePort), tstPath, tstMethods, tstScopes)
 
 			err = c.Create(context.TODO(), instance)
-			// The instance object may not be a valid object because it might be missing some required fields.
-			// Please modify the instance object by adding required fields and then remove the following if statement.
 			if apierrors.IsInvalid(err) {
 				Fail(fmt.Sprintf("failed to create object, got an invalid object error: %v", err))
 				return
@@ -106,12 +99,6 @@ var _ = Describe("Gate Controller", func() {
 			vs := networkingv1alpha3.VirtualService{}
 			err = c.Get(context.TODO(), client.ObjectKey{Name: expectedVSName, Namespace: expectedVSNamespace}, &vs)
 			Expect(err).NotTo(HaveOccurred())
-
-			/*
-				jsn, err := json.MarshalIndent(vs, "", "  ")
-				Expect(err).NotTo(HaveOccurred())
-				fmt.Printf("\n----------------------------------------\n%s", jsn)
-			*/
 
 			//Meta
 			verifyOwnerReference(vs.ObjectMeta, tstName, gatewayv2alpha1.GroupVersion.String(), "Gate")
@@ -169,12 +156,6 @@ var _ = Describe("Gate Controller", func() {
 			err = c.Get(context.TODO(), client.ObjectKey{Name: expectedRuleName, Namespace: expectedRuleNamespace}, &rl)
 			Expect(err).NotTo(HaveOccurred())
 
-			/*
-				jsn, err = json.MarshalIndent(rl, "", "  ")
-				Expect(err).NotTo(HaveOccurred())
-				fmt.Printf("\n----------------------------------------\n%s", jsn)
-			*/
-
 			//Meta
 			verifyOwnerReference(rl.ObjectMeta, tstName, gatewayv2alpha1.GroupVersion.String(), "Gate")
 
@@ -192,7 +173,7 @@ var _ = Describe("Gate Controller", func() {
 			Expect(rl.Spec.Authenticators[0].Handler).NotTo(BeNil())
 			Expect(rl.Spec.Authenticators[0].Handler.Name).To(Equal("oauth2_introspection"))
 			Expect(rl.Spec.Authenticators[0].Handler.Config).NotTo(BeNil())
-			//             Authenticators[0].Handler.Config validation
+			//Authenticators[0].Handler.Config validation
 			handlerConfig := map[string]interface{}{}
 			err = json.Unmarshal(rl.Spec.Authenticators[0].Config.Raw, &handlerConfig)
 			Expect(err).NotTo(HaveOccurred())
@@ -206,34 +187,20 @@ var _ = Describe("Gate Controller", func() {
 
 			//Spec.Mutators
 			Expect(rl.Spec.Mutators).To(BeNil())
-			//
 		})
 	})
 })
 
-// add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
-	// Create a new controller
 	c, err := controller.New("api-gateway-controller", mgr, controller.Options{Reconciler: r})
 	if err != nil {
 		return err
 	}
 
-	// Watch for changes to Api
 	err = c.Watch(&source.Kind{Type: &gatewayv2alpha1.Gate{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
-
-	// TODO(user): Modify this to be the types you create
-	// Uncomment watch a Deployment created by Guestbook - change this for objects you create
-	//err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
-	//	IsController: true,
-	//	OwnerType:    &webappv1.Guestbook{},
-	//})
-	//if err != nil {
-	//	return err
-	//}
 
 	return nil
 }
