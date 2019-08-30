@@ -28,6 +28,8 @@ type jwt struct {
 	oathkeeperSvcPort uint32
 }
 
+var methods = []string{"GET", "POST", "PUT", "HEAD", "DELETE", "PATCH", "OPTIONS", "TRACE", "CONNECT"}
+
 func (j *jwt) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	var destinationHost string
 	var destinationPort uint32
@@ -124,7 +126,7 @@ func (j *jwt) generateAccessRule(api *gatewayv2alpha1.Gate, jwtConfig []byte) *r
 			URL: fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", *api.Spec.Service.Name, api.ObjectMeta.Namespace, int(*api.Spec.Service.Port)),
 		},
 		Match: &rulev1alpha1.Match{
-			Methods: []string{},
+			Methods: methods,
 			URL: fmt.Sprintf("<http|https>://%s<%s>", *api.Spec.Service.Host, "/.*"),
 		},
 		Authorizer: &rulev1alpha1.Authorizer{
@@ -436,7 +438,7 @@ func (j *jwt) prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Rule
 			URL: fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", *api.Spec.Service.Name, api.ObjectMeta.Namespace, int(*api.Spec.Service.Port)),
 		},
 		Match: &rulev1alpha1.Match{
-			Methods: []string{},
+			Methods: methods,
 			URL: fmt.Sprintf("<http|https>://%s<%s>", *api.Spec.Service.Host, "/.*"),
 		},
 		Authorizer: &rulev1alpha1.Authorizer{
