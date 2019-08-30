@@ -1,5 +1,9 @@
 # Api-Gateway Controller (name to be changed)
 
+## Overview
+
+The API Gateway Controller manages Istio authentication Policies, VirtualServices and Oathkeeper Rule. The controller allows to expose services using Gate resources. It operates on `gate.gateway.kyma-project.io` CustomResourceDefinition (CRD) resources.
+
 ## Prerequisites
 
 - recent version of Go language with support for modules (e.g: 1.12.6)
@@ -8,105 +12,25 @@
 - kustomize
 - access to K8s environment: minikube or a remote K8s cluster
 
-## How to use it
+## Details
+
+### Run the controller locally
 
 - `start minikube`
 - `make build` to build the binary and run tests
 - `eval $(minikube docker-env)`
 - `make build-image` to build a docker image
-- Update the `patches` field in `config/crd/kustomization.yaml` and `config/default/kustomization.yaml` to `patchesStrategicMerge`
+- export `OATHKEEPER_SVC_ADDRESS`, `OATHKEEPER_SVC_PORT` and `JWKS_URI` variables
 - `make deploy` to deploy controller to the minikube
 
-## Example CR structure:
+### Use command-line flags
 
-```yaml
----
-gateway: kyma-gateway.kyma-system.svc.cluster.local
-service:
-  name: foo-service
-  port: 8080
-  host: foo.bar
-  external: true/false
-auth: 
-  name: JWT
-  config:
-    issuer: http://dex.kyma.local
-    jwks: []
-    mode: 
-      name: ALL
-      config:
-        scopes: []
----
-gateway: kyma-gateway.kyma-system.svc.cluster.local
-service:
-  name: foo-service
-  port: 8080
-  host: foo.bar
-  external: true/false
-auth: 
-  name: JWT
-  config:
-    issuer: http://dex.kyma.local
-    jwks: []
-    mode: 
-      name: EXCLUDE
-      config:
-        - pathSuffix: '/c'
-        - pathRegex: '/d/*'
-        - pathPrefix: ''
-        - pathExact: '/f/foobar.png'
----
-gateway: kyma-gateway.kyma-system.svc.cluster.local
-service:
-  name: foo-service
-  port: 8080
-  host: foo.bar
-  external: true/false
-auth: 
-  name: JWT
-  config:
-    issuer: http://dex.kyma.local
-    jwks: []
-    mode: 
-      name: INCLUDE
-      config:
-        paths:
-        - path: '/a'
-          scopes: 
-            - read
-          methods:
-            - GET
-            - POST
-        - path: '/b'
-          methods:
-            - GET
----
-gateway: kyma-gateway.kyma-system.svc.cluster.local
-service:
-  name: foo-service
-  port: 8080
-  host: foo.bar
-  external: true/false
-auth:
-  name: PASSTHROUGH
----
-gateway: kyma-gateway.kyma-system.svc.cluster.local
-service:
-  name: foo-service
-  port: 8080
-  host: foo.bar
-  external: true/false
-auth:
-  name: OAUTH
-  config:
-    paths:
-    - path: '/a'
-      scopes: 
-        - write
-      methods:
-        - POST
-    # Invalid or takes priority
-    - path: '/*' 
-      scopes: []
-      methods: []
-```
+| Name | Required | Description | Possible values |
+|------|----------|-------------|-----------------|
+| **oathkeeper-svc-address** | Yes | Used to set ory oathkeeper-proxy service address. | ` ory-oathkeeper-proxy.kyma-system.svc.cluster.local` |
+| **oathkeeper-svc-port** | Yes | Used to set ory oathkeeper-proxy service port. | `4455` |
+| **jwks-uri** | Yes | Used to set default jwksUri in the Policy. | any string |
+
+### Example CR structure
+
+Valid examples of Gate CR can be found in `config/samples` catalog. 
