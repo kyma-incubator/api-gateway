@@ -2,7 +2,7 @@
 
 ## Overview
 
-The API Gateway Controller manages Istio authentication Policies, VirtualServices and Oathkeeper Rule. The controller allows to expose services using Gate resources. It operates on `gate.gateway.kyma-project.io` CustomResourceDefinition (CRD) resources.
+The API Gateway Controller manages Istio authentication Policies, VirtualServices and Oathkeeper Rule. The controller allows to expose services using instances of the `gate.gateway.kyma-project.io` custom resource (CR).
 
 ## Prerequisites
 
@@ -21,16 +21,16 @@ The API Gateway Controller manages Istio authentication Policies, VirtualService
 - `eval $(minikube docker-env)`
 - `make build-image` to build a docker image
 - export `OATHKEEPER_SVC_ADDRESS`, `OATHKEEPER_SVC_PORT` and `JWKS_URI` variables
-- `make deploy` to deploy controller to the minikube
+- `make deploy` to deploy controller
 
 ### Use command-line flags
 
 | Name | Required | Description | Possible values |
 |------|----------|-------------|-----------------|
-| **oathkeeper-svc-address** | Yes | Used to set ory oathkeeper-proxy service address. | ` ory-oathkeeper-proxy.kyma-system.svc.cluster.local` |
-| **oathkeeper-svc-port** | Yes | Used to set ory oathkeeper-proxy service port. | `4455` |
-| **jwks-uri** | Yes | Used to set default jwksUri in the Policy. | any string |
+| **oathkeeper-svc-address** | yes | ory oathkeeper-proxy service address. | ` ory-oathkeeper-proxy.kyma-system.svc.cluster.local` |
+| **oathkeeper-svc-port** | yes | ory oathkeeper-proxy service port. | `4455` |
+| **jwks-uri** | yes | default jwksUri in the Policy. | any string |
 
 ### Example CR structure
 
-Valid examples of Gate CR can be found in `config/samples` catalog. 
+Valid examples of the Gate CR can be found in the `config/samples` catalog. 
