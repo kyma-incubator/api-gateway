@@ -28,12 +28,12 @@ import (
 const (
 	timeout = time.Second * 5
 
-	testGatewayURL       = "kyma-gateway.kyma-system.svc.cluster.local"
-	testOathkeeperSvcURL = "oathkeeper.kyma-system.svc.cluster.local"
-	testOathkeeperPort   = uint32(1234)
-	testNamespace        = "padu-system"
-	testNameBase         = "test"
-	testIDLength         = 5
+	testGatewayURL              = "kyma-gateway.kyma-system.svc.cluster.local"
+	testOathkeeperSvcURL        = "oathkeeper.kyma-system.svc.cluster.local"
+	testOathkeeperPort   uint32 = 1234
+	testNamespace               = "padu-system"
+	testNameBase                = "test"
+	testIDLength                = 5
 )
 
 var _ = Describe("Gate Controller", func() {
@@ -80,7 +80,7 @@ var _ = Describe("Gate Controller", func() {
 
 						var authStrategyName = gatewayv2alpha1.Oauth
 
-						instance := testInstance(authStrategyName, configJSON, testName, testNamespace, testServiceName, testServiceHost, int32(testServicePort))
+						instance := testInstance(authStrategyName, configJSON, testName, testNamespace, testServiceName, testServiceHost, testServicePort)
 
 						err := c.Create(context.TODO(), instance)
 						if apierrors.IsInvalid(err) {
@@ -209,7 +209,7 @@ var _ = Describe("Gate Controller", func() {
 						testName := generateTestName(testNameBase, testIDLength)
 
 						var authStrategyName = gatewayv2alpha1.Jwt
-						instance := testInstance(authStrategyName, configJSON, testName, testNamespace, testServiceName, testServiceHost, int32(testServicePort))
+						instance := testInstance(authStrategyName, configJSON, testName, testNamespace, testServiceName, testServiceHost, testServicePort)
 
 						err := c.Create(context.TODO(), instance)
 						if apierrors.IsInvalid(err) {
@@ -352,7 +352,7 @@ func toCSVList(input []string) string {
 	return res
 }
 
-func testInstance(authStrategyName, configJSON, name, namespace, serviceName, serviceHost string, servicePort int32) *gatewayv2alpha1.Gate {
+func testInstance(authStrategyName, configJSON, name, namespace, serviceName, serviceHost string, servicePort uint32) *gatewayv2alpha1.Gate {
 	rawCfg := &runtime.RawExtension{
 		Raw: []byte(configJSON),
 	}
