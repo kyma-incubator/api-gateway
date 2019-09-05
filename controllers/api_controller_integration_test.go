@@ -3,13 +3,12 @@ package controllers_test
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"time"
 
 	"encoding/json"
 
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
-	"github.com/kyma-incubator/api-gateway/controllers"
-	crClients "github.com/kyma-incubator/api-gateway/internal/clients"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
@@ -18,7 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -27,166 +25,301 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-const timeout = time.Second * 5
+const (
+	timeout = time.Second * 5
 
-const tstGateway = "kyma-gateway.kyma-system.svc.cluster.local"
-const tstOathkeeperSvc = "oathkeeper.kyma-system.svc.cluster.local"
-const tstOathkeeperPort = uint32(1234)
-const tstNamespace = "padu-system"
-const tstName = "test"
-
-var expectedRequest = reconcile.Request{NamespacedName: types.NamespacedName{Name: tstName, Namespace: tstNamespace}}
+	testGatewayURL       = "kyma-gateway.kyma-system.svc.cluster.local"
+	testOathkeeperSvcURL = "oathkeeper.kyma-system.svc.cluster.local"
+	testOathkeeperPort   = uint32(1234)
+	testNamespace        = "padu-system"
+	testNameBase         = "test"
+	testIDLength         = 5
+)
 
 var _ = Describe("Gate Controller", func() {
-	const tstServiceName = "httpbin"
-	const tstServiceHost = "httpbin.kyma.local"
-	const tstServicePort uint32 = 443
-	const tstPath = "/.*"
-	var tstMethods = []string{"GET", "PUT"}
-	var tstScopes = []string{"foo", "bar"}
+	const testServiceName = "httpbin"
+	const testServiceHost = "httpbin.kyma.local"
+	const testServicePort uint32 = 443
+	const testPath = "/.*"
+	var testIssuer = "https://oauth2.example.com/"
+	var testMethods = []string{"GET", "PUT"}
+	var allMethods = []string{"GET", "POST", "PUT", "HEAD", "DELETE", "PATCH", "OPTIONS", "TRACE", "CONNECT"}
+	var testScopes = []string{"foo", "bar"}
 
-	Context("in a happy-path scenario", func() {
-		It("should create a VirtualService and an AccessRule", func() {
+	//var requests chan reconcile.Request
+	//var stopMgr chan struct{}
+	//var mgrStopped *sync.WaitGroup
+	//var c client.Client
 
-			s := runtime.NewScheme()
+	//BeforeEach(func() {
+	//
+	//})
 
-			err := rulev1alpha1.AddToScheme(s)
-			Expect(err).NotTo(HaveOccurred())
+	//AfterEach(func() {
+	//	close(stopMgr)
+	//	mgrStopped.Wait()
+	//})
 
-			err = gatewayv2alpha1.AddToScheme(s)
-			Expect(err).NotTo(HaveOccurred())
+	Context("when creating a Gate for exposing service", func() {
+		Context("on all the paths,", func() {
+			Context("secured with Oauth2 introspection,", func() {
+				Context("in a happy-path scenario", func() {
+					It("should create a VirtualService and an AccessRule", func() {
+						configJSON := fmt.Sprintf(`
+							{
+								"paths":[
+									{
+										"path": "%s",
+										"scopes": [%s],
+										"methods": [%s]
+									}
+								]
+							}`, testPath, toCSVList(testScopes), toCSVList(testMethods))
 
-			err = networkingv1alpha3.AddToScheme(s)
-			Expect(err).NotTo(HaveOccurred())
+						testName := generateTestName(testNameBase, testIDLength)
 
-			mgr, err := manager.New(cfg, manager.Options{Scheme: s})
-			Expect(err).NotTo(HaveOccurred())
-			c := mgr.GetClient()
+						var authStrategyName = gatewayv2alpha1.Oauth
 
-			reconciler := &controllers.APIReconciler{
-				Client:            mgr.GetClient(),
-				ExtCRClients:      crClients.New(mgr.GetClient()),
-				Log:               ctrl.Log.WithName("controllers").WithName("Gate"),
-				OathkeeperSvc:     tstOathkeeperSvc,
-				OathkeeperSvcPort: tstOathkeeperPort,
-			}
+						instance := testInstance(authStrategyName, configJSON, testName, testNamespace, testServiceName, testServiceHost, int32(testServicePort))
 
-			recFn, requests := SetupTestReconcile(reconciler)
+						err := c.Create(context.TODO(), instance)
+						if apierrors.IsInvalid(err) {
+							Fail(fmt.Sprintf("failed to create object, got an invalid object error: %v", err))
+							return
+						}
+						Expect(err).NotTo(HaveOccurred())
+						defer c.Delete(context.TODO(), instance)
 
-			Expect(add(mgr, recFn)).To(Succeed())
+						expectedRequest := reconcile.Request{NamespacedName: types.NamespacedName{Name: testName, Namespace: testNamespace}}
 
-			stopMgr, mgrStopped := StartTestManager(mgr)
-			defer func() {
-				close(stopMgr)
-				mgrStopped.Wait()
-			}()
+						Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
 
-			instance := testInstance(tstName, tstNamespace, tstServiceName, tstServiceHost, int32(tstServicePort), tstPath, tstMethods, tstScopes)
+						//Verify VirtualService
+						expectedVSName := testName + "-" + testServiceName
+						expectedVSNamespace := testNamespace
+						vs := networkingv1alpha3.VirtualService{}
+						err = c.Get(context.TODO(), client.ObjectKey{Name: expectedVSName, Namespace: expectedVSNamespace}, &vs)
+						Expect(err).NotTo(HaveOccurred())
 
-			err = c.Create(context.TODO(), instance)
-			if apierrors.IsInvalid(err) {
-				Fail(fmt.Sprintf("failed to create object, got an invalid object error: %v", err))
-				return
-			}
-			Expect(err).NotTo(HaveOccurred())
-			defer c.Delete(context.TODO(), instance)
+						//Meta
+						verifyOwnerReference(vs.ObjectMeta, testName, gatewayv2alpha1.GroupVersion.String(), "Gate")
+						//Spec.Hosts
+						Expect(vs.Spec.Hosts).To(HaveLen(1))
+						Expect(vs.Spec.Hosts[0]).To(Equal(testServiceHost))
+						//Spec.Gateways
+						Expect(vs.Spec.Gateways).To(HaveLen(1))
+						Expect(vs.Spec.Gateways[0]).To(Equal(testGatewayURL))
+						//Spec.HTTP
+						Expect(vs.Spec.HTTP).To(HaveLen(1))
+						////// HTTP.Match[]
+						Expect(vs.Spec.HTTP[0].Match).To(HaveLen(1))
+						/////////// Match[].URI
+						Expect(vs.Spec.HTTP[0].Match[0].URI).NotTo(BeNil())
+						Expect(vs.Spec.HTTP[0].Match[0].URI.Exact).To(BeEmpty())
+						Expect(vs.Spec.HTTP[0].Match[0].URI.Prefix).To(BeEmpty())
+						Expect(vs.Spec.HTTP[0].Match[0].URI.Suffix).To(BeEmpty())
+						Expect(vs.Spec.HTTP[0].Match[0].URI.Regex).To(Equal(testPath))
+						Expect(vs.Spec.HTTP[0].Match[0].Scheme).To(BeNil())
+						Expect(vs.Spec.HTTP[0].Match[0].Method).To(BeNil())
+						Expect(vs.Spec.HTTP[0].Match[0].Authority).To(BeNil())
+						Expect(vs.Spec.HTTP[0].Match[0].Headers).To(BeNil())
+						Expect(vs.Spec.HTTP[0].Match[0].Port).To(BeZero())
+						Expect(vs.Spec.HTTP[0].Match[0].SourceLabels).To(BeNil())
+						Expect(vs.Spec.HTTP[0].Match[0].Gateways).To(BeNil())
+						////// HTTP.Route[]
+						Expect(vs.Spec.HTTP[0].Route).To(HaveLen(1))
+						Expect(vs.Spec.HTTP[0].Route[0].Destination.Host).To(Equal(testOathkeeperSvcURL))
+						Expect(vs.Spec.HTTP[0].Route[0].Destination.Subset).To(Equal(""))
+						Expect(vs.Spec.HTTP[0].Route[0].Destination.Port.Name).To(Equal(""))
+						Expect(vs.Spec.HTTP[0].Route[0].Destination.Port.Number).To(Equal(testOathkeeperPort))
+						Expect(vs.Spec.HTTP[0].Route[0].Weight).To(BeZero())
+						Expect(vs.Spec.HTTP[0].Route[0].Headers).To(BeNil())
+						//Others
+						Expect(vs.Spec.HTTP[0].Rewrite).To(BeNil())
+						Expect(vs.Spec.HTTP[0].WebsocketUpgrade).To(BeFalse())
+						Expect(vs.Spec.HTTP[0].Timeout).To(BeEmpty())
+						Expect(vs.Spec.HTTP[0].Retries).To(BeNil())
+						Expect(vs.Spec.HTTP[0].Fault).To(BeNil())
+						Expect(vs.Spec.HTTP[0].Mirror).To(BeNil())
+						Expect(vs.Spec.HTTP[0].DeprecatedAppendHeaders).To(BeNil())
+						Expect(vs.Spec.HTTP[0].Headers).To(BeNil())
+						Expect(vs.Spec.HTTP[0].RemoveResponseHeaders).To(BeNil())
+						Expect(vs.Spec.HTTP[0].CorsPolicy).To(BeNil())
+						//Spec.TCP
+						Expect(vs.Spec.TCP).To(BeNil())
+						//Spec.TLS
+						Expect(vs.Spec.TLS).To(BeNil())
 
-			Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
+						//Verify Rule
+						expectedRuleName := testName + "-" + testServiceName
+						expectedRuleNamespace := testNamespace
+						rl := rulev1alpha1.Rule{}
+						err = c.Get(context.TODO(), client.ObjectKey{Name: expectedRuleName, Namespace: expectedRuleNamespace}, &rl)
+						Expect(err).NotTo(HaveOccurred())
 
-			//Verify VirtualService
-			expectedVSName := tstName + "-" + tstServiceName
-			expectedVSNamespace := tstNamespace
-			vs := networkingv1alpha3.VirtualService{}
-			err = c.Get(context.TODO(), client.ObjectKey{Name: expectedVSName, Namespace: expectedVSNamespace}, &vs)
-			Expect(err).NotTo(HaveOccurred())
+						//Meta
+						verifyOwnerReference(rl.ObjectMeta, testName, gatewayv2alpha1.GroupVersion.String(), "Gate")
 
-			//Meta
-			verifyOwnerReference(vs.ObjectMeta, tstName, gatewayv2alpha1.GroupVersion.String(), "Gate")
-			//Spec.Hosts
-			Expect(vs.Spec.Hosts).To(HaveLen(1))
-			Expect(vs.Spec.Hosts[0]).To(Equal(tstServiceHost))
-			//Spec.Gateways
-			Expect(vs.Spec.Gateways).To(HaveLen(1))
-			Expect(vs.Spec.Gateways[0]).To(Equal(tstGateway))
-			//Spec.HTTP
-			Expect(vs.Spec.HTTP).To(HaveLen(1))
-			////// HTTP.Match[]
-			Expect(vs.Spec.HTTP[0].Match).To(HaveLen(1))
-			/////////// Match[].URI
-			Expect(vs.Spec.HTTP[0].Match[0].URI).NotTo(BeNil())
-			Expect(vs.Spec.HTTP[0].Match[0].URI.Exact).To(BeEmpty())
-			Expect(vs.Spec.HTTP[0].Match[0].URI.Prefix).To(BeEmpty())
-			Expect(vs.Spec.HTTP[0].Match[0].URI.Suffix).To(BeEmpty())
-			Expect(vs.Spec.HTTP[0].Match[0].URI.Regex).To(Equal(tstPath))
-			Expect(vs.Spec.HTTP[0].Match[0].Scheme).To(BeNil())
-			Expect(vs.Spec.HTTP[0].Match[0].Method).To(BeNil())
-			Expect(vs.Spec.HTTP[0].Match[0].Authority).To(BeNil())
-			Expect(vs.Spec.HTTP[0].Match[0].Headers).To(BeNil())
-			Expect(vs.Spec.HTTP[0].Match[0].Port).To(BeZero())
-			Expect(vs.Spec.HTTP[0].Match[0].SourceLabels).To(BeNil())
-			Expect(vs.Spec.HTTP[0].Match[0].Gateways).To(BeNil())
-			////// HTTP.Route[]
-			Expect(vs.Spec.HTTP[0].Route).To(HaveLen(1))
-			Expect(vs.Spec.HTTP[0].Route[0].Destination.Host).To(Equal(tstOathkeeperSvc))
-			Expect(vs.Spec.HTTP[0].Route[0].Destination.Subset).To(Equal(""))
-			Expect(vs.Spec.HTTP[0].Route[0].Destination.Port.Name).To(Equal(""))
-			Expect(vs.Spec.HTTP[0].Route[0].Destination.Port.Number).To(Equal(tstOathkeeperPort))
-			Expect(vs.Spec.HTTP[0].Route[0].Weight).To(BeZero())
-			Expect(vs.Spec.HTTP[0].Route[0].Headers).To(BeNil())
-			//Others
-			Expect(vs.Spec.HTTP[0].Rewrite).To(BeNil())
-			Expect(vs.Spec.HTTP[0].WebsocketUpgrade).To(BeFalse())
-			Expect(vs.Spec.HTTP[0].Timeout).To(BeEmpty())
-			Expect(vs.Spec.HTTP[0].Retries).To(BeNil())
-			Expect(vs.Spec.HTTP[0].Fault).To(BeNil())
-			Expect(vs.Spec.HTTP[0].Mirror).To(BeNil())
-			Expect(vs.Spec.HTTP[0].DeprecatedAppendHeaders).To(BeNil())
-			Expect(vs.Spec.HTTP[0].Headers).To(BeNil())
-			Expect(vs.Spec.HTTP[0].RemoveResponseHeaders).To(BeNil())
-			Expect(vs.Spec.HTTP[0].CorsPolicy).To(BeNil())
-			//Spec.TCP
-			Expect(vs.Spec.TCP).To(BeNil())
-			//Spec.TLS
-			Expect(vs.Spec.TLS).To(BeNil())
+						//Spec.Upstream
+						Expect(rl.Spec.Upstream).NotTo(BeNil())
+						Expect(rl.Spec.Upstream.URL).To(Equal(fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", testServiceName, testNamespace, testServicePort)))
+						Expect(rl.Spec.Upstream.StripPath).To(BeNil())
+						Expect(rl.Spec.Upstream.PreserveHost).To(BeNil())
+						//Spec.Match
+						Expect(rl.Spec.Match).NotTo(BeNil())
+						Expect(rl.Spec.Match.URL).To(Equal(fmt.Sprintf("<http|https>://%s<%s>", testServiceHost, testPath)))
+						Expect(rl.Spec.Match.Methods).To(Equal(testMethods))
+						//Spec.Authenticators
+						Expect(rl.Spec.Authenticators).To(HaveLen(1))
+						Expect(rl.Spec.Authenticators[0].Handler).NotTo(BeNil())
+						Expect(rl.Spec.Authenticators[0].Handler.Name).To(Equal("oauth2_introspection"))
+						Expect(rl.Spec.Authenticators[0].Handler.Config).NotTo(BeNil())
+						//Authenticators[0].Handler.Config validation
+						handlerConfig := map[string]interface{}{}
+						err = json.Unmarshal(rl.Spec.Authenticators[0].Config.Raw, &handlerConfig)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(handlerConfig).To(HaveLen(1))
+						Expect(asStringSlice(handlerConfig["required_scope"])).To(BeEquivalentTo(testScopes))
+						//Spec.Authorizer
+						Expect(rl.Spec.Authorizer).NotTo(BeNil())
+						Expect(rl.Spec.Authorizer.Handler).NotTo(BeNil())
+						Expect(rl.Spec.Authorizer.Handler.Name).To(Equal("allow"))
+						Expect(rl.Spec.Authorizer.Handler.Config).To(BeNil())
 
-			//Verify Rule
-			expectedRuleName := tstName + "-" + tstServiceName
-			expectedRuleNamespace := tstNamespace
-			rl := rulev1alpha1.Rule{}
-			err = c.Get(context.TODO(), client.ObjectKey{Name: expectedRuleName, Namespace: expectedRuleNamespace}, &rl)
-			Expect(err).NotTo(HaveOccurred())
+						//Spec.Mutators
+						Expect(rl.Spec.Mutators).To(BeNil())
+					})
+				})
+			})
+			Context("secured with JWT token authentication,", func() {
+				Context("in a happy-path scenario", func() {
+					It("should create a VirtualService and an AccessRule", func() {
+						configJSON := fmt.Sprintf(`
+							{
+								"issuer": "%s",
+								"jwks": [],
+								"mode": {
+									"name": "%s",
+									"config": {
+										"scopes": [%s]
+									}
+                                }
+							}`, testIssuer, gatewayv2alpha1.JWTAll, toCSVList(testScopes))
 
-			//Meta
-			verifyOwnerReference(rl.ObjectMeta, tstName, gatewayv2alpha1.GroupVersion.String(), "Gate")
+						testName := generateTestName(testNameBase, testIDLength)
 
-			//Spec.Upstream
-			Expect(rl.Spec.Upstream).NotTo(BeNil())
-			Expect(rl.Spec.Upstream.URL).To(Equal(fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", tstServiceName, tstNamespace, tstServicePort)))
-			Expect(rl.Spec.Upstream.StripPath).To(BeNil())
-			Expect(rl.Spec.Upstream.PreserveHost).To(BeNil())
-			//Spec.Match
-			Expect(rl.Spec.Match).NotTo(BeNil())
-			Expect(rl.Spec.Match.URL).To(Equal(fmt.Sprintf("<http|https>://%s<%s>", tstServiceHost, tstPath)))
-			Expect(rl.Spec.Match.Methods).To(Equal(tstMethods))
-			//Spec.Authenticators
-			Expect(rl.Spec.Authenticators).To(HaveLen(1))
-			Expect(rl.Spec.Authenticators[0].Handler).NotTo(BeNil())
-			Expect(rl.Spec.Authenticators[0].Handler.Name).To(Equal("oauth2_introspection"))
-			Expect(rl.Spec.Authenticators[0].Handler.Config).NotTo(BeNil())
-			//Authenticators[0].Handler.Config validation
-			handlerConfig := map[string]interface{}{}
-			err = json.Unmarshal(rl.Spec.Authenticators[0].Config.Raw, &handlerConfig)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(handlerConfig).To(HaveLen(1))
-			Expect(asStringSlice(handlerConfig["required_scope"])).To(BeEquivalentTo(tstScopes))
-			//Spec.Authorizer
-			Expect(rl.Spec.Authorizer).NotTo(BeNil())
-			Expect(rl.Spec.Authorizer.Handler).NotTo(BeNil())
-			Expect(rl.Spec.Authorizer.Handler.Name).To(Equal("allow"))
-			Expect(rl.Spec.Authorizer.Handler.Config).To(BeNil())
+						var authStrategyName = gatewayv2alpha1.Jwt
+						instance := testInstance(authStrategyName, configJSON, testName, testNamespace, testServiceName, testServiceHost, int32(testServicePort))
 
-			//Spec.Mutators
-			Expect(rl.Spec.Mutators).To(BeNil())
+						err := c.Create(context.TODO(), instance)
+						if apierrors.IsInvalid(err) {
+							Fail(fmt.Sprintf("failed to create object, got an invalid object error: %v", err))
+							return
+						}
+						Expect(err).NotTo(HaveOccurred())
+						defer c.Delete(context.TODO(), instance)
+
+						expectedRequest := reconcile.Request{NamespacedName: types.NamespacedName{Name: testName, Namespace: testNamespace}}
+
+						Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
+						//Verify VirtualService
+						expectedVSName := testName + "-" + testServiceName
+						expectedVSNamespace := testNamespace
+						vs := networkingv1alpha3.VirtualService{}
+						err = c.Get(context.TODO(), client.ObjectKey{Name: expectedVSName, Namespace: expectedVSNamespace}, &vs)
+						Expect(err).NotTo(HaveOccurred())
+
+						//Meta
+						verifyOwnerReference(vs.ObjectMeta, testName, gatewayv2alpha1.GroupVersion.String(), "Gate")
+						//Spec.Hosts
+						Expect(vs.Spec.Hosts).To(HaveLen(1))
+						Expect(vs.Spec.Hosts[0]).To(Equal(testServiceHost))
+						//Spec.Gateways
+						Expect(vs.Spec.Gateways).To(HaveLen(1))
+						Expect(vs.Spec.Gateways[0]).To(Equal(testGatewayURL))
+						//Spec.HTTP
+						Expect(vs.Spec.HTTP).To(HaveLen(1))
+						////// HTTP.Match[]
+						Expect(vs.Spec.HTTP[0].Match).To(HaveLen(1))
+						/////////// Match[].URI
+						Expect(vs.Spec.HTTP[0].Match[0].URI).NotTo(BeNil())
+						Expect(vs.Spec.HTTP[0].Match[0].URI.Exact).To(BeEmpty())
+						Expect(vs.Spec.HTTP[0].Match[0].URI.Prefix).To(BeEmpty())
+						Expect(vs.Spec.HTTP[0].Match[0].URI.Suffix).To(BeEmpty())
+						Expect(vs.Spec.HTTP[0].Match[0].URI.Regex).To(Equal(testPath))
+						Expect(vs.Spec.HTTP[0].Match[0].Scheme).To(BeNil())
+						Expect(vs.Spec.HTTP[0].Match[0].Method).To(BeNil())
+						Expect(vs.Spec.HTTP[0].Match[0].Authority).To(BeNil())
+						Expect(vs.Spec.HTTP[0].Match[0].Headers).To(BeNil())
+						Expect(vs.Spec.HTTP[0].Match[0].Port).To(BeZero())
+						Expect(vs.Spec.HTTP[0].Match[0].SourceLabels).To(BeNil())
+						Expect(vs.Spec.HTTP[0].Match[0].Gateways).To(BeNil())
+						////// HTTP.Route[]
+						Expect(vs.Spec.HTTP[0].Route).To(HaveLen(1))
+						Expect(vs.Spec.HTTP[0].Route[0].Destination.Host).To(Equal(testOathkeeperSvcURL))
+						Expect(vs.Spec.HTTP[0].Route[0].Destination.Subset).To(Equal(""))
+						Expect(vs.Spec.HTTP[0].Route[0].Destination.Port.Name).To(Equal(""))
+						Expect(vs.Spec.HTTP[0].Route[0].Destination.Port.Number).To(Equal(testOathkeeperPort))
+						Expect(vs.Spec.HTTP[0].Route[0].Weight).To(BeZero())
+						Expect(vs.Spec.HTTP[0].Route[0].Headers).To(BeNil())
+						//Others
+						Expect(vs.Spec.HTTP[0].Rewrite).To(BeNil())
+						Expect(vs.Spec.HTTP[0].WebsocketUpgrade).To(BeFalse())
+						Expect(vs.Spec.HTTP[0].Timeout).To(BeEmpty())
+						Expect(vs.Spec.HTTP[0].Retries).To(BeNil())
+						Expect(vs.Spec.HTTP[0].Fault).To(BeNil())
+						Expect(vs.Spec.HTTP[0].Mirror).To(BeNil())
+						Expect(vs.Spec.HTTP[0].DeprecatedAppendHeaders).To(BeNil())
+						Expect(vs.Spec.HTTP[0].Headers).To(BeNil())
+						Expect(vs.Spec.HTTP[0].RemoveResponseHeaders).To(BeNil())
+						Expect(vs.Spec.HTTP[0].CorsPolicy).To(BeNil())
+						//Spec.TCP
+						Expect(vs.Spec.TCP).To(BeNil())
+						//Spec.TLS
+						Expect(vs.Spec.TLS).To(BeNil())
+
+						//Verify Rule
+						expectedRuleName := testName + "-" + testServiceName
+						expectedRuleNamespace := testNamespace
+						rl := rulev1alpha1.Rule{}
+						err = c.Get(context.TODO(), client.ObjectKey{Name: expectedRuleName, Namespace: expectedRuleNamespace}, &rl)
+						Expect(err).NotTo(HaveOccurred())
+
+						//Meta
+						verifyOwnerReference(rl.ObjectMeta, testName, gatewayv2alpha1.GroupVersion.String(), "Gate")
+
+						//Spec.Upstream
+						Expect(rl.Spec.Upstream).NotTo(BeNil())
+						Expect(rl.Spec.Upstream.URL).To(Equal(fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", testServiceName, testNamespace, testServicePort)))
+						Expect(rl.Spec.Upstream.StripPath).To(BeNil())
+						Expect(rl.Spec.Upstream.PreserveHost).To(BeNil())
+						//Spec.Match
+						Expect(rl.Spec.Match).NotTo(BeNil())
+						Expect(rl.Spec.Match.URL).To(Equal(fmt.Sprintf("<http|https>://%s<%s>", testServiceHost, testPath)))
+						Expect(rl.Spec.Match.Methods).To(Equal(allMethods))
+						//Spec.Authenticators
+						Expect(rl.Spec.Authenticators).To(HaveLen(1))
+						Expect(rl.Spec.Authenticators[0].Handler).NotTo(BeNil())
+						Expect(rl.Spec.Authenticators[0].Handler.Name).To(Equal("jwt"))
+						Expect(rl.Spec.Authenticators[0].Handler.Config).NotTo(BeNil())
+						//Authenticators[0].Handler.Config validation
+						handlerConfig := map[string]interface{}{}
+						err = json.Unmarshal(rl.Spec.Authenticators[0].Config.Raw, &handlerConfig)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(handlerConfig).To(HaveLen(2))
+						Expect(asStringSlice(handlerConfig["required_scope"])).To(BeEquivalentTo(testScopes))
+						Expect(asStringSlice(handlerConfig["trusted_issuers"])).To(BeEquivalentTo([]string{testIssuer}))
+						//Spec.Authorizer
+						Expect(rl.Spec.Authorizer).NotTo(BeNil())
+						Expect(rl.Spec.Authorizer.Handler).NotTo(BeNil())
+						Expect(rl.Spec.Authorizer.Handler.Name).To(Equal("allow"))
+						Expect(rl.Spec.Authorizer.Handler.Config).To(BeNil())
+
+						//Spec.Mutators
+						Expect(rl.Spec.Mutators).To(BeNil())
+					})
+				})
+			})
 		})
 	})
 })
@@ -205,39 +338,26 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	return nil
 }
 
-func testInstance(name, namespace, serviceName, serviceHost string, servicePort int32, path string, methods, scopes []string) *gatewayv2alpha1.Gate {
-
-	toCSVList := func(input []string) string {
-		if len(input) == 0 {
-			return ""
-		}
-
-		res := `"` + input[0] + `"`
-
-		for i := 1; i < len(input); i++ {
-			res = res + "," + `"` + input[i] + `"`
-		}
-
-		return res
+func toCSVList(input []string) string {
+	if len(input) == 0 {
+		return ""
 	}
 
-	configJSON := fmt.Sprintf(`
-{
-	"paths":[
-		{
-			"path": "%s",
-			"scopes": [%s],
-			"methods": [%s]
-		}
-	]
-}`, path, toCSVList(scopes), toCSVList(methods))
+	res := `"` + input[0] + `"`
 
+	for i := 1; i < len(input); i++ {
+		res = res + "," + `"` + input[i] + `"`
+	}
+
+	return res
+}
+
+func testInstance(authStrategyName, configJSON, name, namespace, serviceName, serviceHost string, servicePort int32) *gatewayv2alpha1.Gate {
 	rawCfg := &runtime.RawExtension{
 		Raw: []byte(configJSON),
 	}
 
-	var gateway = tstGateway
-	var authStrategyName = gatewayv2alpha1.Oauth
+	var gateway = testGatewayURL
 
 	return &gatewayv2alpha1.Gate{
 		ObjectMeta: metav1.ObjectMeta{
@@ -284,4 +404,17 @@ func asStringSlice(in interface{}) []string {
 	}
 
 	return res
+}
+
+func generateTestName(name string, length int) string {
+
+	rand.Seed(time.Now().UnixNano())
+
+	letterRunes := []rune("abcdefghijklmnopqrstuvwxyz")
+
+	b := make([]rune, length)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return name + "-" + string(b)
 }
