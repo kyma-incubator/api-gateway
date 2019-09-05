@@ -46,20 +46,6 @@ var _ = Describe("Gate Controller", func() {
 	var allMethods = []string{"GET", "POST", "PUT", "HEAD", "DELETE", "PATCH", "OPTIONS", "TRACE", "CONNECT"}
 	var testScopes = []string{"foo", "bar"}
 
-	//var requests chan reconcile.Request
-	//var stopMgr chan struct{}
-	//var mgrStopped *sync.WaitGroup
-	//var c client.Client
-
-	//BeforeEach(func() {
-	//
-	//})
-
-	//AfterEach(func() {
-	//	close(stopMgr)
-	//	mgrStopped.Wait()
-	//})
-
 	Context("when creating a Gate for exposing service", func() {
 		Context("on all the paths,", func() {
 			Context("secured with Oauth2 introspection,", func() {
