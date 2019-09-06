@@ -17,6 +17,7 @@ type virtualService struct {
 	spec      *virtualServiceSpec
 }
 
+// VirtualService creates builder for knative.dev/pkg/apis/istio/v1alpha3/VirtualService type
 func VirtualService(name string) *virtualService {
 	return &virtualService{
 		name: name,
@@ -63,6 +64,7 @@ type ownerReference struct {
 	val *k8sMeta.OwnerReference
 }
 
+// OwnerReference creates builder for k8s.io/apimachinery/pkg/types/OwnerReference type
 func OwnerReference(name, apiVersion, kind, uid string) *ownerReference {
 	return &ownerReference{
 		val: &k8sMeta.OwnerReference{
@@ -93,6 +95,7 @@ type virtualServiceSpec struct {
 	routeDest *routeDestination
 }
 
+// VirtualServiceSpec creates builder for knative.dev/pkg/apis/istio/v1alpha3/VirtualServiceSpec type
 func VirtualServiceSpec() *virtualServiceSpec {
 	return &virtualServiceSpec{}
 }
@@ -115,32 +118,16 @@ func (b *virtualServiceSpec) HTTP(mr *matchRequest, rd *routeDestination) *virtu
 
 func (b *virtualServiceSpec) Get() *networkingv1alpha3.VirtualServiceSpec {
 
-	var httpMatch []networkingv1alpha3.HTTPMatchRequest = nil
-	var routeDest []networkingv1alpha3.HTTPRouteDestination = nil
+	var httpMatch []networkingv1alpha3.HTTPMatchRequest
+	var routeDest []networkingv1alpha3.HTTPRouteDestination
 
-	//var matchReq &networkingv1alpha3.HTTPMatchRequest = nil
 	if b.matchReq != nil {
-		httpMatch = append(httpMatch, *b.matchReq.data)
-		//matchReq = b.matchReq.data
+		httpMatch = append(httpMatch, *b.matchReq.Get())
 	}
-
-	//URI: &v1alpha1.StringMatch{
-	//	Regex: "/.*",
-	//},
-	//}
 
 	if b.routeDest != nil {
-		routeDest = append(routeDest, *b.routeDest.data)
+		routeDest = append(routeDest, *b.routeDest.Get())
 	}
-
-	//route := &networkingv1alpha3.HTTPRouteDestination{
-	//	Destination: networkingv1alpha3.Destination{
-	//		//Host: fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace),
-	//		//Port: networkingv1alpha3.PortSelector{
-	//		//	Number: uint32(*api.Spec.Service.Port),
-	//		//},
-	//	},
-	//}
 
 	spec := &networkingv1alpha3.VirtualServiceSpec{
 		Hosts:    b.hosts,
@@ -156,15 +143,17 @@ func (b *virtualServiceSpec) Get() *networkingv1alpha3.VirtualServiceSpec {
 	return spec
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// MatchRequest
-
+// MatchRequest creates builder for knative.dev/pkg/apis/istio/v1alpha3/HTTPMatchRequest type
 func MatchRequest() *matchRequest {
 	return &matchRequest{}
 }
 
 type matchRequest struct {
 	data *networkingv1alpha3.HTTPMatchRequest
+}
+
+func (mr *matchRequest) Get() *networkingv1alpha3.HTTPMatchRequest {
+	return mr.data
 }
 
 func (mr *matchRequest) URI() *stringMatch {
@@ -183,9 +172,7 @@ func (st *stringMatch) Regex(value string) *matchRequest {
 	return st.parent()
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// routeDestination
-
+// RouteDestination creates builder for knative.dev/pkg/apis/istio/v1alpha3/HTTPRouteDestination type
 func RouteDestination() *routeDestination {
 	return &routeDestination{&networkingv1alpha3.HTTPRouteDestination{}}
 }
@@ -201,6 +188,9 @@ func (rd *routeDestination) Host(value string) *routeDestination {
 func (rd *routeDestination) Port(value uint32) *routeDestination {
 	rd.data.Destination.Port.Number = value
 	return rd
+}
+func (rd *routeDestination) Get() *networkingv1alpha3.HTTPRouteDestination {
+	return rd.data
 }
 
 func sliceIfDefined(e string) []string {

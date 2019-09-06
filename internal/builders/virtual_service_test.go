@@ -12,7 +12,7 @@ var _ = Describe("Builder for", func() {
 	host := "oauthkeeper.cluster.local"
 	gateway := "some-gateway"
 
-	matchUriRegex := "*/"
+	matchURIRegex := "*/"
 	destHost := "somehost.somenamespace.svc.cluster.local"
 	var destPort uint32 = 4321
 
@@ -55,7 +55,7 @@ var _ = Describe("Builder for", func() {
 				Host(host).
 				Gateway(gateway).
 				HTTP(
-					MatchRequest().URI().Regex(matchUriRegex),
+					MatchRequest().URI().Regex(matchURIRegex),
 					RouteDestination().Host(destHost).Port(destPort)).
 				Get()
 
@@ -67,7 +67,7 @@ var _ = Describe("Builder for", func() {
 
 			Expect(result.HTTP).To(HaveLen(1))
 			Expect(result.HTTP[0].Match).To(HaveLen(1))
-			Expect(result.HTTP[0].Match[0].URI.Regex).To(Equal(matchUriRegex))
+			Expect(result.HTTP[0].Match[0].URI.Regex).To(Equal(matchURIRegex))
 			Expect(result.HTTP[0].Route).To(HaveLen(1))
 			Expect(result.HTTP[0].Route[0].Destination.Host).To(Equal(destHost))
 			Expect(result.HTTP[0].Route[0].Destination.Port.Number).To(Equal(destPort))
