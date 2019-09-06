@@ -2,26 +2,22 @@ package builders
 
 import (
 	k8sMeta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	k8sTypes "k8s.io/apimachinery/pkg/types"
 	networkingv1alpha1 "knative.dev/pkg/apis/istio/common/v1alpha1"
 	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 )
-
-////////////////////////////////////////////////////////////////////////////////
-//VirtualService
-
-type virtualService struct {
-	name      string
-	namespace string
-	owner     *ownerReference
-	spec      *virtualServiceSpec
-}
 
 // VirtualService creates builder for knative.dev/pkg/apis/istio/v1alpha3/VirtualService type
 func VirtualService(name string) *virtualService {
 	return &virtualService{
 		name: name,
 	}
+}
+
+type virtualService struct {
+	name      string
+	namespace string
+	owner     *ownerReference
+	spec      *virtualServiceSpec
 }
 
 func (b *virtualService) Namespace(ns string) *virtualService {
@@ -57,47 +53,16 @@ func (b *virtualService) Get() *networkingv1alpha3.VirtualService {
 	return vs
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// OwnerReference
-
-type ownerReference struct {
-	val *k8sMeta.OwnerReference
+// VirtualServiceSpec creates builder for knative.dev/pkg/apis/istio/v1alpha3/VirtualServiceSpec type
+func VirtualServiceSpec() *virtualServiceSpec {
+	return &virtualServiceSpec{}
 }
-
-// OwnerReference creates builder for k8s.io/apimachinery/pkg/types/OwnerReference type
-func OwnerReference(name, apiVersion, kind, uid string) *ownerReference {
-	return &ownerReference{
-		val: &k8sMeta.OwnerReference{
-			Name:       name,
-			APIVersion: apiVersion,
-			Kind:       kind,
-			UID:        k8sTypes.UID(uid),
-		},
-	}
-}
-
-func (b *ownerReference) Controller(ctrl bool) *ownerReference {
-	b.val.Controller = &ctrl
-	return b
-}
-
-func (b *ownerReference) Get() *k8sMeta.OwnerReference {
-	return b.val
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// VirtualService.Spec
 
 type virtualServiceSpec struct {
 	hosts     []string
 	gateways  []string
 	matchReq  *matchRequest
 	routeDest *routeDestination
-}
-
-// VirtualServiceSpec creates builder for knative.dev/pkg/apis/istio/v1alpha3/VirtualServiceSpec type
-func VirtualServiceSpec() *virtualServiceSpec {
-	return &virtualServiceSpec{}
 }
 
 func (b *virtualServiceSpec) Host(host string) *virtualServiceSpec {
@@ -192,24 +157,3 @@ func (rd *routeDestination) Port(value uint32) *routeDestination {
 func (rd *routeDestination) Get() *networkingv1alpha3.HTTPRouteDestination {
 	return rd.data
 }
-
-func sliceIfDefined(e string) []string {
-	if e == "" {
-		return nil
-	}
-
-	return []string{e}
-}
-
-/*
-	spec := &networkingv1alpha3.VirtualServiceSpec{
-		Hosts:    []string{*api.Spec.Service.Host},
-		Gateways: []string{*api.Spec.Gateway},
-		HTTP: []networkingv1alpha3.HTTPRoute{
-			{
-				Match: []networkingv1alpha3.HTTPMatchRequest{*match},
-				Route: []networkingv1alpha3.HTTPRouteDestination{*route},
-			},
-		},
-	}
-*/

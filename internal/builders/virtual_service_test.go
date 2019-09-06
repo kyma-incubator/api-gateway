@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	k8sTypes "k8s.io/apimachinery/pkg/types"
 )
 
 var _ = Describe("Builder for", func() {
@@ -24,7 +25,7 @@ var _ = Describe("Builder for", func() {
 			refName := "refName"
 			refVersion := "v2alpha1"
 			refKind := "Gate"
-			refUID := "123"
+			var refUID k8sTypes.UID = "123"
 
 			vs := VirtualService(name).Namespace(namespace).
 				Owner(OwnerReference(refName, refVersion, refKind, refUID).Controller(true)).
