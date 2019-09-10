@@ -26,10 +26,10 @@ func (p *passthrough) Process(ctx context.Context, api *gatewayv2alpha1.Gate) er
 	}
 
 	if oldVS != nil {
-		newVS := prepareVirtualService(api, oldVS, destinationHost, *api.Spec.Service.Port)
+		newVS := p.prepareVirtualService(api, oldVS, destinationHost, *api.Spec.Service.Port)
 		return p.updateVirtualService(ctx, newVS)
 	}
-	vs := p.generateVirtualService(api)
+	vs := p.generateVirtualService(api, destinationHost, *api.Spec.Service.Port)
 	return p.createVirtualService(ctx, vs)
 
 }
@@ -50,11 +50,31 @@ func (p *passthrough) createVirtualService(ctx context.Context, vs *networkingv1
 	return p.vsClient.Create(ctx, vs)
 }
 
+func (p *passthrough) prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv1alpha3.VirtualService, destinationHost string, destinationPort uint32) *networkingv1alpha3.VirtualService {
+	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
+
+	ownerRef := generateOwnerRef(api)
+	return builders.VirtualService().From(vs).
+		Name(virtualServiceName).
+		Namespace(api.ObjectMeta.Namespace).
+		Owner(builders.OwnerReference().From(&ownerRef)).
+		Spec(
+			builders.VirtualServiceSpec().
+				Host(*api.Spec.Service.Host).
+				Gateway(*api.Spec.Gateway).
+				HTTP(
+					builders.MatchRequest().URI().Regex("/.*"),
+					builders.RouteDestination().
+						Host(fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace)).
+						Port(*api.Spec.Service.Port))).
+		Get()
+}
+
 func (p *passthrough) updateVirtualService(ctx context.Context, vs *networkingv1alpha3.VirtualService) error {
 	return p.vsClient.Update(ctx, vs)
 }
 
-func (p *passthrough) generateVirtualService(api *gatewayv2alpha1.Gate) *networkingv1alpha3.VirtualService {
+func (p *passthrough) generateVirtualService(api *gatewayv2alpha1.Gate, destinationHost string, destinationPort uint32) *networkingv1alpha3.VirtualService {
 	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 
 	ownerRef := generateOwnerRef(api)

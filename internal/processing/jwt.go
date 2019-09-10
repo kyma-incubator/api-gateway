@@ -65,7 +65,7 @@ func (j *jwt) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	if oldVS != nil {
 		return j.updateVirtualService(ctx, prepareVirtualService(api, oldVS, j.oathkeeperSvc, j.oathkeeperSvcPort))
 	}
-	err = j.createVirtualService(ctx, j.generateVirtualService(api, j.oathkeeperSvc, j.oathkeeperSvcPort))
+	err = j.createVirtualService(ctx, generateVirtualService(api, j.oathkeeperSvc, j.oathkeeperSvcPort))
 	if err != nil {
 		return err
 	}
@@ -166,7 +166,7 @@ func (j *jwt) updateVirtualService(ctx context.Context, vs *networkingv1alpha3.V
 	return j.vsClient.Update(ctx, vs)
 }
 
-func (j *jwt) generateVirtualService(api *gatewayv2alpha1.Gate, destinationHost string, destinationPort uint32) *networkingv1alpha3.VirtualService {
+func generateVirtualService(api *gatewayv2alpha1.Gate, destinationHost string, destinationPort uint32) *networkingv1alpha3.VirtualService {
 	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	ownerRef := generateOwnerRef(api)
 	return builders.VirtualService().

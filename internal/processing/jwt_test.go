@@ -74,8 +74,7 @@ func TestGenerateAuthenticationPolicy(t *testing.T) {
 func TestOauthGenerateVirtualService4JWT(t *testing.T) {
 	assert := assert.New(t)
 
-	jwtStrategy := &jwt{JWKSURI: "http://dex-service.namespace.svc.cluster.local:5556/keys"}
-	vs := jwtStrategy.generateVirtualService(getGate4JWT(), "test-service.test-namespace.svc.cluster.local", 8080)
+	vs := generateVirtualService(getGate4JWT(), "test-service.test-namespace.svc.cluster.local", 8080)
 
 	assert.Equal(len(vs.Spec.Gateways), 1)
 	assert.Equal(vs.Spec.Gateways[0], apiGateway)
