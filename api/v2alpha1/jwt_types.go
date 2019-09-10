@@ -12,8 +12,7 @@ type JWTModeConfig struct {
 
 // InternalConfig internal config, specific for JWT modes
 type InternalConfig struct {
-	Name   string                `json:"name"`
-	Config *runtime.RawExtension `json:"config,omitempty"`
+	Name string `json:"name"`
 }
 
 // JWTModeALL representation of config for the ALL mode

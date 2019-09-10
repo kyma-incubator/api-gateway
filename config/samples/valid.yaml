@@ -30,7 +30,10 @@ spec:
       mutators: []
       mode:
         name: ALL
-        config: {}
+  paths:
+    - path: /.*
+      scopes: []
+      methods: ["GET"]
 ---
 apiVersion: gateway.kyma-project.io/v2alpha1
 kind: Gate
@@ -51,8 +54,10 @@ spec:
         - handler: noop
       mode:
         name: ALL
-        config: 
-          scopes: ["foo", "bar"]
+  paths:
+    - path: /.*
+      scopes: ["foo", "bar"]
+      methods: ["GET"]
 ---
 apiVersion: gateway.kyma-project.io/v2alpha1
 kind: Gate
@@ -72,8 +77,10 @@ spec:
       mutators: []
       mode: 
         name: ALL
-        config: 
-          scopes: ["foo", "bar"]
+  paths:
+    - path: /.*
+      scopes: ["foo", "bar"]
+      methods: ["GET"]
 ---
 apiVersion: gateway.kyma-project.io/v2alpha1
 kind: Gate
@@ -88,11 +95,11 @@ spec:
   auth:
     name: OAUTH
     config:
-      paths:
-      - path: /.*
-        scopes: [read]
-        methods: [GET]
       mutators: []
+  paths:
+    - path: /.*
+      scopes: ["read"]
+      methods: ["GET"]
 ---
 apiVersion: gateway.kyma-project.io/v2alpha1
 kind: Gate
@@ -107,10 +114,10 @@ spec:
   auth:
     name: OAUTH
     config:
-      paths:
-      - path: /.*
-        scopes: [read]
-        methods: [GET]
-      mutators: 
+      mutators:
         - handler: noop
           config: {}
+  paths:
+    - path: /.*
+      scopes: ["read"]
+      methods: ["GET"]

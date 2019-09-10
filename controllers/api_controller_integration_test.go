@@ -54,21 +54,14 @@ var _ = Describe("Gate Controller", func() {
 					It("should create a VirtualService and an AccessRule", func() {
 						configJSON := fmt.Sprintf(`
 							{
-								"paths":[
-									{
-										"path": "%s",
-										"scopes": [%s],
-										"methods": [%s]
-									}
-								],
 								"mutators": [%s]
-							}`, testPath, toCSVList(testScopes), toCSVList(testMethods), getMutators(testMutators))
+							}`, getMutators(testMutators))
 
 						testName := generateTestName(testNameBase, testIDLength)
 
 						var authStrategyName = gatewayv2alpha1.Oauth
 
-						instance := testInstance(authStrategyName, configJSON, testName, testNamespace, testServiceName, testServiceHost, testServicePort)
+						instance := testInstance(authStrategyName, configJSON, testName, testNamespace, testServiceName, testServiceHost, testServicePort, testPath, testMethods, testScopes)
 
 						err := c.Create(context.TODO(), instance)
 						if apierrors.IsInvalid(err) {
@@ -189,18 +182,15 @@ var _ = Describe("Gate Controller", func() {
 								"issuer": "%s",
 								"jwks": [],
 								"mode": {
-									"name": "%s",
-									"config": {
-										"scopes": [%s]
-									}
+									"name": "%s"
                                 },
                                 "mutators": [%s]
-							}`, testIssuer, gatewayv2alpha1.JWTAll, toCSVList(testScopes), getMutators(testMutators))
+							}`, testIssuer, gatewayv2alpha1.JWTAll, getMutators(testMutators))
 						fmt.Printf("---\n%s\n---", configJSON)
 						testName := generateTestName(testNameBase, testIDLength)
 
 						var authStrategyName = gatewayv2alpha1.Jwt
-						instance := testInstance(authStrategyName, configJSON, testName, testNamespace, testServiceName, testServiceHost, testServicePort)
+						instance := testInstance(authStrategyName, configJSON, testName, testNamespace, testServiceName, testServiceHost, testServicePort, "/.*", []string{}, testScopes)
 
 						err := c.Create(context.TODO(), instance)
 						if apierrors.IsInvalid(err) {
@@ -345,7 +335,7 @@ func toCSVList(input []string) string {
 	return res
 }
 
-func testInstance(authStrategyName, configJSON, name, namespace, serviceName, serviceHost string, servicePort uint32) *gatewayv2alpha1.Gate {
+func testInstance(authStrategyName, configJSON, name, namespace, serviceName, serviceHost string, servicePort uint32, path string, methods []string, scopes []string) *gatewayv2alpha1.Gate {
 	rawCfg := &runtime.RawExtension{
 		Raw: []byte(configJSON),
 	}
@@ -367,6 +357,13 @@ func testInstance(authStrategyName, configJSON, name, namespace, serviceName, se
 			Auth: &gatewayv2alpha1.AuthStrategy{
 				Name:   &authStrategyName,
 				Config: rawCfg,
+			},
+			Paths: []gatewayv2alpha1.Path{
+				{
+					Path:    path,
+					Scopes:  scopes,
+					Methods: methods,
+				},
 			},
 		},
 	}

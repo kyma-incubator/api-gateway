@@ -6,7 +6,6 @@ import (
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	authenticationv1alpha1 "knative.dev/pkg/apis/istio/authentication/v1alpha1"
 )
@@ -43,8 +42,7 @@ func getJWTConfig() *gatewayv2alpha1.JWTModeConfig {
 	return &gatewayv2alpha1.JWTModeConfig{
 		Issuer: "http://dex.someDomain.local",
 		Mode: gatewayv2alpha1.InternalConfig{
-			Name:   gatewayv2alpha1.JWTAll,
-			Config: &runtime.RawExtension{},
+			Name: gatewayv2alpha1.JWTAll,
 		},
 	}
 }

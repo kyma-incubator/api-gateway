@@ -7,7 +7,6 @@ import (
 
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 var (
@@ -16,13 +15,17 @@ var (
 
 type jwt struct{}
 
-func (j *jwt) Validate(config *runtime.RawExtension) error {
+func (j *jwt) Validate(gate *gatewayv2alpha1.Gate) error {
 	var template gatewayv2alpha1.JWTModeConfig
 
-	if !configNotEmpty(config) {
+	if len(gate.Spec.Paths) == 0 {
+		return fmt.Errorf("path is required")
+	}
+
+	if !configNotEmpty(gate.Spec.Auth.Config) {
 		return fmt.Errorf("supplied config cannot be empty")
 	}
-	err := json.Unmarshal(config.Raw, &template)
+	err := json.Unmarshal(gate.Spec.Auth.Config.Raw, &template)
 	if err != nil {
 		return errors.WithStack(err)
 	}

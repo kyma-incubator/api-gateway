@@ -43,11 +43,7 @@ func (j *jwt) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	switch jwtConfig.Mode.Name {
 	case gatewayv2alpha1.JWTAll:
 		{
-			modeConfig, err := j.toJWTModeALLConfig(jwtConfig.Mode.Config)
-			if err != nil {
-				return err
-			}
-			if len(modeConfig.Scopes) == 0 {
+			if len(api.Spec.Paths[0].Scopes) == 0 {
 				oldAP, err := j.getAuthenticationPolicy(ctx, api)
 				if err != nil {
 					return err
@@ -68,7 +64,7 @@ func (j *jwt) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 					return err
 				}
 
-				jwtConfJSON, err := generateRequiredScopesJSONForJWT(modeConfig, jwtConfig)
+				jwtConfJSON, err := generateRequiredScopesJSONForJWT(api, jwtConfig)
 				if err != nil {
 					return err
 				}
@@ -171,9 +167,9 @@ func (j *jwt) updateAccessRule(ctx context.Context, ar *rulev1alpha1.Rule) error
 	return j.arClient.Update(ctx, ar)
 }
 
-func generateRequiredScopesJSONForJWT(jwtAllConf *gatewayv2alpha1.JWTModeALL, conf *gatewayv2alpha1.JWTModeConfig) ([]byte, error) {
+func generateRequiredScopesJSONForJWT(gate *gatewayv2alpha1.Gate, conf *gatewayv2alpha1.JWTModeConfig) ([]byte, error) {
 	jwtConf := &internalTypes.JwtConfig{
-		RequiredScope: jwtAllConf.Scopes,
+		RequiredScope: gate.Spec.Paths[0].Scopes,
 		TrustedIssuer: []string{conf.Issuer},
 	}
 	return json.Marshal(jwtConf)
@@ -348,15 +344,6 @@ func (j *jwt) generateAuthenticationPolicy(api *gatewayv2alpha1.Gate, config *ga
 
 func (j *jwt) toJWTConfig(config *runtime.RawExtension) (*gatewayv2alpha1.JWTModeConfig, error) {
 	var template gatewayv2alpha1.JWTModeConfig
-	err := json.Unmarshal(config.Raw, &template)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	return &template, nil
-}
-
-func (j *jwt) toJWTModeALLConfig(config *runtime.RawExtension) (*gatewayv2alpha1.JWTModeALL, error) {
-	var template gatewayv2alpha1.JWTModeALL
 	err := json.Unmarshal(config.Raw, &template)
 	if err != nil {
 		return nil, errors.WithStack(err)

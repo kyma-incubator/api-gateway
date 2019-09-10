@@ -47,6 +47,8 @@ type GateSpec struct {
 	// Gateway to be used
 	// +kubebuilder:validation:Pattern=^(?:[_a-z0-9](?:[_a-z0-9-]+[a-z0-9])?\.)+(?:[a-z](?:[a-z0-9-]+[a-z0-9])?)?$
 	Gateway *string `json:"gateway"`
+	//Paths represents collection of Path to secure
+	Paths []Path `json:"paths,omitempty"`
 }
 
 // GateStatus defines the observed state of Gate
@@ -105,6 +107,17 @@ type AuthStrategy struct {
 	// Config configures the auth strategy. Configuration keys vary per strategy.
 	// +kubebuilder:validation:Type=object
 	Config *runtime.RawExtension `json:"config,omitempty"`
+}
+
+//Path .
+type Path struct {
+	// Path to be exposed
+	// +kubebuilder:validation:Pattern=^/([0-9a-zA-Z./*]+)
+	Path string `json:"path"`
+	// Set of allowed scopes
+	Scopes []string `json:"scopes,omitempty"`
+	// Set of allowed HTTP methods
+	Methods []string `json:"methods,omitempty"`
 }
 
 //GatewayResourceStatus .

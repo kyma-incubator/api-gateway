@@ -13,10 +13,9 @@ func TestOauthGenerateVirtualService(t *testing.T) {
 	assert := assert.New(t)
 
 	gate := getGate()
-	oauthConfig := getOauthConfig()
 	oauthStrategy := &oauth{oathkeeperSvc: "test-oathkeeper", oathkeeperSvcPort: 4455}
 
-	vs := oauthStrategy.generateVirtualService(gate, oauthConfig)
+	vs := oauthStrategy.generateVirtualService(gate)
 
 	assert.Equal(len(vs.Spec.Gateways), 1)
 	assert.Equal(vs.Spec.Gateways[0], apiGateway)
@@ -45,15 +44,14 @@ func TestOauthPrepareVirtualService(t *testing.T) {
 	assert := assert.New(t)
 
 	gate := getGate()
-	oauthConfig := getOauthConfig()
 	oauthStrategy := &oauth{oathkeeperSvc: "test-oathkeeper", oathkeeperSvcPort: 4455}
 
-	oldVS := oauthStrategy.generateVirtualService(gate, oauthConfig)
+	oldVS := oauthStrategy.generateVirtualService(gate)
 
 	oldVS.ObjectMeta.Generation = int64(15)
 	oldVS.ObjectMeta.Name = "mst"
 
-	newVS := oauthStrategy.prepareVirtualService(gate, oldVS, oauthConfig)
+	newVS := oauthStrategy.prepareVirtualService(gate, oldVS)
 
 	assert.Equal(newVS.ObjectMeta.Generation, int64(15))
 
@@ -179,18 +177,19 @@ func getGate() *gatewayv2alpha1.Gate {
 				Host: &serviceHost,
 				Port: &servicePort,
 			},
+			Paths: []gatewayv2alpha1.Path{
+				{
+					Path:    "/foo",
+					Scopes:  []string{"write", "read"},
+					Methods: []string{"GET"},
+				},
+			},
 		},
 	}
 }
 
 func getOauthConfig() *gatewayv2alpha1.OauthModeConfig {
 	return &gatewayv2alpha1.OauthModeConfig{
-		Paths: []gatewayv2alpha1.Option{
-			{
-				Path:    "/foo",
-				Scopes:  []string{"write", "read"},
-				Methods: []string{"GET"},
-			},
-		},
+		Mutators: []*gatewayv2alpha1.Mutator{},
 	}
 }
