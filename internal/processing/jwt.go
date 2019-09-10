@@ -23,7 +23,6 @@ import (
 type jwt struct {
 	arClient          *accessRuleClient.AccessRule
 	vsClient          *istioClient.VirtualService
-	apClient          *istioClient.AuthenticationPolicy
 	JWKSURI           string
 	oathkeeperSvc     string
 	oathkeeperSvcPort uint32
@@ -209,26 +208,6 @@ func (j *jwt) generateVirtualService(api *gatewayv2alpha1.Gate, destinationHost 
 					builders.MatchRequest().URI().Regex(api.Spec.Paths[0].Path),
 					builders.RouteDestination().Host(destinationHost).Port(destinationPort))).
 		Get()
-}
-
-func (j *jwt) getAuthenticationPolicy(ctx context.Context, api *gatewayv2alpha1.Gate) (*authenticationv1alpha1.Policy, error) {
-	ap, err := j.apClient.GetForAPI(ctx, api)
-	if err != nil {
-		if apierrs.IsNotFound(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return ap, nil
-}
-
-func (j *jwt) createAuthenticationPolicy(ctx context.Context, ap *authenticationv1alpha1.Policy) error {
-	return j.apClient.Create(ctx, ap)
-}
-
-func (j *jwt) updateAuthenticationPolicy(ctx context.Context, ap *authenticationv1alpha1.Policy) error {
-	return j.apClient.Update(ctx, ap)
 }
 
 func (j *jwt) prepareAuthenticationPolicy(api *gatewayv2alpha1.Gate, config *gatewayv2alpha1.JWTModeConfig, ap *authenticationv1alpha1.Policy) *authenticationv1alpha1.Policy {
