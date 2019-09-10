@@ -43,7 +43,6 @@ var _ = Describe("Gate Controller", func() {
 	const testPath = "/.*"
 	var testIssuer = "https://oauth2.example.com/"
 	var testMethods = []string{"GET", "PUT"}
-	var allMethods = []string{"GET", "POST", "PUT", "HEAD", "DELETE", "PATCH", "OPTIONS", "TRACE", "CONNECT"}
 	var testScopes = []string{"foo", "bar"}
 	var testMutators = []string{"noop", "idtoken"}
 
@@ -190,7 +189,7 @@ var _ = Describe("Gate Controller", func() {
 						testName := generateTestName(testNameBase, testIDLength)
 
 						var authStrategyName = gatewayv2alpha1.Jwt
-						instance := testInstance(authStrategyName, configJSON, testName, testNamespace, testServiceName, testServiceHost, testServicePort, "/.*", []string{}, testScopes)
+						instance := testInstance(authStrategyName, configJSON, testName, testNamespace, testServiceName, testServiceHost, testServicePort, "/.*", []string{"GET"}, testScopes)
 
 						err := c.Create(context.TODO(), instance)
 						if apierrors.IsInvalid(err) {
@@ -277,7 +276,7 @@ var _ = Describe("Gate Controller", func() {
 						//Spec.Match
 						Expect(rl.Spec.Match).NotTo(BeNil())
 						Expect(rl.Spec.Match.URL).To(Equal(fmt.Sprintf("<http|https>://%s<%s>", testServiceHost, testPath)))
-						Expect(rl.Spec.Match.Methods).To(Equal(allMethods))
+						Expect(rl.Spec.Match.Methods).To(Equal([]string{"GET"}))
 						//Spec.Authenticators
 						Expect(rl.Spec.Authenticators).To(HaveLen(1))
 						Expect(rl.Spec.Authenticators[0].Handler).NotTo(BeNil())

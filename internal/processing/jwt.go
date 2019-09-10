@@ -29,8 +29,6 @@ type jwt struct {
 	oathkeeperSvcPort uint32
 }
 
-var methods = []string{"GET", "POST", "PUT", "HEAD", "DELETE", "PATCH", "OPTIONS", "TRACE", "CONNECT"}
-
 func (j *jwt) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	var destinationHost string
 	var destinationPort uint32
@@ -119,8 +117,8 @@ func (j *jwt) generateAccessRule(api *gatewayv2alpha1.Gate, config *gatewayv2alp
 			URL: fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", *api.Spec.Service.Name, api.ObjectMeta.Namespace, int(*api.Spec.Service.Port)),
 		},
 		Match: &rulev1alpha1.Match{
-			Methods: methods,
-			URL:     fmt.Sprintf("<http|https>://%s<%s>", *api.Spec.Service.Host, "/.*"),
+			Methods: api.Spec.Paths[0].Methods,
+			URL:     fmt.Sprintf("<http|https>://%s<%s>", *api.Spec.Service.Host, api.Spec.Paths[0].Path),
 		},
 		Authorizer: &rulev1alpha1.Authorizer{
 			Handler: &rulev1alpha1.Handler{
@@ -187,7 +185,7 @@ func (j *jwt) prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv1a
 				Host(*api.Spec.Service.Host).
 				Gateway(*api.Spec.Gateway).
 				HTTP(
-					builders.MatchRequest().URI().Regex("/.*"),
+					builders.MatchRequest().URI().Regex(api.Spec.Paths[0].Path),
 					builders.RouteDestination().Host(destinationHost).Port(destinationPort))).
 		Get()
 }
@@ -208,7 +206,7 @@ func (j *jwt) generateVirtualService(api *gatewayv2alpha1.Gate, destinationHost 
 				Host(*api.Spec.Service.Host).
 				Gateway(*api.Spec.Gateway).
 				HTTP(
-					builders.MatchRequest().URI().Regex("/.*"),
+					builders.MatchRequest().URI().Regex(api.Spec.Paths[0].Path),
 					builders.RouteDestination().Host(destinationHost).Port(destinationPort))).
 		Get()
 }
@@ -374,8 +372,8 @@ func (j *jwt) prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Rule
 			URL: fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", *api.Spec.Service.Name, api.ObjectMeta.Namespace, int(*api.Spec.Service.Port)),
 		},
 		Match: &rulev1alpha1.Match{
-			Methods: methods,
-			URL:     fmt.Sprintf("<http|https>://%s<%s>", *api.Spec.Service.Host, "/.*"),
+			Methods: api.Spec.Paths[0].Methods,
+			URL:     fmt.Sprintf("<http|https>://%s<%s>", *api.Spec.Service.Host, api.Spec.Paths[0].Path),
 		},
 		Authorizer: &rulev1alpha1.Authorizer{
 			Handler: &rulev1alpha1.Handler{

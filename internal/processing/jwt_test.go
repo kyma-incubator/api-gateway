@@ -34,6 +34,11 @@ func getGate4JWT() *gatewayv2alpha1.Gate {
 				Host: &serviceHost,
 				Port: &servicePort,
 			},
+			Paths: []gatewayv2alpha1.Path{{
+				Path:    "/.*",
+				Methods: []string{"GET"},
+			},
+			},
 		},
 	}
 }
@@ -139,9 +144,9 @@ func TestJwtPrepareAccessRule(t *testing.T) {
 	assert.NotEmpty(newAR.Spec.Authenticators[0].Config)
 	assert.Equal(string(newAR.Spec.Authenticators[0].Config.Raw), string(jwtConfig))
 
-	assert.Equal(len(newAR.Spec.Match.Methods), len(methods))
-	assert.Equal(newAR.Spec.Match.Methods, methods)
-	assert.Equal(newAR.Spec.Match.URL, "<http|https>://myService.myDomain.com</.*>")
+	assert.Equal(len(newAR.Spec.Match.Methods), 1)
+	assert.Equal(newAR.Spec.Match.Methods, []string{"GET"})
+	assert.Equal(newAR.Spec.Match.URL, "<http|https>://myService.myDomain.com</foo>")
 
 	assert.Equal(newAR.Spec.Authorizer.Name, "allow")
 	assert.Empty(newAR.Spec.Authorizer.Config)
@@ -173,9 +178,9 @@ func TestJwtGenerateAccessRule(t *testing.T) {
 	assert.Equal(ar.Spec.Authenticators[0].Name, "jwt")
 	assert.Equal(string(ar.Spec.Authenticators[0].Config.Raw), string(jwtConfig))
 
-	assert.Equal(len(ar.Spec.Match.Methods), len(methods))
-	assert.Equal(ar.Spec.Match.Methods, methods)
-	assert.Equal(ar.Spec.Match.URL, "<http|https>://myService.myDomain.com</.*>")
+	assert.Equal(len(ar.Spec.Match.Methods), 1)
+	assert.Equal(ar.Spec.Match.Methods, []string{"GET"})
+	assert.Equal(ar.Spec.Match.URL, "<http|https>://myService.myDomain.com</foo>")
 
 	assert.Equal(ar.Spec.Authorizer.Name, "allow")
 	assert.Empty(ar.Spec.Authorizer.Config)
