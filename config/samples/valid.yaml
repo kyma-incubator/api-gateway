@@ -80,7 +80,7 @@ spec:
     - path: /.*
       scopes: ["foo", "bar"]
       methods: ["GET"]
-      mutators: []
+  mutators: []
 ---
 apiVersion: gateway.kyma-project.io/v2alpha1
 kind: Gate

@@ -262,6 +262,7 @@ func (o *oauth) prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Ru
 
 }
 
+//ParseMutatorsConfiguration .
 func ParseMutatorsConfiguration(mutators []*gatewayv2alpha1.Mutator) []*rulev1alpha1.Mutator {
 	var resultMutators []*rulev1alpha1.Mutator
 
