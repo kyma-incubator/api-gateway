@@ -43,32 +43,32 @@ func (j *jwt) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	switch jwtConfig.Mode.Name {
 	case gatewayv2alpha1.JWTAll:
 		{
-				oldAR, err := j.getAccessRule(ctx, api)
+			oldAR, err := j.getAccessRule(ctx, api)
+			if err != nil {
+				return err
+			}
+
+			jwtConfJSON, err := generateRequiredScopesJSONForJWT(api, jwtConfig)
+			if err != nil {
+				return err
+			}
+
+			if oldAR != nil {
+				newAR := j.prepareAccessRule(api, oldAR, jwtConfig, jwtConfJSON)
+				err = j.updateAccessRule(ctx, newAR)
 				if err != nil {
 					return err
 				}
-
-				jwtConfJSON, err := generateRequiredScopesJSONForJWT(api, jwtConfig)
+			} else {
+				ar := j.generateAccessRule(api, jwtConfig, jwtConfJSON)
+				err = j.createAccessRule(ctx, ar)
 				if err != nil {
 					return err
 				}
+			}
 
-				if oldAR != nil {
-					newAR := j.prepareAccessRule(api, oldAR, jwtConfig, jwtConfJSON)
-					err = j.updateAccessRule(ctx, newAR)
-					if err != nil {
-						return err
-					}
-				} else {
-					ar := j.generateAccessRule(api, jwtConfig, jwtConfJSON)
-					err = j.createAccessRule(ctx, ar)
-					if err != nil {
-						return err
-					}
-				}
-
-				destinationHost = j.oathkeeperSvc
-				destinationPort = j.oathkeeperSvcPort
+			destinationHost = j.oathkeeperSvc
+			destinationPort = j.oathkeeperSvcPort
 		}
 	default:
 		return fmt.Errorf("unsupported mode: %s", jwtConfig.Mode.Name)
