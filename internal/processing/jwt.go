@@ -43,22 +43,6 @@ func (j *jwt) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	switch jwtConfig.Mode.Name {
 	case gatewayv2alpha1.JWTAll:
 		{
-			if len(api.Spec.Paths[0].Scopes) == 0 {
-				oldAP, err := j.getAuthenticationPolicy(ctx, api)
-				if err != nil {
-					return err
-				}
-				if oldAP != nil {
-					return j.updateAuthenticationPolicy(ctx, j.prepareAuthenticationPolicy(api, jwtConfig, oldAP))
-				}
-				err = j.createAuthenticationPolicy(ctx, j.generateAuthenticationPolicy(api, jwtConfig))
-				if err != nil {
-					return err
-				}
-
-				destinationHost = fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace)
-				destinationPort = *api.Spec.Service.Port
-			} else {
 				oldAR, err := j.getAccessRule(ctx, api)
 				if err != nil {
 					return err
@@ -85,7 +69,6 @@ func (j *jwt) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 
 				destinationHost = j.oathkeeperSvc
 				destinationPort = j.oathkeeperSvcPort
-			}
 		}
 	default:
 		return fmt.Errorf("unsupported mode: %s", jwtConfig.Mode.Name)
