@@ -45,11 +45,15 @@ var _ = Describe("Gate Controller", func() {
 	var testMethods = []string{"GET", "PUT"}
 	var testScopes = []string{"foo", "bar"}
 	var testMutators = []*rulev1alpha1.Mutator{
-		{Handler: &rulev1alpha1.Handler{
-			Name: "noop"},
+		{
+			Handler: &rulev1alpha1.Handler{
+				Name: "noop",
+			},
 		},
-		{Handler: &rulev1alpha1.Handler{
-			Name: "idtoken"},
+		{
+			Handler: &rulev1alpha1.Handler{
+				Name: "idtoken",
+			},
 		},
 	}
 
