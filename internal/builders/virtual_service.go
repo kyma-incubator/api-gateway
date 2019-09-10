@@ -1,114 +1,104 @@
 package builders
 
 import (
-	k8sMeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	networkingv1alpha1 "knative.dev/pkg/apis/istio/common/v1alpha1"
 	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 )
 
-// VirtualService creates builder for knative.dev/pkg/apis/istio/v1alpha3/VirtualService type
-func VirtualService(name string) *virtualService {
+// VirtualService returns builder for knative.dev/pkg/apis/istio/v1alpha3/VirtualService type
+func VirtualService() *virtualService {
 	return &virtualService{
-		name: name,
+		value: &networkingv1alpha3.VirtualService{},
 	}
 }
 
 type virtualService struct {
-	name      string
-	namespace string
-	owner     *ownerReference
-	spec      *virtualServiceSpec
+	value *networkingv1alpha3.VirtualService
 }
 
-func (b *virtualService) Namespace(ns string) *virtualService {
-	b.namespace = ns
-	return b
-}
-
-func (b *virtualService) Owner(o *ownerReference) *virtualService {
-	b.owner = o
-	return b
-}
-
-func (b *virtualService) Spec(s *virtualServiceSpec) *virtualService {
-	b.spec = s
-	return b
-}
-
-func (b *virtualService) Get() *networkingv1alpha3.VirtualService {
-	objectMeta := k8sMeta.ObjectMeta{
-		Name:      b.name,
-		Namespace: b.namespace,
-	}
-
-	if b.owner != nil {
-		objectMeta.OwnerReferences = []k8sMeta.OwnerReference{*b.owner.Get()}
-	}
-
-	vs := &networkingv1alpha3.VirtualService{
-		ObjectMeta: objectMeta,
-		Spec:       *b.spec.Get(),
-	}
-
+func (vs *virtualService) From(val *networkingv1alpha3.VirtualService) *virtualService {
+	vs.value = val
 	return vs
 }
 
-// VirtualServiceSpec creates builder for knative.dev/pkg/apis/istio/v1alpha3/VirtualServiceSpec type
+func (vs *virtualService) Name(val string) *virtualService {
+	vs.value.Name = val
+	return vs
+}
+
+func (vs *virtualService) Namespace(val string) *virtualService {
+	vs.value.Namespace = val
+	return vs
+}
+
+func (vs *virtualService) Owner(val *ownerReference) *virtualService {
+	vs.value.OwnerReferences = append(vs.value.OwnerReferences, *val.Get())
+	return vs
+}
+
+func (vs *virtualService) Spec(val *virtualServiceSpec) *virtualService {
+	vs.value.Spec = *val.Get()
+	return vs
+}
+
+func (vs *virtualService) Get() *networkingv1alpha3.VirtualService {
+	return vs.value
+}
+
+// VirtualServiceSpec returns builder for knative.dev/pkg/apis/istio/v1alpha3/VirtualServiceSpec type
 func VirtualServiceSpec() *virtualServiceSpec {
-	return &virtualServiceSpec{}
+	return &virtualServiceSpec{
+		value: &networkingv1alpha3.VirtualServiceSpec{},
+	}
 }
 
 type virtualServiceSpec struct {
-	hosts     []string
-	gateways  []string
-	matchReq  *matchRequest
-	routeDest *routeDestination
+	value *networkingv1alpha3.VirtualServiceSpec
 }
 
-func (b *virtualServiceSpec) Host(host string) *virtualServiceSpec {
-	b.hosts = []string{host}
+func (b *virtualServiceSpec) From(val *networkingv1alpha3.VirtualServiceSpec) *virtualServiceSpec {
+	b.value = val
 	return b
 }
 
-func (b *virtualServiceSpec) Gateway(gw string) *virtualServiceSpec {
-	b.gateways = append(b.gateways, gw)
+func (b *virtualServiceSpec) Host(val string) *virtualServiceSpec {
+	b.value.Hosts = append(b.value.Hosts, val)
+	return b
+}
+
+func (b *virtualServiceSpec) Gateway(val string) *virtualServiceSpec {
+	b.value.Gateways = append(b.value.Gateways, val)
 	return b
 }
 
 func (b *virtualServiceSpec) HTTP(mr *matchRequest, rd *routeDestination) *virtualServiceSpec {
-	b.matchReq = mr
-	b.routeDest = rd
+	var httpMatch []networkingv1alpha3.HTTPMatchRequest
+	var routeDest []networkingv1alpha3.HTTPRouteDestination
+
+	if mr != nil {
+		httpMatch = append(httpMatch, *mr.Get())
+	}
+
+	if rd != nil {
+		routeDest = append(routeDest, *rd.Get())
+	}
+
+	b.value.HTTP = []networkingv1alpha3.HTTPRoute{
+		{
+			Match: httpMatch,
+			Route: routeDest,
+		},
+	}
+	//b.routeDest = rd
+
 	return b
 }
 
 func (b *virtualServiceSpec) Get() *networkingv1alpha3.VirtualServiceSpec {
-
-	var httpMatch []networkingv1alpha3.HTTPMatchRequest
-	var routeDest []networkingv1alpha3.HTTPRouteDestination
-
-	if b.matchReq != nil {
-		httpMatch = append(httpMatch, *b.matchReq.Get())
-	}
-
-	if b.routeDest != nil {
-		routeDest = append(routeDest, *b.routeDest.Get())
-	}
-
-	spec := &networkingv1alpha3.VirtualServiceSpec{
-		Hosts:    b.hosts,
-		Gateways: b.gateways,
-		HTTP: []networkingv1alpha3.HTTPRoute{
-			{
-				Match: httpMatch,
-				Route: routeDest,
-			},
-		},
-	}
-
-	return spec
+	return b.value
 }
 
-// MatchRequest creates builder for knative.dev/pkg/apis/istio/v1alpha3/HTTPMatchRequest type
+// MatchRequest returns builder for knative.dev/pkg/apis/istio/v1alpha3/HTTPMatchRequest type
 func MatchRequest() *matchRequest {
 	return &matchRequest{}
 }
@@ -128,32 +118,32 @@ func (mr *matchRequest) URI() *stringMatch {
 }
 
 type stringMatch struct {
-	data   *networkingv1alpha1.StringMatch
+	value  *networkingv1alpha1.StringMatch
 	parent func() *matchRequest
 }
 
-func (st *stringMatch) Regex(value string) *matchRequest {
-	st.data.Regex = value
+func (st *stringMatch) Regex(val string) *matchRequest {
+	st.value.Regex = val
 	return st.parent()
 }
 
-// RouteDestination creates builder for knative.dev/pkg/apis/istio/v1alpha3/HTTPRouteDestination type
+// RouteDestination returns builder for knative.dev/pkg/apis/istio/v1alpha3/HTTPRouteDestination type
 func RouteDestination() *routeDestination {
 	return &routeDestination{&networkingv1alpha3.HTTPRouteDestination{}}
 }
 
 type routeDestination struct {
-	data *networkingv1alpha3.HTTPRouteDestination
+	value *networkingv1alpha3.HTTPRouteDestination
 }
 
-func (rd *routeDestination) Host(value string) *routeDestination {
-	rd.data.Destination.Host = value
+func (rd *routeDestination) Host(val string) *routeDestination {
+	rd.value.Destination.Host = val
 	return rd
 }
-func (rd *routeDestination) Port(value uint32) *routeDestination {
-	rd.data.Destination.Port.Number = value
+func (rd *routeDestination) Port(val uint32) *routeDestination {
+	rd.value.Destination.Port.Number = val
 	return rd
 }
 func (rd *routeDestination) Get() *networkingv1alpha3.HTTPRouteDestination {
-	return rd.data
+	return rd.value
 }

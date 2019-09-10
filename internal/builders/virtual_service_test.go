@@ -27,8 +27,8 @@ var _ = Describe("Builder for", func() {
 			refKind := "Gate"
 			var refUID k8sTypes.UID = "123"
 
-			vs := VirtualService(name).Namespace(namespace).
-				Owner(OwnerReference(refName, refVersion, refKind, refUID).Controller(true)).
+			vs := VirtualService().Name(name).Namespace(namespace).
+				Owner(OwnerReference().Name(refName).APIVersion(refVersion).Kind(refKind).UID(refUID).Controller(true)).
 				Spec(
 					VirtualServiceSpec().
 						Host(host).
