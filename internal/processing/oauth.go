@@ -204,7 +204,7 @@ func (o *oauth) generateAccessRule(api *gatewayv2alpha1.Gate, requiredScopes []b
 				Name: "allow",
 			},
 		},
-		Mutators: ParseMutatorsConfiguration(api.Spec.Mutators),
+		Mutators: parseMutatorsConfiguration(api.Spec.Mutators),
 		Authenticators: []*rulev1alpha1.Authenticator{
 			{
 				Handler: &rulev1alpha1.Handler{
@@ -253,7 +253,7 @@ func (o *oauth) prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Ru
 				},
 			},
 		},
-		Mutators: ParseMutatorsConfiguration(api.Spec.Mutators),
+		Mutators: parseMutatorsConfiguration(api.Spec.Mutators),
 	}
 
 	ar.Spec = *spec
@@ -262,8 +262,7 @@ func (o *oauth) prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Ru
 
 }
 
-//ParseMutatorsConfiguration .
-func ParseMutatorsConfiguration(mutators []*gatewayv2alpha1.Mutator) []*rulev1alpha1.Mutator {
+func parseMutatorsConfiguration(mutators []*gatewayv2alpha1.Mutator) []*rulev1alpha1.Mutator {
 	var resultMutators []*rulev1alpha1.Mutator
 
 	for _, mutator := range mutators {
