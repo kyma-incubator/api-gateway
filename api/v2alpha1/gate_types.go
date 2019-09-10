@@ -49,6 +49,8 @@ type GateSpec struct {
 	Gateway *string `json:"gateway"`
 	//Paths represents collection of Path to secure
 	Paths []Path `json:"paths,omitempty"`
+	// Mutators to be used
+	Mutators []*Mutator `json:"mutators,omitempty"`
 }
 
 // GateStatus defines the observed state of Gate
@@ -118,6 +120,12 @@ type Path struct {
 	Scopes []string `json:"scopes,omitempty"`
 	// Set of allowed HTTP methods
 	Methods []string `json:"methods,omitempty"`
+}
+
+// Mutator representation of AccessRule mutator field
+type Mutator struct {
+	Name   string                `json:"handler"`
+	Config *runtime.RawExtension `json:"config,omitempty"`
 }
 
 //GatewayResourceStatus .

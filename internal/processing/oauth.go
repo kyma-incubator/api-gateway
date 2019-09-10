@@ -195,19 +195,6 @@ func (o *oauth) generateAccessRule(api *gatewayv2alpha1.Gate, config *gatewayv2a
 	rawConfig := &runtime.RawExtension{
 		Raw: requiredScopes,
 	}
-	mutators := []*rulev1alpha1.Mutator{}
-
-	if len(config.Mutators) > 0 {
-		for i := range config.Mutators {
-			mut := &rulev1alpha1.Mutator{
-				Handler: &rulev1alpha1.Handler{
-					Name:   config.Mutators[i].Name,
-					Config: config.Mutators[i].Config,
-				},
-			}
-			mutators = append(mutators, mut)
-		}
-	}
 
 	spec := &rulev1alpha1.RuleSpec{
 		Upstream: &rulev1alpha1.Upstream{
@@ -222,7 +209,7 @@ func (o *oauth) generateAccessRule(api *gatewayv2alpha1.Gate, config *gatewayv2a
 				Name: "allow",
 			},
 		},
-		Mutators: mutators,
+		Mutators: ParseMutatorsConfiguration(api.Spec.Mutators),
 		Authenticators: []*rulev1alpha1.Authenticator{
 			{
 				Handler: &rulev1alpha1.Handler{
@@ -250,20 +237,6 @@ func (o *oauth) prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Ru
 		Raw: requiredScopes,
 	}
 
-	mutators := []*rulev1alpha1.Mutator{}
-
-	if len(config.Mutators) > 0 {
-		for i := range config.Mutators {
-			mut := &rulev1alpha1.Mutator{
-				Handler: &rulev1alpha1.Handler{
-					Name:   config.Mutators[i].Name,
-					Config: config.Mutators[i].Config,
-				},
-			}
-			mutators = append(mutators, mut)
-		}
-	}
-
 	spec := &rulev1alpha1.RuleSpec{
 		Upstream: &rulev1alpha1.Upstream{
 			URL: fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", *api.Spec.Service.Name, api.ObjectMeta.Namespace, int(*api.Spec.Service.Port)),
@@ -285,11 +258,27 @@ func (o *oauth) prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Ru
 				},
 			},
 		},
-		Mutators: mutators,
+		Mutators: ParseMutatorsConfiguration(api.Spec.Mutators),
 	}
 
 	ar.Spec = *spec
 
 	return ar
 
+}
+
+func ParseMutatorsConfiguration(mutators []*gatewayv2alpha1.Mutator) []*rulev1alpha1.Mutator {
+	var resultMutators []*rulev1alpha1.Mutator
+
+	for _, mutator := range mutators {
+		mut := &rulev1alpha1.Mutator{
+			Handler: &rulev1alpha1.Handler{
+				Name:   mutator.Name,
+				Config: mutator.Config,
+			},
+		}
+		resultMutators = append(resultMutators, mut)
+	}
+
+	return resultMutators
 }

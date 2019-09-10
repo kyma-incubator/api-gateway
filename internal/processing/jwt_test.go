@@ -39,6 +39,7 @@ func getGate4JWT() *gatewayv2alpha1.Gate {
 				Methods: []string{"GET"},
 			},
 			},
+			Mutators: []*gatewayv2alpha1.Mutator{},
 		},
 	}
 }

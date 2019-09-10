@@ -407,6 +407,18 @@ spec:
               description: Gateway to be used
               pattern: ^(?:[_a-z0-9](?:[_a-z0-9-]+[a-z0-9])?\.)+(?:[a-z](?:[a-z0-9-]+[a-z0-9])?)?$
               type: string
+            mutators:
+              description: Mutators to be used
+              items:
+                properties:
+                  config:
+                    type: object
+                  handler:
+                    type: string
+                required:
+                - handler
+                type: object
+              type: array
             paths:
               description: Paths represents collection of Path to secure
               items:

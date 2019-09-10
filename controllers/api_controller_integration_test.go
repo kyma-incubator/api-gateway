@@ -44,23 +44,22 @@ var _ = Describe("Gate Controller", func() {
 	var testIssuer = "https://oauth2.example.com/"
 	var testMethods = []string{"GET", "PUT"}
 	var testScopes = []string{"foo", "bar"}
-	var testMutators = []string{"noop", "idtoken"}
+	var testMutators = []*gatewayv2alpha1.Mutator{
+		{Name: "noop"}, {Name: "idtoken"},
+	}
 
 	Context("when creating a Gate for exposing service", func() {
 		Context("on all the paths,", func() {
 			Context("secured with Oauth2 introspection,", func() {
 				Context("in a happy-path scenario", func() {
 					It("should create a VirtualService and an AccessRule", func() {
-						configJSON := fmt.Sprintf(`
-							{
-								"mutators": [%s]
-							}`, getMutators(testMutators))
+						configJSON := fmt.Sprintf(`{}`)
 
 						testName := generateTestName(testNameBase, testIDLength)
 
 						var authStrategyName = gatewayv2alpha1.Oauth
 
-						instance := testInstance(authStrategyName, configJSON, testName, testNamespace, testServiceName, testServiceHost, testServicePort, testPath, testMethods, testScopes)
+						instance := testInstance(authStrategyName, configJSON, testName, testNamespace, testServiceName, testServiceHost, testServicePort, testPath, testMethods, testScopes, testMutators)
 
 						err := c.Create(context.TODO(), instance)
 						if apierrors.IsInvalid(err) {
@@ -169,7 +168,8 @@ var _ = Describe("Gate Controller", func() {
 						//Spec.Mutators
 						Expect(rl.Spec.Mutators).NotTo(BeNil())
 						Expect(len(rl.Spec.Mutators)).To(Equal(len(testMutators)))
-						Expect(rl.Spec.Mutators[0].Handler.Name).To(Equal(testMutators[0]))
+						Expect(rl.Spec.Mutators[0].Handler.Name).To(Equal(testMutators[0].Name))
+						Expect(rl.Spec.Mutators[1].Handler.Name).To(Equal(testMutators[1].Name))
 					})
 				})
 			})
@@ -179,14 +179,13 @@ var _ = Describe("Gate Controller", func() {
 						configJSON := fmt.Sprintf(`
 							{
 								"issuer": "%s",
-								"jwks": [],
-                                "mutators": [%s]
-							}`, testIssuer, getMutators(testMutators))
+								"jwks": []
+							}`, testIssuer)
 						fmt.Printf("---\n%s\n---", configJSON)
 						testName := generateTestName(testNameBase, testIDLength)
 
 						var authStrategyName = gatewayv2alpha1.Jwt
-						instance := testInstance(authStrategyName, configJSON, testName, testNamespace, testServiceName, testServiceHost, testServicePort, "/.*", []string{"GET"}, testScopes)
+						instance := testInstance(authStrategyName, configJSON, testName, testNamespace, testServiceName, testServiceHost, testServicePort, "/.*", []string{"GET"}, testScopes, testMutators)
 
 						err := c.Create(context.TODO(), instance)
 						if apierrors.IsInvalid(err) {
@@ -295,7 +294,8 @@ var _ = Describe("Gate Controller", func() {
 						//Spec.Mutators
 						Expect(rl.Spec.Mutators).NotTo(BeNil())
 						Expect(len(rl.Spec.Mutators)).To(Equal(len(testMutators)))
-						Expect(rl.Spec.Mutators[0].Handler.Name).To(Equal(testMutators[0]))
+						Expect(rl.Spec.Mutators[0].Handler.Name).To(Equal(testMutators[0].Name))
+						Expect(rl.Spec.Mutators[1].Handler.Name).To(Equal(testMutators[1].Name))
 					})
 				})
 			})
@@ -331,7 +331,7 @@ func toCSVList(input []string) string {
 	return res
 }
 
-func testInstance(authStrategyName, configJSON, name, namespace, serviceName, serviceHost string, servicePort uint32, path string, methods []string, scopes []string) *gatewayv2alpha1.Gate {
+func testInstance(authStrategyName, configJSON, name, namespace, serviceName, serviceHost string, servicePort uint32, path string, methods []string, scopes []string, mutators []*gatewayv2alpha1.Mutator) *gatewayv2alpha1.Gate {
 	rawCfg := &runtime.RawExtension{
 		Raw: []byte(configJSON),
 	}
@@ -361,6 +361,7 @@ func testInstance(authStrategyName, configJSON, name, namespace, serviceName, se
 					Methods: methods,
 				},
 			},
+			Mutators: mutators,
 		},
 	}
 }
@@ -403,27 +404,4 @@ func generateTestName(name string, length int) string {
 		b[i] = letterRunes[rand.Intn(len(letterRunes))]
 	}
 	return name + "-" + string(b)
-}
-
-func getMutators(in []string) string {
-	if len(in) == 0 {
-		return `[]`
-	}
-	res := ""
-	for i := range in {
-		if i == len(in)-1 {
-			res = res + fmt.Sprintf(
-				`
-			{
-				"handler": "%s"
-			}`, in[i])
-		} else {
-			res = res + fmt.Sprintf(
-				`
-			{
-				"handler": "%s"
-			},`, in[i])
-		}
-	}
-	return res
 }

@@ -90,20 +90,6 @@ func (j *jwt) generateAccessRule(api *gatewayv2alpha1.Gate, config *gatewayv2alp
 		Raw: jwtConfig,
 	}
 
-	mutators := []*rulev1alpha1.Mutator{}
-
-	if len(config.Mutators) > 0 {
-		for i := range config.Mutators {
-			mut := &rulev1alpha1.Mutator{
-				Handler: &rulev1alpha1.Handler{
-					Name:   config.Mutators[i].Name,
-					Config: config.Mutators[i].Config,
-				},
-			}
-			mutators = append(mutators, mut)
-		}
-	}
-
 	spec := &rulev1alpha1.RuleSpec{
 		Upstream: &rulev1alpha1.Upstream{
 			URL: fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", *api.Spec.Service.Name, api.ObjectMeta.Namespace, int(*api.Spec.Service.Port)),
@@ -125,7 +111,7 @@ func (j *jwt) generateAccessRule(api *gatewayv2alpha1.Gate, config *gatewayv2alp
 				},
 			},
 		},
-		Mutators: mutators,
+		Mutators: ParseMutatorsConfiguration(api.Spec.Mutators),
 	}
 
 	rule := &rulev1alpha1.Rule{
@@ -325,20 +311,6 @@ func (j *jwt) prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Rule
 		Raw: jwtConfig,
 	}
 
-	mutators := []*rulev1alpha1.Mutator{}
-
-	if len(config.Mutators) > 0 {
-		for i := range config.Mutators {
-			mut := &rulev1alpha1.Mutator{
-				Handler: &rulev1alpha1.Handler{
-					Name:   config.Mutators[i].Name,
-					Config: config.Mutators[i].Config,
-				},
-			}
-			mutators = append(mutators, mut)
-		}
-	}
-
 	spec := &rulev1alpha1.RuleSpec{
 		Upstream: &rulev1alpha1.Upstream{
 			URL: fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", *api.Spec.Service.Name, api.ObjectMeta.Namespace, int(*api.Spec.Service.Port)),
@@ -360,7 +332,7 @@ func (j *jwt) prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Rule
 				},
 			},
 		},
-		Mutators: mutators,
+		Mutators: ParseMutatorsConfiguration(api.Spec.Mutators),
 	}
 
 	ar.Spec = *spec

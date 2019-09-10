@@ -184,12 +184,7 @@ func getGate() *gatewayv2alpha1.Gate {
 					Methods: []string{"GET"},
 				},
 			},
+			Mutators: []*gatewayv2alpha1.Mutator{},
 		},
-	}
-}
-
-func getOauthConfig() *gatewayv2alpha1.OauthModeConfig {
-	return &gatewayv2alpha1.OauthModeConfig{
-		Mutators: []*gatewayv2alpha1.Mutator{},
 	}
 }
