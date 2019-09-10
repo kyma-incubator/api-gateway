@@ -56,22 +56,22 @@ type virtualServiceSpec struct {
 	value *networkingv1alpha3.VirtualServiceSpec
 }
 
-func (b *virtualServiceSpec) From(val *networkingv1alpha3.VirtualServiceSpec) *virtualServiceSpec {
-	b.value = val
-	return b
+func (vss *virtualServiceSpec) From(val *networkingv1alpha3.VirtualServiceSpec) *virtualServiceSpec {
+	vss.value = val
+	return vss
 }
 
-func (b *virtualServiceSpec) Host(val string) *virtualServiceSpec {
-	b.value.Hosts = append(b.value.Hosts, val)
-	return b
+func (vss *virtualServiceSpec) Host(val string) *virtualServiceSpec {
+	vss.value.Hosts = append(vss.value.Hosts, val)
+	return vss
 }
 
-func (b *virtualServiceSpec) Gateway(val string) *virtualServiceSpec {
-	b.value.Gateways = append(b.value.Gateways, val)
-	return b
+func (vss *virtualServiceSpec) Gateway(val string) *virtualServiceSpec {
+	vss.value.Gateways = append(vss.value.Gateways, val)
+	return vss
 }
 
-func (b *virtualServiceSpec) HTTP(mr *matchRequest, rd *routeDestination) *virtualServiceSpec {
+func (vss *virtualServiceSpec) HTTP(mr *matchRequest, rd *routeDestination) *virtualServiceSpec {
 	var httpMatch []networkingv1alpha3.HTTPMatchRequest
 	var routeDest []networkingv1alpha3.HTTPRouteDestination
 
@@ -83,19 +83,18 @@ func (b *virtualServiceSpec) HTTP(mr *matchRequest, rd *routeDestination) *virtu
 		routeDest = append(routeDest, *rd.Get())
 	}
 
-	b.value.HTTP = []networkingv1alpha3.HTTPRoute{
+	vss.value.HTTP = []networkingv1alpha3.HTTPRoute{
 		{
 			Match: httpMatch,
 			Route: routeDest,
 		},
 	}
-	//b.routeDest = rd
 
-	return b
+	return vss
 }
 
-func (b *virtualServiceSpec) Get() *networkingv1alpha3.VirtualServiceSpec {
-	return b.value
+func (vss *virtualServiceSpec) Get() *networkingv1alpha3.VirtualServiceSpec {
+	return vss.value
 }
 
 // MatchRequest returns builder for knative.dev/pkg/apis/istio/v1alpha3/HTTPMatchRequest type
