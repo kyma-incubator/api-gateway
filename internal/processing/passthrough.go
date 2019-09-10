@@ -65,8 +65,8 @@ func (p *passthrough) prepareVirtualService(api *gatewayv2alpha1.Gate, vs *netwo
 				HTTP(
 					builders.MatchRequest().URI().Regex("/.*"),
 					builders.RouteDestination().
-						Host(fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace)).
-						Port(*api.Spec.Service.Port))).
+						Host(destinationHost).
+						Port(destinationPort))).
 		Get()
 }
 
@@ -89,7 +89,7 @@ func (p *passthrough) generateVirtualService(api *gatewayv2alpha1.Gate, destinat
 				HTTP(
 					builders.MatchRequest().URI().Regex("/.*"),
 					builders.RouteDestination().
-						Host(fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace)).
-						Port(*api.Spec.Service.Port))).
+						Host(destinationHost).
+						Port(destinationPort))).
 		Get()
 }
