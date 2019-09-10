@@ -27,8 +27,6 @@ spec:
     config:
       issuer: http://dex.kyma.local
       jwks: []
-      mode:
-        name: ALL
   paths:
     - path: /.*
       scopes: []
@@ -50,8 +48,6 @@ spec:
     config:
       issuer: http://dex.kyma.local
       jwks: []
-      mode:
-        name: ALL
   paths:
     - path: /.*
       scopes: ["foo", "bar"]
@@ -74,8 +70,6 @@ spec:
     config:
       issuer: http://dex.kyma.local
       jwks: []
-      mode: 
-        name: ALL
   paths:
     - path: /.*
       scopes: ["foo", "bar"]
