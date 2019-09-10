@@ -44,12 +44,7 @@ func getGate4JWT() *gatewayv2alpha1.Gate {
 }
 
 func getJWTConfig() *gatewayv2alpha1.JWTModeConfig {
-	return &gatewayv2alpha1.JWTModeConfig{
-		Issuer: "http://dex.someDomain.local",
-		Mode: gatewayv2alpha1.InternalConfig{
-			Name: gatewayv2alpha1.JWTAll,
-		},
-	}
+	return &gatewayv2alpha1.JWTModeConfig{Issuer: "http://dex.someDomain.local"}
 }
 
 func TestGenerateAuthenticationPolicy(t *testing.T) {

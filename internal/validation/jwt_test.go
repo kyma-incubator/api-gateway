@@ -25,14 +25,6 @@ mode:
 	invalidIssuer = `
 issuer: this-is-not-an-url
 `
-	invalidJWTMode = `
-issuer: http://dex.kyma.local
-jwks: ["a", "b"]
-mode:
-  name: CLASSIFIED_MODE_DONT_USE
-  config:
-    top: secret
-`
 	logJWT = logf.Log.WithName("jwt-validate-test")
 )
 
@@ -44,11 +36,6 @@ func TestJWTValidate(t *testing.T) {
 	assert.NilError(t, err)
 	invalidIssuerGate := getJWTGate(&runtime.RawExtension{Raw: jsonData})
 	assert.Error(t, strategy.Validate(invalidIssuerGate), "issuer field is empty or not a valid url")
-
-	jsonData, err = yaml.YAMLToJSON([]byte(invalidJWTMode))
-	assert.NilError(t, err)
-	invalidJWTGate := getJWTGate(&runtime.RawExtension{Raw: jsonData})
-	assert.Error(t, strategy.Validate(invalidJWTGate), "supplied mode is invalid: CLASSIFIED_MODE_DONT_USE, valid modes are: ALL, INCLUDE, EXCLUDE")
 
 	jsonData, err = yaml.YAMLToJSON([]byte(validYamlForJWT))
 	validGate := getJWTGate(&runtime.RawExtension{Raw: jsonData})

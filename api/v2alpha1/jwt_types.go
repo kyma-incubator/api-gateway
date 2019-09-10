@@ -4,15 +4,9 @@ import "k8s.io/apimachinery/pkg/runtime"
 
 // JWTModeConfig config for JWT mode
 type JWTModeConfig struct {
-	Issuer   string         `json:"issuer"`
-	JWKS     []string       `json:"jwks,omitempty"`
-	Mode     InternalConfig `json:"mode"`
-	Mutators []*Mutator     `json:"mutators,omitempty"`
-}
-
-// InternalConfig internal config, specific for JWT modes
-type InternalConfig struct {
-	Name string `json:"name"`
+	Issuer   string     `json:"issuer"`
+	JWKS     []string   `json:"jwks,omitempty"`
+	Mutators []*Mutator `json:"mutators,omitempty"`
 }
 
 // JWTModeALL representation of config for the ALL mode
@@ -37,12 +31,3 @@ type Mutator struct {
 	Name   string                `json:"handler"`
 	Config *runtime.RawExtension `json:"config,omitempty"`
 }
-
-const (
-	// JWTAll ?
-	JWTAll string = "ALL"
-	// JWTInclude ?
-	JWTInclude string = "INCLUDE"
-	// JWTExclude ?
-	JWTExclude string = "EXCLUDE"
-)

@@ -180,11 +180,8 @@ var _ = Describe("Gate Controller", func() {
 							{
 								"issuer": "%s",
 								"jwks": [],
-								"mode": {
-									"name": "%s"
-                                },
                                 "mutators": [%s]
-							}`, testIssuer, gatewayv2alpha1.JWTAll, getMutators(testMutators))
+							}`, testIssuer, getMutators(testMutators))
 						fmt.Printf("---\n%s\n---", configJSON)
 						testName := generateTestName(testNameBase, testIDLength)
 
