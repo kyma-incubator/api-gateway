@@ -111,7 +111,7 @@ func (j *jwt) generateAccessRule(api *gatewayv2alpha1.Gate, config *gatewayv2alp
 				},
 			},
 		},
-		Mutators: parseMutatorsConfiguration(api.Spec.Mutators),
+		Mutators: api.Spec.Mutators,
 	}
 
 	rule := &rulev1alpha1.Rule{
@@ -332,7 +332,7 @@ func (j *jwt) prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Rule
 				},
 			},
 		},
-		Mutators: parseMutatorsConfiguration(api.Spec.Mutators),
+		Mutators: api.Spec.Mutators,
 	}
 
 	ar.Spec = *spec

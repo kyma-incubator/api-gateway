@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
+	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -182,7 +183,7 @@ func getGate() *gatewayv2alpha1.Gate {
 					Methods: []string{"GET"},
 				},
 			},
-			Mutators: []*gatewayv2alpha1.Mutator{},
+			Mutators: []*rulev1alpha1.Mutator{},
 		},
 	}
 }
