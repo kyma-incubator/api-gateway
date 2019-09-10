@@ -34,13 +34,13 @@ func (o *oauth) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	}
 
 	if oldVS != nil {
-		newVS := o.prepareVirtualService(api, oldVS)
+		newVS := prepareVirtualService(api, oldVS, o.oathkeeperSvc, o.oathkeeperSvcPort)
 		err = o.updateVirtualService(ctx, newVS)
 		if err != nil {
 			return err
 		}
 	} else {
-		vs := o.generateVirtualService(api)
+		vs := generateVirtualService(api, o.oathkeeperSvc, o.oathkeeperSvcPort)
 		err = o.createVirtualService(ctx, vs)
 		if err != nil {
 			return err
@@ -106,22 +106,6 @@ func (o *oauth) createAccessRule(ctx context.Context, ar *rulev1alpha1.Rule) err
 	return o.arClient.Create(ctx, ar)
 }
 
-func (o *oauth) prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv1alpha3.VirtualService) *networkingv1alpha3.VirtualService {
-	ownerRef := generateOwnerRef(api)
-	return builders.VirtualService().From(vs).
-		Name(fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)).
-		Namespace(api.ObjectMeta.Namespace).
-		Owner(builders.OwnerReference().From(&ownerRef)).
-		Spec(
-			builders.VirtualServiceSpec().
-				Host(*api.Spec.Service.Host).
-				Gateway(*api.Spec.Gateway).
-				HTTP(
-					builders.MatchRequest().URI().Regex(api.Spec.Paths[0].Path),
-					builders.RouteDestination().Host(o.oathkeeperSvc).Port(o.oathkeeperSvcPort))).
-		Get()
-}
-
 func (o *oauth) updateVirtualService(ctx context.Context, vs *networkingv1alpha3.VirtualService) error {
 	return o.vsClient.Update(ctx, vs)
 }
@@ -147,24 +131,6 @@ func generateObjectMeta(api *gatewayv2alpha1.Gate) k8sMeta.ObjectMeta {
 		Namespace(api.ObjectMeta.Namespace).
 		OwnerReference(builders.OwnerReference().From(&ownerRef)).
 		Get()
-}
-
-func (o *oauth) generateVirtualService(api *gatewayv2alpha1.Gate) *networkingv1alpha3.VirtualService {
-	vs := builders.VirtualService().Name(fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)).
-		Namespace(api.ObjectMeta.Namespace).
-		Owner(builders.OwnerReference().
-			Name(api.ObjectMeta.Name).APIVersion(api.TypeMeta.APIVersion).
-			Kind(api.TypeMeta.Kind).UID(api.ObjectMeta.UID).
-			Controller(true)).
-		Spec(
-			builders.VirtualServiceSpec().
-				Host(*api.Spec.Service.Host).
-				Gateway(*api.Spec.Gateway).
-				HTTP(
-					builders.MatchRequest().URI().Regex(api.Spec.Paths[0].Path),
-					builders.RouteDestination().Host(o.oathkeeperSvc).Port(o.oathkeeperSvcPort))).
-		Get()
-	return vs
 }
 
 func generateRequiredScopesJSON(path *gatewayv2alpha1.Path) ([]byte, error) {

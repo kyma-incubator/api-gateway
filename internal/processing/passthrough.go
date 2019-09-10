@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
-	builders "github.com/kyma-incubator/api-gateway/internal/builders"
+	"github.com/kyma-incubator/api-gateway/internal/builders"
 	istioClient "github.com/kyma-incubator/api-gateway/internal/clients/istio"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
@@ -18,16 +18,18 @@ type passthrough struct {
 func (p *passthrough) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	fmt.Println("Processing API")
 
+	destinationHost := fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace)
+
 	oldVS, err := p.getVirtualService(ctx, api)
 	if err != nil {
 		return err
 	}
 
 	if oldVS != nil {
-		newVS := p.prepareVirtualService(api, oldVS)
+		newVS := p.prepareVirtualService(api, oldVS, destinationHost, *api.Spec.Service.Port)
 		return p.updateVirtualService(ctx, newVS)
 	}
-	vs := p.generateVirtualService(api)
+	vs := p.generateVirtualService(api, destinationHost, *api.Spec.Service.Port)
 	return p.createVirtualService(ctx, vs)
 
 }
@@ -48,7 +50,7 @@ func (p *passthrough) createVirtualService(ctx context.Context, vs *networkingv1
 	return p.vsClient.Create(ctx, vs)
 }
 
-func (p *passthrough) prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv1alpha3.VirtualService) *networkingv1alpha3.VirtualService {
+func (p *passthrough) prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv1alpha3.VirtualService, destinationHost string, destinationPort uint32) *networkingv1alpha3.VirtualService {
 	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 
 	ownerRef := generateOwnerRef(api)
@@ -63,8 +65,8 @@ func (p *passthrough) prepareVirtualService(api *gatewayv2alpha1.Gate, vs *netwo
 				HTTP(
 					builders.MatchRequest().URI().Regex("/.*"),
 					builders.RouteDestination().
-						Host(fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace)).
-						Port(*api.Spec.Service.Port))).
+						Host(destinationHost).
+						Port(destinationPort))).
 		Get()
 }
 
@@ -72,7 +74,7 @@ func (p *passthrough) updateVirtualService(ctx context.Context, vs *networkingv1
 	return p.vsClient.Update(ctx, vs)
 }
 
-func (p *passthrough) generateVirtualService(api *gatewayv2alpha1.Gate) *networkingv1alpha3.VirtualService {
+func (p *passthrough) generateVirtualService(api *gatewayv2alpha1.Gate, destinationHost string, destinationPort uint32) *networkingv1alpha3.VirtualService {
 	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 
 	ownerRef := generateOwnerRef(api)
@@ -87,7 +89,7 @@ func (p *passthrough) generateVirtualService(api *gatewayv2alpha1.Gate) *network
 				HTTP(
 					builders.MatchRequest().URI().Regex("/.*"),
 					builders.RouteDestination().
-						Host(fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace)).
-						Port(*api.Spec.Service.Port))).
+						Host(destinationHost).
+						Port(destinationPort))).
 		Get()
 }

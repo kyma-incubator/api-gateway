@@ -14,9 +14,7 @@ func TestOauthGenerateVirtualService(t *testing.T) {
 	assert := assert.New(t)
 
 	gate := getGate()
-	oauthStrategy := &oauth{oathkeeperSvc: "test-oathkeeper", oathkeeperSvcPort: 4455}
-
-	vs := oauthStrategy.generateVirtualService(gate)
+	vs := generateVirtualService(gate, "test-oathkeeper", 4455)
 
 	assert.Equal(len(vs.Spec.Gateways), 1)
 	assert.Equal(vs.Spec.Gateways[0], apiGateway)
@@ -45,14 +43,13 @@ func TestOauthPrepareVirtualService(t *testing.T) {
 	assert := assert.New(t)
 
 	gate := getGate()
-	oauthStrategy := &oauth{oathkeeperSvc: "test-oathkeeper", oathkeeperSvcPort: 4455}
 
-	oldVS := oauthStrategy.generateVirtualService(gate)
+	oldVS := generateVirtualService(gate, "test-oathkeeper", 4455)
 
 	oldVS.ObjectMeta.Generation = int64(15)
 	oldVS.ObjectMeta.Name = "mst"
 
-	newVS := oauthStrategy.prepareVirtualService(gate, oldVS)
+	newVS := prepareVirtualService(gate, oldVS, "test-oathkeeper", 4455)
 
 	assert.Equal(newVS.ObjectMeta.Generation, int64(15))
 
