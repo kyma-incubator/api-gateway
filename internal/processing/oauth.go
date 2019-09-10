@@ -28,11 +28,6 @@ type oauth struct {
 func (o *oauth) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	fmt.Println("Processing API")
 
-	oauthConfig, err := generateOauthConfig(api)
-	if err != nil {
-		return err
-	}
-
 	oldVS, err := o.getVirtualService(ctx, api)
 	if err != nil {
 		return err
@@ -63,13 +58,13 @@ func (o *oauth) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	}
 
 	if oldAR != nil {
-		newAR := o.prepareAccessRule(api, oldAR, oauthConfig, requiredScopesJSON)
+		newAR := o.prepareAccessRule(api, oldAR, requiredScopesJSON)
 		err = o.updateAccessRule(ctx, newAR)
 		if err != nil {
 			return err
 		}
 	} else {
-		ar := o.generateAccessRule(api, oauthConfig, requiredScopesJSON)
+		ar := o.generateAccessRule(api, requiredScopesJSON)
 		err = o.createAccessRule(ctx, ar)
 		if err != nil {
 			return err
@@ -189,7 +184,7 @@ func generateOauthConfig(api *gatewayv2alpha1.Gate) (*gatewayv2alpha1.OauthModeC
 	return &oauthConfig, nil
 }
 
-func (o *oauth) generateAccessRule(api *gatewayv2alpha1.Gate, config *gatewayv2alpha1.OauthModeConfig, requiredScopes []byte) *rulev1alpha1.Rule {
+func (o *oauth) generateAccessRule(api *gatewayv2alpha1.Gate, requiredScopes []byte) *rulev1alpha1.Rule {
 	objectMeta := generateObjectMeta(api)
 
 	rawConfig := &runtime.RawExtension{
@@ -228,7 +223,7 @@ func (o *oauth) generateAccessRule(api *gatewayv2alpha1.Gate, config *gatewayv2a
 	return rule
 }
 
-func (o *oauth) prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Rule, config *gatewayv2alpha1.OauthModeConfig, requiredScopes []byte) *rulev1alpha1.Rule {
+func (o *oauth) prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Rule, requiredScopes []byte) *rulev1alpha1.Rule {
 	ar.ObjectMeta.OwnerReferences = []k8sMeta.OwnerReference{generateOwnerRef(api)}
 	ar.ObjectMeta.Name = fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	ar.ObjectMeta.Namespace = api.ObjectMeta.Namespace
