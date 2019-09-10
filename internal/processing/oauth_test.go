@@ -51,7 +51,7 @@ func TestOauthPrepareVirtualService(t *testing.T) {
 	oldVS.ObjectMeta.Generation = int64(15)
 	oldVS.ObjectMeta.Name = "mst"
 
-	newVS := oauthStrategy.prepareVirtualService(gate, oldVS)
+	newVS := prepareVirtualService(gate, oldVS, oauthStrategy.oathkeeperSvc, oauthStrategy.oathkeeperSvcPort)
 
 	assert.Equal(newVS.ObjectMeta.Generation, int64(15))
 

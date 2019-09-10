@@ -29,9 +29,6 @@ type jwt struct {
 }
 
 func (j *jwt) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
-	var destinationHost string
-	var destinationPort uint32
-
 	jwtConfig, err := j.toJWTConfig(api.Spec.Auth.Config)
 	if err != nil {
 		return err
@@ -61,17 +58,14 @@ func (j *jwt) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 		}
 	}
 
-	destinationHost = j.oathkeeperSvc
-	destinationPort = j.oathkeeperSvcPort
-
 	oldVS, err := j.getVirtualService(ctx, api)
 	if err != nil {
 		return err
 	}
 	if oldVS != nil {
-		return j.updateVirtualService(ctx, j.prepareVirtualService(api, oldVS, destinationHost, destinationPort))
+		return j.updateVirtualService(ctx, prepareVirtualService(api, oldVS, j.oathkeeperSvc, j.oathkeeperSvcPort))
 	}
-	err = j.createVirtualService(ctx, j.generateVirtualService(api, destinationHost, destinationPort))
+	err = j.createVirtualService(ctx, j.generateVirtualService(api, j.oathkeeperSvc, j.oathkeeperSvcPort))
 	if err != nil {
 		return err
 	}
@@ -150,7 +144,7 @@ func (j *jwt) createVirtualService(ctx context.Context, vs *networkingv1alpha3.V
 	return j.vsClient.Create(ctx, vs)
 }
 
-func (j *jwt) prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv1alpha3.VirtualService, destinationHost string, destinationPort uint32) *networkingv1alpha3.VirtualService {
+func prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv1alpha3.VirtualService, destinationHost string, destinationPort uint32) *networkingv1alpha3.VirtualService {
 	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	ownerRef := generateOwnerRef(api)
 
