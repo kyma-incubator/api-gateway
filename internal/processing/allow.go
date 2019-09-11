@@ -17,7 +17,6 @@ type allow struct {
 }
 
 func (a *allow) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
-	fmt.Println("Processing API")
 	destinationHost := ""
 	destinationPort := uint32(0000)
 	if a.isSecured(api, api.Spec.Paths[0]) {
@@ -27,8 +26,6 @@ func (a *allow) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 		destinationHost = fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace)
 		destinationPort = *api.Spec.Service.Port
 	}
-
-	fmt.Printf("+++\n%s\n", destinationHost)
 
 	oldVS, err := a.getVirtualService(ctx, api)
 	if err != nil {
@@ -65,8 +62,6 @@ func (a *allow) updateVirtualService(ctx context.Context, vs *networkingv1alpha3
 }
 
 func (a *allow) isSecured(api *gatewayv2alpha1.Gate, path gatewayv2alpha1.Path) bool {
-	fmt.Printf("---\n%v\n", api.Spec.Mutators)
-	fmt.Printf("===\n%v | %d\n", path, len(path.Scopes))
 	if len(path.Scopes) > 0 || len(api.Spec.Mutators) > 0 {
 		return true
 	}
