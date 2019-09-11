@@ -63,9 +63,9 @@ func (j *jwt) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 		return err
 	}
 	if oldVS != nil {
-		return j.updateVirtualService(ctx, prepareVirtualService(api, oldVS, j.oathkeeperSvc, j.oathkeeperSvcPort))
+		return j.updateVirtualService(ctx, prepareVirtualService(api, oldVS, j.oathkeeperSvc, j.oathkeeperSvcPort, api.Spec.Paths[0].Path))
 	}
-	err = j.createVirtualService(ctx, generateVirtualService(api, j.oathkeeperSvc, j.oathkeeperSvcPort))
+	err = j.createVirtualService(ctx, generateVirtualService(api, j.oathkeeperSvc, j.oathkeeperSvcPort, api.Spec.Paths[0].Path))
 	if err != nil {
 		return err
 	}
@@ -144,7 +144,7 @@ func (j *jwt) createVirtualService(ctx context.Context, vs *networkingv1alpha3.V
 	return j.vsClient.Create(ctx, vs)
 }
 
-func prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv1alpha3.VirtualService, destinationHost string, destinationPort uint32) *networkingv1alpha3.VirtualService {
+func prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv1alpha3.VirtualService, destinationHost string, destinationPort uint32, path string) *networkingv1alpha3.VirtualService {
 	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	ownerRef := generateOwnerRef(api)
 
@@ -157,7 +157,7 @@ func prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv1alpha3.Vir
 				Host(*api.Spec.Service.Host).
 				Gateway(*api.Spec.Gateway).
 				HTTP(
-					builders.MatchRequest().URI().Regex(api.Spec.Paths[0].Path),
+					builders.MatchRequest().URI().Regex(path),
 					builders.RouteDestination().Host(destinationHost).Port(destinationPort))).
 		Get()
 }
@@ -166,7 +166,7 @@ func (j *jwt) updateVirtualService(ctx context.Context, vs *networkingv1alpha3.V
 	return j.vsClient.Update(ctx, vs)
 }
 
-func generateVirtualService(api *gatewayv2alpha1.Gate, destinationHost string, destinationPort uint32) *networkingv1alpha3.VirtualService {
+func generateVirtualService(api *gatewayv2alpha1.Gate, destinationHost string, destinationPort uint32, path string) *networkingv1alpha3.VirtualService {
 	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	ownerRef := generateOwnerRef(api)
 	return builders.VirtualService().
@@ -178,7 +178,7 @@ func generateVirtualService(api *gatewayv2alpha1.Gate, destinationHost string, d
 				Host(*api.Spec.Service.Host).
 				Gateway(*api.Spec.Gateway).
 				HTTP(
-					builders.MatchRequest().URI().Regex(api.Spec.Paths[0].Path),
+					builders.MatchRequest().URI().Regex(path),
 					builders.RouteDestination().Host(destinationHost).Port(destinationPort))).
 		Get()
 }

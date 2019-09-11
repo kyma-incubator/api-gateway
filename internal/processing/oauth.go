@@ -34,13 +34,13 @@ func (o *oauth) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	}
 
 	if oldVS != nil {
-		newVS := prepareVirtualService(api, oldVS, o.oathkeeperSvc, o.oathkeeperSvcPort)
+		newVS := prepareVirtualService(api, oldVS, o.oathkeeperSvc, o.oathkeeperSvcPort, api.Spec.Paths[0].Path)
 		err = o.updateVirtualService(ctx, newVS)
 		if err != nil {
 			return err
 		}
 	} else {
-		vs := generateVirtualService(api, o.oathkeeperSvc, o.oathkeeperSvcPort)
+		vs := generateVirtualService(api, o.oathkeeperSvc, o.oathkeeperSvcPort, api.Spec.Paths[0].Path)
 		err = o.createVirtualService(ctx, vs)
 		if err != nil {
 			return err
