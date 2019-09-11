@@ -7,42 +7,64 @@ import (
 
 // VirtualService returns builder for knative.dev/pkg/apis/istio/v1alpha3/VirtualService type
 func VirtualService() *virtualService {
-	return &virtualService{
-		value: &networkingv1alpha3.VirtualService{},
-	}
+	return &virtualService{}
 }
+
+type virtualServiceFunc func(value *networkingv1alpha3.VirtualService)
 
 type virtualService struct {
-	value *networkingv1alpha3.VirtualService
+	fns    []virtualServiceFunc
+	intVal *networkingv1alpha3.VirtualService
 }
 
-func (vs *virtualService) From(val *networkingv1alpha3.VirtualService) *virtualService {
-	vs.value = val
-	return vs
+func (vs *virtualService) add(fn virtualServiceFunc) {
+	vs.fns = append(vs.fns, fn)
 }
 
 func (vs *virtualService) Name(val string) *virtualService {
-	vs.value.Name = val
+	vs.add(func(value *networkingv1alpha3.VirtualService) {
+		value.Name = val
+	})
 	return vs
 }
 
 func (vs *virtualService) Namespace(val string) *virtualService {
-	vs.value.Namespace = val
+	vs.add(func(value *networkingv1alpha3.VirtualService) {
+		value.Namespace = val
+	})
 	return vs
 }
 
 func (vs *virtualService) Owner(val *ownerReference) *virtualService {
-	vs.value.OwnerReferences = append(vs.value.OwnerReferences, *val.Get())
+	vs.add(func(value *networkingv1alpha3.VirtualService) {
+		value.OwnerReferences = append(value.OwnerReferences, *val.Get())
+	})
 	return vs
 }
 
 func (vs *virtualService) Spec(val *virtualServiceSpec) *virtualService {
-	vs.value.Spec = *val.Get()
+	vs.add(func(value *networkingv1alpha3.VirtualService) {
+		value.Spec = *val.Get()
+	})
 	return vs
 }
 
+func (vs *virtualService) get(value *networkingv1alpha3.VirtualService) *networkingv1alpha3.VirtualService {
+	for i := 0; i < len(vs.fns); i++ {
+		vs.fns[i](value)
+	}
+	return value
+}
+
 func (vs *virtualService) Get() *networkingv1alpha3.VirtualService {
-	return vs.value
+	if vs.intVal == nil {
+		return vs.get(&networkingv1alpha3.VirtualService{})
+	}
+	return vs.get(vs.intVal)
+}
+func (vs *virtualService) From(val *networkingv1alpha3.VirtualService) *virtualService {
+	vs.intVal = val
+	return vs
 }
 
 // VirtualServiceSpec returns builder for knative.dev/pkg/apis/istio/v1alpha3/VirtualServiceSpec type

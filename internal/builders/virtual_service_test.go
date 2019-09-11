@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	k8sTypes "k8s.io/apimachinery/pkg/types"
+	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 )
 
 var _ = Describe("Builder for", func() {
@@ -27,12 +28,17 @@ var _ = Describe("Builder for", func() {
 			refKind := "Gate"
 			var refUID k8sTypes.UID = "123"
 
+			initialVs := networkingv1alpha3.VirtualService{}
+			initialVs.Name = "shoudBeOverwritten"
+			initialVs.Spec.Hosts = []string{"a,", "b", "c"}
+
 			vs := VirtualService().Name(name).Namespace(namespace).
 				Owner(OwnerReference().Name(refName).APIVersion(refVersion).Kind(refKind).UID(refUID).Controller(true)).
 				Spec(
 					VirtualServiceSpec().
 						Host(host).
 						Gateway(gateway)).
+				From(&initialVs).
 				Get()
 			fmt.Printf("%#v", vs)
 			Expect(vs.Name).To(Equal(name))
