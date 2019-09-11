@@ -29,8 +29,8 @@ const (
 	Jwt string = "JWT"
 	//Oauth .
 	Oauth string = "OAUTH"
-	//Passthrough .
-	Passthrough string = "PASSTHROUGH"
+	//Allow .
+	Allow string = "ALLOW"
 	//StatusOK .
 	StatusOK StatusCode = "OK"
 	//StatusSkipped .
@@ -105,7 +105,7 @@ type Service struct {
 
 //AuthStrategy .
 type AuthStrategy struct {
-	// +kubebuilder:validation:Enum=JWT;OAUTH;PASSTHROUGH
+	// +kubebuilder:validation:Enum=JWT;OAUTH;ALLOW
 	Name *string `json:"name"`
 	// Config configures the auth strategy. Configuration keys vary per strategy.
 	// +kubebuilder:validation:Type=object

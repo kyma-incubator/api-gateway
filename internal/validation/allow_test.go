@@ -1,8 +1,9 @@
 package validation_test
 
 import (
-	"k8s.io/apimachinery/pkg/types"
 	"testing"
+
+	"k8s.io/apimachinery/pkg/types"
 
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
 	"github.com/kyma-incubator/api-gateway/internal/validation"
@@ -12,18 +13,18 @@ import (
 )
 
 var (
-	log = logf.Log.WithName("passthrough-validate-test")
+	log = logf.Log.WithName("allow-validate-test")
 )
 
 func TestPassthroughValidate(t *testing.T) {
-	strategy, err := validation.NewFactory(log).StrategyFor(gatewayv2alpha1.Passthrough)
+	strategy, err := validation.NewFactory(log).StrategyFor(gatewayv2alpha1.Allow)
 	assert.NilError(t, err)
 
 	valid := getPassthroughValidGate()
 	assert.NilError(t, strategy.Validate(valid))
 
 	notValid := getPassthroughNotValidGate()
-	assert.Error(t, strategy.Validate(notValid), "passthrough mode requires empty configuration")
+	assert.Error(t, strategy.Validate(notValid), "supplied config should contain exactly one path")
 }
 
 func getPassthroughValidGate() *gatewayv2alpha1.Gate {
@@ -49,6 +50,12 @@ func getPassthroughValidGate() *gatewayv2alpha1.Gate {
 				Name: &serviceName,
 				Host: &serviceHost,
 				Port: &servicePort,
+			},
+			Paths: []gatewayv2alpha1.Path{
+				{
+					Path:    "/.*",
+					Methods: []string{"GET"},
+				},
 			},
 		},
 	}
@@ -77,13 +84,6 @@ func getPassthroughNotValidGate() *gatewayv2alpha1.Gate {
 				Name: &serviceName,
 				Host: &serviceHost,
 				Port: &servicePort,
-			},
-			Paths: []gatewayv2alpha1.Path{
-				{
-					Path:    "/foo",
-					Scopes:  []string{"write", "read"},
-					Methods: []string{"GET"},
-				},
 			},
 		},
 	}
