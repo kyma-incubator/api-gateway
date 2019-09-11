@@ -24,7 +24,7 @@ func TestPassthroughValidate(t *testing.T) {
 	assert.NilError(t, strategy.Validate(valid))
 
 	notValid := getPassthroughNotValidGate()
-	assert.Error(t, strategy.Validate(notValid), "supplied config should contain exactly one path")
+	assert.Error(t, strategy.Validate(notValid), "allow mode does not support scopes")
 }
 
 func getPassthroughValidGate() *gatewayv2alpha1.Gate {
@@ -84,6 +84,13 @@ func getPassthroughNotValidGate() *gatewayv2alpha1.Gate {
 				Name: &serviceName,
 				Host: &serviceHost,
 				Port: &servicePort,
+			},
+			Paths: []gatewayv2alpha1.Path{
+				{
+					Path:    "/.*",
+					Methods: []string{"GET"},
+					Scopes:  []string{"read", "write"},
+				},
 			},
 		},
 	}
