@@ -148,7 +148,7 @@ func prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv1alpha3.Vir
 	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	ownerRef := generateOwnerRef(api)
 
-	return builders.VirtualService().From(vs).
+	return builders.VirtualService().
 		Name(virtualServiceName).
 		Namespace(api.ObjectMeta.Namespace).
 		Owner(builders.OwnerReference().From(&ownerRef)).
@@ -156,10 +156,10 @@ func prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv1alpha3.Vir
 			builders.VirtualServiceSpec().
 				Host(*api.Spec.Service.Host).
 				Gateway(*api.Spec.Gateway).
-				HTTP(
-					builders.MatchRequest().URI().Regex(path),
-					builders.RouteDestination().Host(destinationHost).Port(destinationPort))).
-		Get()
+				HTTP(builders.HTTPRoute().
+					Match(builders.MatchRequest().URI().Regex(path)).
+					Route(builders.RouteDestination().Host(destinationHost).Port(destinationPort)))).
+		Set(vs)
 }
 
 func (j *jwt) updateVirtualService(ctx context.Context, vs *networkingv1alpha3.VirtualService) error {
@@ -177,10 +177,10 @@ func generateVirtualService(api *gatewayv2alpha1.Gate, destinationHost string, d
 			builders.VirtualServiceSpec().
 				Host(*api.Spec.Service.Host).
 				Gateway(*api.Spec.Gateway).
-				HTTP(
-					builders.MatchRequest().URI().Regex(path),
-					builders.RouteDestination().Host(destinationHost).Port(destinationPort))).
-		Get()
+				HTTP(builders.HTTPRoute().
+					Match(builders.MatchRequest().URI().Regex(path)).
+					Route(builders.RouteDestination().Host(destinationHost).Port(destinationPort)))).
+		New()
 }
 
 func (j *jwt) prepareAuthenticationPolicy(api *gatewayv2alpha1.Gate, config *gatewayv2alpha1.JWTModeConfig, ap *authenticationv1alpha1.Policy) *authenticationv1alpha1.Policy {
