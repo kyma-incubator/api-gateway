@@ -123,17 +123,6 @@ type Path struct {
 	Methods []string `json:"methods,omitempty"`
 }
 
-// Mutator representation of AccessRule mutator field
-type Mutator struct {
-	*Handler `json:",inline"`
-}
-
-// Handler represents an Oathkeeper routine that operates on incoming requests. It is used to either validate a request (Authenticator, Authorizer) or modify it (Mutator).
-type Handler struct {
-	Name   string                `json:"handler"`
-	Config *runtime.RawExtension `json:"config,omitempty"`
-}
-
 //GatewayResourceStatus .
 type GatewayResourceStatus struct {
 	Code        StatusCode `json:"code,omitempty"`
