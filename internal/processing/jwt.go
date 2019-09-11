@@ -44,6 +44,15 @@ func (j *jwt) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 		return err
 	}
 
+	accessStrategy := &rulev1alpha1.Authenticator{
+		Handler: &rulev1alpha1.Handler{
+			Name: "jwt",
+			Config: &runtime.RawExtension{
+				Raw: jwtConfJSON,
+			},
+		},
+	}
+
 	if oldAR != nil {
 		newAR := j.prepareAccessRule(api, oldAR, jwtConfig, jwtConfJSON)
 		err = j.updateAccessRule(ctx, newAR)
@@ -51,7 +60,7 @@ func (j *jwt) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 			return err
 		}
 	} else {
-		ar := j.generateAccessRule(api, jwtConfig, jwtConfJSON)
+		ar := generateAccessRule(api, api.Spec.Paths[0], []*rulev1alpha1.Authenticator{accessStrategy})
 		err = j.createAccessRule(ctx, ar)
 		if err != nil {
 			return err
@@ -75,45 +84,6 @@ func (j *jwt) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 
 func (j *jwt) createAccessRule(ctx context.Context, ar *rulev1alpha1.Rule) error {
 	return j.arClient.Create(ctx, ar)
-}
-
-func (j *jwt) generateAccessRule(api *gatewayv2alpha1.Gate, config *gatewayv2alpha1.JWTModeConfig, jwtConfig []byte) *rulev1alpha1.Rule {
-	objectMeta := generateObjectMeta(api)
-
-	rawConfig := &runtime.RawExtension{
-		Raw: jwtConfig,
-	}
-
-	spec := &rulev1alpha1.RuleSpec{
-		Upstream: &rulev1alpha1.Upstream{
-			URL: fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", *api.Spec.Service.Name, api.ObjectMeta.Namespace, int(*api.Spec.Service.Port)),
-		},
-		Match: &rulev1alpha1.Match{
-			Methods: api.Spec.Paths[0].Methods,
-			URL:     fmt.Sprintf("<http|https>://%s<%s>", *api.Spec.Service.Host, api.Spec.Paths[0].Path),
-		},
-		Authorizer: &rulev1alpha1.Authorizer{
-			Handler: &rulev1alpha1.Handler{
-				Name: "allow",
-			},
-		},
-		Authenticators: []*rulev1alpha1.Authenticator{
-			{
-				Handler: &rulev1alpha1.Handler{
-					Name:   "jwt",
-					Config: rawConfig,
-				},
-			},
-		},
-		Mutators: api.Spec.Mutators,
-	}
-
-	rule := &rulev1alpha1.Rule{
-		ObjectMeta: objectMeta,
-		Spec:       *spec,
-	}
-
-	return rule
 }
 
 func (j *jwt) updateAccessRule(ctx context.Context, ar *rulev1alpha1.Rule) error {
@@ -333,4 +303,32 @@ func (j *jwt) prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Rule
 
 	return ar
 
+}
+
+func generateAccessRule(api *gatewayv2alpha1.Gate, rule gatewayv2alpha1.Path, accessStrategies []*rulev1alpha1.Authenticator) *rulev1alpha1.Rule {
+	objectMeta := generateObjectMeta(api)
+
+	spec := &rulev1alpha1.RuleSpec{
+		Upstream: &rulev1alpha1.Upstream{
+			URL: fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", *api.Spec.Service.Name, api.ObjectMeta.Namespace, int(*api.Spec.Service.Port)),
+		},
+		Match: &rulev1alpha1.Match{
+			Methods: rule.Methods,
+			URL:     fmt.Sprintf("<http|https>://%s<%s>", *api.Spec.Service.Host, rule.Path),
+		},
+		Authorizer: &rulev1alpha1.Authorizer{
+			Handler: &rulev1alpha1.Handler{
+				Name: "allow",
+			},
+		},
+		Authenticators: accessStrategies,
+		Mutators:       api.Spec.Mutators,
+	}
+
+	accessRule := &rulev1alpha1.Rule{
+		ObjectMeta: objectMeta,
+		Spec:       *spec,
+	}
+
+	return accessRule
 }

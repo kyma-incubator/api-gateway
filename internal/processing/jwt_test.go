@@ -1,6 +1,7 @@
 package processing
 
 import (
+	"k8s.io/apimachinery/pkg/runtime"
 	"testing"
 
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
@@ -126,7 +127,16 @@ func TestJwtPrepareAccessRule(t *testing.T) {
 	jwtConfigOrig := getJWTConfig()
 	jwtConfig := []byte(`"required_scope":["write","read"],"trusted_issuers":["http://dex.kyma.local"]`)
 
-	oldAR := jwtStrategy.generateAccessRule(gate, jwtConfigOrig, jwtConfig)
+	accessStrategy := &rulev1alpha1.Authenticator{
+		Handler: &rulev1alpha1.Handler{
+			Name: "jwt",
+			Config: &runtime.RawExtension{
+				Raw: jwtConfig,
+			},
+		},
+	}
+
+	oldAR := generateAccessRule(gate, gate.Spec.Paths[0], []*rulev1alpha1.Authenticator{accessStrategy})
 
 	oldAR.ObjectMeta.Generation = int64(15)
 	oldAR.ObjectMeta.Name = "mst"
@@ -162,12 +172,20 @@ func TestJwtPrepareAccessRule(t *testing.T) {
 func TestJwtGenerateAccessRule(t *testing.T) {
 	assert := assert.New(t)
 
-	jwtStrategy := &jwt{oathkeeperSvc: "test-oathkeeper", oathkeeperSvcPort: 8080}
 	gate := getGate()
 
 	jwtConfig := []byte(`"required_scope":["write","read"],"trusted_issuers":["http://dex.kyma.local"]`)
-	jwtConfigOrig := getJWTConfig()
-	ar := jwtStrategy.generateAccessRule(gate, jwtConfigOrig, jwtConfig)
+
+	accessStrategy := &rulev1alpha1.Authenticator{
+		Handler: &rulev1alpha1.Handler{
+			Name: "jwt",
+			Config: &runtime.RawExtension{
+				Raw: jwtConfig,
+			},
+		},
+	}
+
+	ar := generateAccessRule(gate, gate.Spec.Paths[0], []*rulev1alpha1.Authenticator{accessStrategy})
 
 	assert.Equal(len(ar.Spec.Authenticators), 1)
 	assert.NotEmpty(ar.Spec.Authenticators[0].Config)
