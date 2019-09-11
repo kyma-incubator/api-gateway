@@ -5,9 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/kyma-incubator/api-gateway/api/v2alpha1"
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
-	builders "github.com/kyma-incubator/api-gateway/internal/builders"
+	"github.com/kyma-incubator/api-gateway/internal/builders"
 	istioClient "github.com/kyma-incubator/api-gateway/internal/clients/istio"
 	accessRuleClient "github.com/kyma-incubator/api-gateway/internal/clients/ory"
 	internalTypes "github.com/kyma-incubator/api-gateway/internal/types/ory"
@@ -16,7 +15,6 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	k8sMeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	authenticationv1alpha1 "knative.dev/pkg/apis/istio/authentication/v1alpha1"
 	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 )
 
@@ -54,7 +52,7 @@ func (j *jwt) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	}
 
 	if oldAR != nil {
-		newAR := j.prepareAccessRule(api, oldAR, jwtConfig, jwtConfJSON)
+		newAR := prepareAccessRule(api, oldAR, api.Spec.Paths[0], []*rulev1alpha1.Authenticator{accessStrategy})
 		err = j.updateAccessRule(ctx, newAR)
 		if err != nil {
 			return err
@@ -153,98 +151,6 @@ func generateVirtualService(api *gatewayv2alpha1.Gate, destinationHost string, d
 		Get()
 }
 
-func (j *jwt) prepareAuthenticationPolicy(api *gatewayv2alpha1.Gate, config *gatewayv2alpha1.JWTModeConfig, ap *authenticationv1alpha1.Policy) *authenticationv1alpha1.Policy {
-	authenticationPolicyName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
-	controller := true
-
-	ownerRef := &k8sMeta.OwnerReference{
-		Name:       api.ObjectMeta.Name,
-		APIVersion: api.TypeMeta.APIVersion,
-		Kind:       api.TypeMeta.Kind,
-		UID:        api.ObjectMeta.UID,
-		Controller: &controller,
-	}
-
-	ap.ObjectMeta.OwnerReferences = []k8sMeta.OwnerReference{*ownerRef}
-	ap.ObjectMeta.Name = authenticationPolicyName
-	ap.ObjectMeta.Namespace = api.ObjectMeta.Namespace
-
-	targets := []authenticationv1alpha1.TargetSelector{
-		{
-			Name: *api.Spec.Service.Name,
-		},
-	}
-	peers := []authenticationv1alpha1.PeerAuthenticationMethod{
-		{
-			Mtls: &authenticationv1alpha1.MutualTLS{},
-		},
-	}
-	origins := []authenticationv1alpha1.OriginAuthenticationMethod{
-		{
-			Jwt: &authenticationv1alpha1.Jwt{
-				Issuer:  config.Issuer,
-				JwksURI: j.JWKSURI,
-			},
-		},
-	}
-	spec := &authenticationv1alpha1.PolicySpec{
-		Targets:          targets,
-		PrincipalBinding: authenticationv1alpha1.PrincipalBindingUserOrigin,
-		Peers:            peers,
-		Origins:          origins,
-	}
-	ap.Spec = *spec
-	return ap
-}
-
-func (j *jwt) generateAuthenticationPolicy(api *gatewayv2alpha1.Gate, config *gatewayv2alpha1.JWTModeConfig) *authenticationv1alpha1.Policy {
-	authenticationPolicyName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
-	controller := true
-
-	ownerRef := &k8sMeta.OwnerReference{
-		Name:       api.ObjectMeta.Name,
-		APIVersion: api.TypeMeta.APIVersion,
-		Kind:       api.TypeMeta.Kind,
-		UID:        api.ObjectMeta.UID,
-		Controller: &controller,
-	}
-
-	objectMeta := k8sMeta.ObjectMeta{
-		Name:            authenticationPolicyName,
-		Namespace:       api.ObjectMeta.Namespace,
-		OwnerReferences: []k8sMeta.OwnerReference{*ownerRef},
-	}
-	targets := []authenticationv1alpha1.TargetSelector{
-		{
-			Name: *api.Spec.Service.Name,
-		},
-	}
-	peers := []authenticationv1alpha1.PeerAuthenticationMethod{
-		{
-			Mtls: &authenticationv1alpha1.MutualTLS{},
-		},
-	}
-	origins := []authenticationv1alpha1.OriginAuthenticationMethod{
-		{
-			Jwt: &authenticationv1alpha1.Jwt{
-				Issuer:  config.Issuer,
-				JwksURI: j.JWKSURI,
-			},
-		},
-	}
-	spec := &authenticationv1alpha1.PolicySpec{
-		Targets:          targets,
-		PrincipalBinding: authenticationv1alpha1.PrincipalBindingUserOrigin,
-		Peers:            peers,
-		Origins:          origins,
-	}
-	ap := &authenticationv1alpha1.Policy{
-		ObjectMeta: objectMeta,
-		Spec:       *spec,
-	}
-	return ap
-}
-
 func (j *jwt) toJWTConfig(config *runtime.RawExtension) (*gatewayv2alpha1.JWTModeConfig, error) {
 	var template gatewayv2alpha1.JWTModeConfig
 	err := json.Unmarshal(config.Raw, &template)
@@ -266,37 +172,26 @@ func (j *jwt) getAccessRule(ctx context.Context, api *gatewayv2alpha1.Gate) (*ru
 	return ar, nil
 }
 
-func (j *jwt) prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Rule, config *v2alpha1.JWTModeConfig, jwtConfig []byte) *rulev1alpha1.Rule {
+func prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Rule, rule gatewayv2alpha1.Path, accessStrategies []*rulev1alpha1.Authenticator) *rulev1alpha1.Rule {
 	ar.ObjectMeta.OwnerReferences = []k8sMeta.OwnerReference{generateOwnerRef(api)}
 	ar.ObjectMeta.Name = fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	ar.ObjectMeta.Namespace = api.ObjectMeta.Namespace
-
-	rawConfig := &runtime.RawExtension{
-		Raw: jwtConfig,
-	}
 
 	spec := &rulev1alpha1.RuleSpec{
 		Upstream: &rulev1alpha1.Upstream{
 			URL: fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", *api.Spec.Service.Name, api.ObjectMeta.Namespace, int(*api.Spec.Service.Port)),
 		},
 		Match: &rulev1alpha1.Match{
-			Methods: api.Spec.Paths[0].Methods,
-			URL:     fmt.Sprintf("<http|https>://%s<%s>", *api.Spec.Service.Host, api.Spec.Paths[0].Path),
+			Methods: rule.Methods,
+			URL:     fmt.Sprintf("<http|https>://%s<%s>", *api.Spec.Service.Host, rule.Path),
 		},
 		Authorizer: &rulev1alpha1.Authorizer{
 			Handler: &rulev1alpha1.Handler{
 				Name: "allow",
 			},
 		},
-		Authenticators: []*rulev1alpha1.Authenticator{
-			{
-				Handler: &rulev1alpha1.Handler{
-					Name:   "jwt",
-					Config: rawConfig,
-				},
-			},
-		},
-		Mutators: api.Spec.Mutators,
+		Authenticators: accessStrategies,
+		Mutators:       api.Spec.Mutators,
 	}
 
 	ar.Spec = *spec

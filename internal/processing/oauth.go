@@ -66,7 +66,7 @@ func (o *oauth) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	}
 
 	if oldAR != nil {
-		newAR := o.prepareAccessRule(api, oldAR, requiredScopesJSON)
+		newAR := prepareAccessRule(api, oldAR, api.Spec.Paths[0], []*rulev1alpha1.Authenticator{accessStrategy})
 		err = o.updateAccessRule(ctx, newAR)
 		if err != nil {
 			return err
@@ -145,43 +145,4 @@ func generateRequiredScopesJSON(path *gatewayv2alpha1.Path) ([]byte, error) {
 	requiredScopes := &internalTypes.OauthIntrospectionConfig{
 		RequiredScope: path.Scopes}
 	return json.Marshal(requiredScopes)
-}
-
-func (o *oauth) prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Rule, requiredScopes []byte) *rulev1alpha1.Rule {
-	ar.ObjectMeta.OwnerReferences = []k8sMeta.OwnerReference{generateOwnerRef(api)}
-	ar.ObjectMeta.Name = fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
-	ar.ObjectMeta.Namespace = api.ObjectMeta.Namespace
-
-	rawConfig := &runtime.RawExtension{
-		Raw: requiredScopes,
-	}
-
-	spec := &rulev1alpha1.RuleSpec{
-		Upstream: &rulev1alpha1.Upstream{
-			URL: fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", *api.Spec.Service.Name, api.ObjectMeta.Namespace, int(*api.Spec.Service.Port)),
-		},
-		Match: &rulev1alpha1.Match{
-			Methods: api.Spec.Paths[0].Methods,
-			URL:     fmt.Sprintf("<http|https>://%s<%s>", *api.Spec.Service.Host, api.Spec.Paths[0].Path),
-		},
-		Authorizer: &rulev1alpha1.Authorizer{
-			Handler: &rulev1alpha1.Handler{
-				Name: "allow",
-			},
-		},
-		Authenticators: []*rulev1alpha1.Authenticator{
-			{
-				Handler: &rulev1alpha1.Handler{
-					Name:   "oauth2_introspection",
-					Config: rawConfig,
-				},
-			},
-		},
-		Mutators: api.Spec.Mutators,
-	}
-
-	ar.Spec = *spec
-
-	return ar
-
 }

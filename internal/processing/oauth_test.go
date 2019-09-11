@@ -121,7 +121,6 @@ func TestOauthGenerateAccessRule(t *testing.T) {
 func TestOauthPrepareAccessRule(t *testing.T) {
 	assert := assert.New(t)
 
-	oauthStrategy := &oauth{oathkeeperSvc: "test-oathkeeper"}
 	gate := getGate()
 	requiredScopes := []byte(`required_scopes: ["write", "read"]`)
 
@@ -139,7 +138,7 @@ func TestOauthPrepareAccessRule(t *testing.T) {
 	oldAR.ObjectMeta.Generation = int64(15)
 	oldAR.ObjectMeta.Name = "mst"
 
-	newAR := oauthStrategy.prepareAccessRule(gate, oldAR, requiredScopes)
+	newAR := prepareAccessRule(gate, oldAR, gate.Spec.Paths[0], []*rulev1alpha1.Authenticator{accessStrategy})
 
 	assert.Equal(newAR.ObjectMeta.Generation, int64(15))
 
