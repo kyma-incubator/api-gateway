@@ -16,6 +16,7 @@ limitations under the License.
 package v2alpha1
 
 import (
+	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -50,7 +51,7 @@ type GateSpec struct {
 	//Paths represents collection of Path to secure
 	Paths []Path `json:"paths,omitempty"`
 	// Mutators to be used
-	Mutators []*Mutator `json:"mutators,omitempty"`
+	Mutators []*rulev1alpha1.Mutator `json:"mutators,omitempty"`
 }
 
 // GateStatus defines the observed state of Gate
@@ -124,6 +125,11 @@ type Path struct {
 
 // Mutator representation of AccessRule mutator field
 type Mutator struct {
+	*Handler `json:",inline"`
+}
+
+// Handler represents an Oathkeeper routine that operates on incoming requests. It is used to either validate a request (Authenticator, Authorizer) or modify it (Mutator).
+type Handler struct {
 	Name   string                `json:"handler"`
 	Config *runtime.RawExtension `json:"config,omitempty"`
 }

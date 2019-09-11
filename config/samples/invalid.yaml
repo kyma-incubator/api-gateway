@@ -81,3 +81,16 @@ spec:
       scopes: ["foo", "bar"]
       methods: ["GET"]
   mutators: []
+---
+apiVersion: gateway.kyma-project.io/v2alpha1
+kind: Gate
+metadata:
+  name: invalid-auth
+spec:
+  service:
+    host: httpbin.kyma.local
+    name: httpbin
+    port: 8000
+  auth:
+    name: NOT_VALID
+  gateway: kyma-gateway.kyma-system.svc.cluster.local

@@ -44,8 +44,17 @@ var _ = Describe("Gate Controller", func() {
 	var testIssuer = "https://oauth2.example.com/"
 	var testMethods = []string{"GET", "PUT"}
 	var testScopes = []string{"foo", "bar"}
-	var testMutators = []*gatewayv2alpha1.Mutator{
-		{Name: "noop"}, {Name: "idtoken"},
+	var testMutators = []*rulev1alpha1.Mutator{
+		{
+			Handler: &rulev1alpha1.Handler{
+				Name: "noop",
+			},
+		},
+		{
+			Handler: &rulev1alpha1.Handler{
+				Name: "idtoken",
+			},
+		},
 	}
 
 	Context("when creating a Gate for exposing service", func() {
@@ -331,7 +340,7 @@ func toCSVList(input []string) string {
 	return res
 }
 
-func testInstance(authStrategyName, configJSON, name, namespace, serviceName, serviceHost string, servicePort uint32, path string, methods []string, scopes []string, mutators []*gatewayv2alpha1.Mutator) *gatewayv2alpha1.Gate {
+func testInstance(authStrategyName, configJSON, name, namespace, serviceName, serviceHost string, servicePort uint32, path string, methods []string, scopes []string, mutators []*rulev1alpha1.Mutator) *gatewayv2alpha1.Gate {
 	rawCfg := &runtime.RawExtension{
 		Raw: []byte(configJSON),
 	}
