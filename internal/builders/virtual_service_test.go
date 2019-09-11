@@ -38,8 +38,7 @@ var _ = Describe("Builder for", func() {
 					VirtualServiceSpec().
 						Host(host).
 						Gateway(gateway)).
-				From(&initialVs).
-				Get()
+				Set(&initialVs)
 			fmt.Printf("%#v", vs)
 			Expect(vs.Name).To(Equal(name))
 			Expect(vs.Namespace).To(Equal(namespace))
@@ -58,27 +57,50 @@ var _ = Describe("Builder for", func() {
 	Describe("VirtualService Spec", func() {
 		It("should build the spec", func() {
 
+			host2 := "oauthkeeper2.cluster.local"
+			gateway2 := "some-gateway-2"
+			matchURIRegex2 := "/abcd"
+			matchURIRegex3 := "/xyz/foobar"
+			destHost2 := "somehost2.somenamespace.svc.cluster.local"
+			var destPort2 uint32 = 4343
+
 			result := VirtualServiceSpec().
 				Host(host).
+				Host(host2).
 				Gateway(gateway).
-				HTTP(
-					MatchRequest().URI().Regex(matchURIRegex),
-					RouteDestination().Host(destHost).Port(destPort)).
-				Get()
+				Gateway(gateway2).
+				HTTP(HTTPRoute().
+					Match(MatchRequest().URI().Regex(matchURIRegex)).
+					Match(MatchRequest().URI().Regex(matchURIRegex2)).
+					Route(RouteDestination().Host(destHost).Port(destPort))).
+				HTTP(HTTPRoute().
+					Match(MatchRequest().URI().Regex(matchURIRegex3)).
+					Route(RouteDestination().Host(destHost2).Port(destPort2))).
+				New()
 
-			Expect(result.Hosts).To(HaveLen(1))
+			Expect(result.Hosts).To(HaveLen(2))
 			Expect(result.Hosts[0]).To(Equal(host))
+			Expect(result.Hosts[1]).To(Equal(host2))
 
-			Expect(result.Gateways).To(HaveLen(1))
+			Expect(result.Gateways).To(HaveLen(2))
 			Expect(result.Gateways[0]).To(Equal(gateway))
+			Expect(result.Gateways[1]).To(Equal(gateway2))
 
-			Expect(result.HTTP).To(HaveLen(1))
-			Expect(result.HTTP[0].Match).To(HaveLen(1))
+			Expect(result.HTTP).To(HaveLen(2))
+			Expect(result.HTTP[0].Match).To(HaveLen(2))
 			Expect(result.HTTP[0].Match[0].URI.Regex).To(Equal(matchURIRegex))
+			Expect(result.HTTP[0].Match[1].URI.Regex).To(Equal(matchURIRegex2))
 			Expect(result.HTTP[0].Route).To(HaveLen(1))
 			Expect(result.HTTP[0].Route[0].Destination.Host).To(Equal(destHost))
 			Expect(result.HTTP[0].Route[0].Destination.Port.Number).To(Equal(destPort))
 			Expect(result.HTTP[0].Route[0].Destination.Port.Name).To(BeEmpty())
+
+			Expect(result.HTTP[1].Match).To(HaveLen(1))
+			Expect(result.HTTP[1].Match[0].URI.Regex).To(Equal(matchURIRegex3))
+			Expect(result.HTTP[1].Route).To(HaveLen(1))
+			Expect(result.HTTP[1].Route[0].Destination.Host).To(Equal(destHost2))
+			Expect(result.HTTP[1].Route[0].Destination.Port.Number).To(Equal(destPort2))
+			Expect(result.HTTP[1].Route[0].Destination.Port.Name).To(BeEmpty())
 		})
 	})
 })
