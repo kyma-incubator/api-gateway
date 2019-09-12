@@ -76,8 +76,8 @@ func getGate4Allow() *gatewayv2alpha1.Gate {
 					Path:    "/.*",
 					Methods: []string{"GET"},
 					Mutators: []*rulev1alpha1.Mutator{
-						{
-							&rulev1alpha1.Handler{
+						&rulev1alpha1.Mutator{
+							Handler: &rulev1alpha1.Handler{
 								Name: "noop",
 							},
 						},
