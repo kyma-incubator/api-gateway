@@ -19,7 +19,7 @@ type allow struct {
 func (a *allow) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	destinationHost := ""
 	var destinationPort uint32
-	if a.isSecured(api.Spec.Rules[0]) {
+	if isSecured(api.Spec.Rules[0]) {
 		destinationHost = fmt.Sprintf("%s.svc.cluster.local", a.oathkeeperSvc)
 		destinationPort = a.oathkeeperSvcPort
 	} else {
@@ -61,7 +61,7 @@ func (a *allow) updateVirtualService(ctx context.Context, vs *networkingv1alpha3
 	return a.vsClient.Update(ctx, vs)
 }
 
-func (a *allow) isSecured(rule gatewayv2alpha1.Rule) bool {
+func isSecured(rule gatewayv2alpha1.Rule) bool {
 	if len(rule.Scopes) > 0 || len(rule.Mutators) > 0 {
 		return true
 	}

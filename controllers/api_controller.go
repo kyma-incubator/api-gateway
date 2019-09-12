@@ -108,7 +108,6 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			}
 			return ctrl.Result{}, err
 		}
-
 		err = processingStrategy.Process(ctx, api)
 		if err != nil {
 			virtualServiceStatus := &gatewayv2alpha1.GatewayResourceStatus{
@@ -120,6 +119,10 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			if updateStatErr != nil {
 				return reconcile.Result{Requeue: true}, err
 			}
+			return ctrl.Result{}, err
+		}
+		err = processing.NewFactory(r.ExtCRClients.ForVirtualService(), r.ExtCRClients.ForAccessRule(), r.Log, r.OathkeeperSvc, r.OathkeeperSvcPort, r.JWKSURI).Run(ctx, api)
+		if err != nil {
 			return ctrl.Result{}, err
 		}
 

@@ -7,6 +7,8 @@ import (
 	"github.com/go-logr/logr"
 	istioClient "github.com/kyma-incubator/api-gateway/internal/clients/istio"
 	oryClient "github.com/kyma-incubator/api-gateway/internal/clients/ory"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
 )
@@ -53,4 +55,74 @@ func (f *Factory) StrategyFor(strategyName string) (Strategy, error) {
 	default:
 		return nil, fmt.Errorf("unsupported mode: %s", strategyName)
 	}
+}
+
+// Run ?
+func (f *Factory) Run(ctx context.Context, api *gatewayv2alpha1.Gate) error {
+	var destinationHost string
+	var destinationPort uint32
+	var err error
+	// Get gate
+	// Get list of Paths
+	// Check Paths - validate
+	//Process path one by one
+	for i := range api.Spec.Rules {
+		fmt.Printf("---\n%v\n", api.Spec.Rules[i])
+		// Single Path level
+		// Validate
+		// Process
+
+		if isSecured(api.Spec.Rules[i]) {
+			destinationHost = fmt.Sprintf("%s.svc.cluster.local", f.oathkeeperSvc)
+			destinationPort = f.oathkeeperSvcPort
+		} else {
+			destinationHost = fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace)
+			destinationPort = *api.Spec.Service.Port
+		}
+
+		for j := range api.Spec.Rules[i].AccessStrategy {
+			// Single Strategy for single Path
+			fmt.Printf("+++\n%v\n", api.Spec.Rules[i].AccessStrategy[j].Name)
+			// Compile Oathkeeper config from this
+		}
+		err = f.processVS(ctx, api, destinationHost, destinationPort)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (f *Factory) getVirtualService(ctx context.Context, api *gatewayv2alpha1.Gate) (*networkingv1alpha3.VirtualService, error) {
+	vs, err := f.vsClient.GetForAPI(ctx, api)
+	if err != nil {
+		if apierrs.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return vs, nil
+}
+
+func (f *Factory) createVirtualService(ctx context.Context, vs *networkingv1alpha3.VirtualService) error {
+	return f.vsClient.Create(ctx, vs)
+}
+
+func (f *Factory) updateVirtualService(ctx context.Context, vs *networkingv1alpha3.VirtualService) error {
+	return f.vsClient.Update(ctx, vs)
+}
+
+func (f *Factory) processVS(ctx context.Context, api *gatewayv2alpha1.Gate, destinationHost string, destinationPort uint32) error {
+	oldVS, err := f.getVirtualService(ctx, api)
+	if err != nil {
+		return err
+	}
+
+	if oldVS != nil {
+		newVS := prepareVirtualService(api, oldVS, destinationHost, destinationPort, api.Spec.Rules[0].Path)
+		return f.updateVirtualService(ctx, newVS)
+	}
+	vs := generateVirtualService(api, destinationHost, destinationPort, api.Spec.Rules[0].Path)
+	return f.createVirtualService(ctx, vs)
 }
