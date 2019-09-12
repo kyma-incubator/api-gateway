@@ -63,7 +63,6 @@ var _ = Describe("Builder for", func() {
 						Handler(Handler().
 							Name("hydrator")))).
 				Get()
-			fmt.Printf("%#v", ar)
 			Expect(ar.Name).To(Equal(name))
 			Expect(ar.Namespace).To(Equal(namespace))
 			Expect(ar.OwnerReferences).To(HaveLen(1))
