@@ -426,6 +426,21 @@ spec:
               description: Paths represents collection of Path to secure
               items:
                 properties:
+                  accessStrategy:
+                    description: Set of access strategies for a single path
+                    items:
+                      properties:
+                        config:
+                          description: Config configures the handler. Configuration
+                            keys vary per handler.
+                          type: object
+                        handler:
+                          description: Name is the name of a handler
+                          type: string
+                      required:
+                      - handler
+                      type: object
+                    type: array
                   methods:
                     description: Set of allowed HTTP methods
                     items:

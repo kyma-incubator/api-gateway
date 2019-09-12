@@ -121,6 +121,8 @@ type Path struct {
 	Scopes []string `json:"scopes,omitempty"`
 	// Set of allowed HTTP methods
 	Methods []string `json:"methods,omitempty"`
+	// Set of access strategies for a single path
+	AccessStrategy []*rulev1alpha1.Handler `json:"accessStrategy,omitempty"`
 }
 
 //GatewayResourceStatus .
