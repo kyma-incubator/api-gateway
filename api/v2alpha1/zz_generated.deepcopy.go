@@ -318,11 +318,11 @@ func (in *Rule) DeepCopyInto(out *Rule) {
 	}
 	if in.AccessStrategy != nil {
 		in, out := &in.AccessStrategy, &out.AccessStrategy
-		*out = make([]*v1alpha1.Handler, len(*in))
+		*out = make([]*v1alpha1.Authenticator, len(*in))
 		for i := range *in {
 			if (*in)[i] != nil {
 				in, out := &(*in)[i], &(*out)[i]
-				*out = new(v1alpha1.Handler)
+				*out = new(v1alpha1.Authenticator)
 				(*in).DeepCopyInto(*out)
 			}
 		}

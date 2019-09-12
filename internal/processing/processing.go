@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	istioClient "github.com/kyma-incubator/api-gateway/internal/clients/istio"
 	oryClient "github.com/kyma-incubator/api-gateway/internal/clients/ory"
+	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 
@@ -62,6 +63,7 @@ func (f *Factory) Run(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	var destinationHost string
 	var destinationPort uint32
 	var err error
+	var accessStrategies []*rulev1alpha1.Authenticator
 	// Get gate
 	// Get list of Paths
 	// Check Paths - validate
@@ -84,6 +86,11 @@ func (f *Factory) Run(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 			// Single Strategy for single Path
 			fmt.Printf("+++\n%v\n", api.Spec.Rules[i].AccessStrategy[j].Name)
 			// Compile Oathkeeper config from this
+			accessStrategies = append(accessStrategies, api.Spec.Rules[i].AccessStrategy[j])
+		}
+		err = f.processAR(ctx, api, accessStrategies)
+		if err != nil {
+			return err
 		}
 		err = f.processVS(ctx, api, destinationHost, destinationPort)
 		if err != nil {
@@ -113,6 +120,26 @@ func (f *Factory) updateVirtualService(ctx context.Context, vs *networkingv1alph
 	return f.vsClient.Update(ctx, vs)
 }
 
+func (f *Factory) createAccessRule(ctx context.Context, ar *rulev1alpha1.Rule) error {
+	return f.arClient.Create(ctx, ar)
+}
+
+func (f *Factory) updateAccessRule(ctx context.Context, ar *rulev1alpha1.Rule) error {
+	return f.arClient.Update(ctx, ar)
+}
+
+func (f *Factory) getAccessRule(ctx context.Context, api *gatewayv2alpha1.Gate) (*rulev1alpha1.Rule, error) {
+	ar, err := f.arClient.GetForAPI(ctx, api)
+	if err != nil {
+		if apierrs.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return ar, nil
+}
+
 func (f *Factory) processVS(ctx context.Context, api *gatewayv2alpha1.Gate, destinationHost string, destinationPort uint32) error {
 	oldVS, err := f.getVirtualService(ctx, api)
 	if err != nil {
@@ -125,4 +152,26 @@ func (f *Factory) processVS(ctx context.Context, api *gatewayv2alpha1.Gate, dest
 	}
 	vs := generateVirtualService(api, destinationHost, destinationPort, api.Spec.Rules[0].Path)
 	return f.createVirtualService(ctx, vs)
+}
+
+func (f *Factory) processAR(ctx context.Context, api *gatewayv2alpha1.Gate, config []*rulev1alpha1.Authenticator) error {
+	oldAR, err := f.getAccessRule(ctx, api)
+	if err != nil {
+		return err
+	}
+
+	if oldAR != nil {
+		newAR := prepareAccessRule(api, oldAR, api.Spec.Rules[0], config)
+		err = f.updateAccessRule(ctx, newAR)
+		if err != nil {
+			return err
+		}
+	} else {
+		ar := generateAccessRule(api, api.Spec.Rules[0], config)
+		err = f.createAccessRule(ctx, ar)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
