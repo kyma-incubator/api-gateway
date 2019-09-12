@@ -85,7 +85,7 @@ func getPassthroughNotValidGate() *gatewayv2alpha1.Gate {
 				Host: &serviceHost,
 				Port: &servicePort,
 			},
-			Paths: []gatewayv2alpha1.Path{
+			Rules: []gatewayv2alpha1.Path{
 				{
 					Path:    "/.*",
 					Methods: []string{"GET"},

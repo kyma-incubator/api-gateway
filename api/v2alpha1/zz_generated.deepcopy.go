@@ -127,22 +127,11 @@ func (in *GateSpec) DeepCopyInto(out *GateSpec) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.Paths != nil {
-		in, out := &in.Paths, &out.Paths
+	if in.Rules != nil {
+		in, out := &in.Rules, &out.Rules
 		*out = make([]Path, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
-		}
-	}
-	if in.Mutators != nil {
-		in, out := &in.Mutators, &out.Mutators
-		*out = make([]*v1alpha1.Mutator, len(*in))
-		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(v1alpha1.Mutator)
-				(*in).DeepCopyInto(*out)
-			}
 		}
 	}
 }
@@ -326,6 +315,17 @@ func (in *Path) DeepCopyInto(out *Path) {
 		in, out := &in.Methods, &out.Methods
 		*out = make([]string, len(*in))
 		copy(*out, *in)
+	}
+	if in.Mutators != nil {
+		in, out := &in.Mutators, &out.Mutators
+		*out = make([]*v1alpha1.Mutator, len(*in))
+		for i := range *in {
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(v1alpha1.Mutator)
+				(*in).DeepCopyInto(*out)
+			}
+		}
 	}
 }
 
