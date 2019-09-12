@@ -69,13 +69,12 @@ func (f *Factory) Run(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	// Check Paths - validate
 	//Process path one by one
 	for i := range api.Spec.Rules {
-		fmt.Printf("---\n%v\n", api.Spec.Rules[i])
 		// Single Path level
 		// Validate
 		// Process
 
 		if isSecured(api.Spec.Rules[i]) {
-			destinationHost = fmt.Sprintf("%s.svc.cluster.local", f.oathkeeperSvc)
+			destinationHost = f.oathkeeperSvc
 			destinationPort = f.oathkeeperSvcPort
 		} else {
 			destinationHost = fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace)
@@ -84,7 +83,6 @@ func (f *Factory) Run(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 
 		for j := range api.Spec.Rules[i].AccessStrategy {
 			// Single Strategy for single Path
-			fmt.Printf("+++\n%v\n", api.Spec.Rules[i].AccessStrategy[j].Name)
 			// Compile Oathkeeper config from this
 			accessStrategies = append(accessStrategies, api.Spec.Rules[i].AccessStrategy[j])
 		}
@@ -151,27 +149,30 @@ func (f *Factory) processVS(ctx context.Context, api *gatewayv2alpha1.Gate, dest
 		return f.updateVirtualService(ctx, newVS)
 	}
 	vs := generateVirtualService(api, destinationHost, destinationPort, api.Spec.Rules[0].Path)
+	fmt.Printf("---\n%+v\n", vs)
 	return f.createVirtualService(ctx, vs)
 }
 
 func (f *Factory) processAR(ctx context.Context, api *gatewayv2alpha1.Gate, config []*rulev1alpha1.Authenticator) error {
+	ar := &rulev1alpha1.Rule{}
 	oldAR, err := f.getAccessRule(ctx, api)
 	if err != nil {
 		return err
 	}
 
 	if oldAR != nil {
-		newAR := prepareAccessRule(api, oldAR, api.Spec.Rules[0], config)
-		err = f.updateAccessRule(ctx, newAR)
+		ar = prepareAccessRule(api, oldAR, api.Spec.Rules[0], config)
+		err = f.updateAccessRule(ctx, ar)
 		if err != nil {
 			return err
 		}
 	} else {
-		ar := generateAccessRule(api, api.Spec.Rules[0], config)
+		ar = generateAccessRule(api, api.Spec.Rules[0], config)
 		err = f.createAccessRule(ctx, ar)
 		if err != nil {
 			return err
 		}
 	}
+	fmt.Printf("+++\n%+v\n", ar)
 	return nil
 }

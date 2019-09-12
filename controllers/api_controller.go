@@ -100,27 +100,27 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			return ctrl.Result{}, err
 		}
 
-		processingStrategy, err := processing.NewFactory(r.ExtCRClients.ForVirtualService(), r.ExtCRClients.ForAccessRule(), r.Log, r.OathkeeperSvc, r.OathkeeperSvcPort, r.JWKSURI).StrategyFor(*api.Spec.Auth.Name)
-		if err != nil {
-			_, updateStatErr := r.updateStatus(ctx, api, generateErrorStatus(err), virtualServiceStatus, policyStatus, accessRuleStatus)
-			if updateStatErr != nil {
-				return reconcile.Result{Requeue: true}, err
-			}
-			return ctrl.Result{}, err
-		}
-		err = processingStrategy.Process(ctx, api)
-		if err != nil {
-			virtualServiceStatus := &gatewayv2alpha1.GatewayResourceStatus{
-				Code:        gatewayv2alpha1.StatusError,
-				Description: err.Error(),
-			}
+		// processingStrategy, err := processing.NewFactory(r.ExtCRClients.ForVirtualService(), r.ExtCRClients.ForAccessRule(), r.Log, r.OathkeeperSvc, r.OathkeeperSvcPort, r.JWKSURI).StrategyFor(*api.Spec.Auth.Name)
+		// if err != nil {
+		// 	_, updateStatErr := r.updateStatus(ctx, api, generateErrorStatus(err), virtualServiceStatus, policyStatus, accessRuleStatus)
+		// 	if updateStatErr != nil {
+		// 		return reconcile.Result{Requeue: true}, err
+		// 	}
+		// 	return ctrl.Result{}, err
+		// }
+		// err = processingStrategy.Process(ctx, api)
+		// if err != nil {
+		// 	virtualServiceStatus := &gatewayv2alpha1.GatewayResourceStatus{
+		// 		Code:        gatewayv2alpha1.StatusError,
+		// 		Description: err.Error(),
+		// 	}
 
-			_, updateStatErr := r.updateStatus(ctx, api, generateErrorStatus(err), virtualServiceStatus, policyStatus, accessRuleStatus)
-			if updateStatErr != nil {
-				return reconcile.Result{Requeue: true}, err
-			}
-			return ctrl.Result{}, err
-		}
+		// 	_, updateStatErr := r.updateStatus(ctx, api, generateErrorStatus(err), virtualServiceStatus, policyStatus, accessRuleStatus)
+		// 	if updateStatErr != nil {
+		// 		return reconcile.Result{Requeue: true}, err
+		// 	}
+		// 	return ctrl.Result{}, err
+		// }
 		err = processing.NewFactory(r.ExtCRClients.ForVirtualService(), r.ExtCRClients.ForAccessRule(), r.Log, r.OathkeeperSvc, r.OathkeeperSvcPort, r.JWKSURI).Run(ctx, api)
 		if err != nil {
 			return ctrl.Result{}, err
