@@ -31,7 +31,6 @@ spec:
   gateway: kyma-gateway.kyma-system.svc.cluster.local
   paths:
     - path: /.*
-      scopes: ["foo", "bar"]
       methods: ["GET"]
   mutators:
     - handler: noop
