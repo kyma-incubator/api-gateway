@@ -18,7 +18,7 @@ type allow struct {
 
 func (a *allow) Process(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	destinationHost := ""
-	destinationPort := uint32(0000)
+	var destinationPort uint32
 	if a.isSecured(api, api.Spec.Paths[0]) {
 		destinationHost = fmt.Sprintf("%s.svc.cluster.local", a.oathkeeperSvc)
 		destinationPort = a.oathkeeperSvcPort
