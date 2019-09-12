@@ -61,8 +61,8 @@ func (a *allow) updateVirtualService(ctx context.Context, vs *networkingv1alpha3
 	return a.vsClient.Update(ctx, vs)
 }
 
-func (a *allow) isSecured(path gatewayv2alpha1.Path) bool {
-	if len(path.Scopes) > 0 || len(path.Mutators) > 0 {
+func (a *allow) isSecured(rule gatewayv2alpha1.Rule) bool {
+	if len(rule.Scopes) > 0 || len(rule.Mutators) > 0 {
 		return true
 	}
 	return false

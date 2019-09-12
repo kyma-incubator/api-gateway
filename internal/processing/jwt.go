@@ -172,7 +172,7 @@ func (j *jwt) getAccessRule(ctx context.Context, api *gatewayv2alpha1.Gate) (*ru
 	return ar, nil
 }
 
-func prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Rule, rule gatewayv2alpha1.Path, accessStrategies []*rulev1alpha1.Authenticator) *rulev1alpha1.Rule {
+func prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Rule, rule gatewayv2alpha1.Rule, accessStrategies []*rulev1alpha1.Authenticator) *rulev1alpha1.Rule {
 	ar.ObjectMeta.OwnerReferences = []k8sMeta.OwnerReference{generateOwnerRef(api)}
 	ar.ObjectMeta.Name = fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	ar.ObjectMeta.Namespace = api.ObjectMeta.Namespace
@@ -200,7 +200,7 @@ func prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Rule, rule ga
 
 }
 
-func generateAccessRule(api *gatewayv2alpha1.Gate, rule gatewayv2alpha1.Path, accessStrategies []*rulev1alpha1.Authenticator) *rulev1alpha1.Rule {
+func generateAccessRule(api *gatewayv2alpha1.Gate, rule gatewayv2alpha1.Rule, accessStrategies []*rulev1alpha1.Authenticator) *rulev1alpha1.Rule {
 	objectMeta := generateObjectMeta(api)
 
 	spec := &rulev1alpha1.RuleSpec{

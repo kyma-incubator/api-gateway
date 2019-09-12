@@ -141,8 +141,8 @@ func generateObjectMeta(api *gatewayv2alpha1.Gate) k8sMeta.ObjectMeta {
 		Get()
 }
 
-func generateRequiredScopesJSON(path *gatewayv2alpha1.Path) ([]byte, error) {
+func generateRequiredScopesJSON(rule *gatewayv2alpha1.Rule) ([]byte, error) {
 	requiredScopes := &internalTypes.OauthIntrospectionConfig{
-		RequiredScope: path.Scopes}
+		RequiredScope: rule.Scopes}
 	return json.Marshal(requiredScopes)
 }

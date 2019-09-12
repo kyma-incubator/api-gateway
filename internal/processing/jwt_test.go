@@ -35,7 +35,7 @@ func getGate4JWT() *gatewayv2alpha1.Gate {
 				Host: &serviceHost,
 				Port: &servicePort,
 			},
-			Rules: []gatewayv2alpha1.Path{{
+			Rules: []gatewayv2alpha1.Rule{{
 				Path:     "/.*",
 				Methods:  []string{"GET"},
 				Mutators: []*rulev1alpha1.Mutator{},

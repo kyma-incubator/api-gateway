@@ -190,7 +190,7 @@ func getGate() *gatewayv2alpha1.Gate {
 				Host: &serviceHost,
 				Port: &servicePort,
 			},
-			Rules: []gatewayv2alpha1.Path{
+			Rules: []gatewayv2alpha1.Rule{
 				{
 					Path:     "/foo",
 					Scopes:   []string{"write", "read"},

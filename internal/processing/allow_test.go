@@ -71,7 +71,7 @@ func getGate4Allow() *gatewayv2alpha1.Gate {
 				Host: &serviceHost,
 				Port: &servicePort,
 			},
-			Rules: []gatewayv2alpha1.Path{
+			Rules: []gatewayv2alpha1.Rule{
 				{
 					Path:    "/.*",
 					Methods: []string{"GET"},
