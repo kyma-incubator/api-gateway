@@ -5,13 +5,12 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
 	istioClient "github.com/kyma-incubator/api-gateway/internal/clients/istio"
 	oryClient "github.com/kyma-incubator/api-gateway/internal/clients/ory"
 	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
-
-	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
 )
 
 //Factory .
@@ -24,10 +23,10 @@ type Factory struct {
 	JWKSURI           string
 }
 
-//Strategy .
-type Strategy interface {
-	Process(ctx context.Context, api *gatewayv2alpha1.Gate) error
-}
+// //Strategy .
+// type Strategy interface {
+// 	Process(ctx context.Context, api *gatewayv2alpha1.Gate) error
+// }
 
 //NewFactory .
 func NewFactory(vsClient *istioClient.VirtualService, arClient *oryClient.AccessRule, logger logr.Logger, oathkeeperSvc string, oathkeeperSvcPort uint32, jwksURI string) *Factory {
@@ -41,22 +40,22 @@ func NewFactory(vsClient *istioClient.VirtualService, arClient *oryClient.Access
 	}
 }
 
-//StrategyFor .
-func (f *Factory) StrategyFor(strategyName string) (Strategy, error) {
-	switch strategyName {
-	case gatewayv2alpha1.Allow:
-		f.Log.Info("Allow processing mode detected")
-		return &allow{vsClient: f.vsClient, oathkeeperSvc: f.oathkeeperSvc, oathkeeperSvcPort: f.oathkeeperSvcPort}, nil
-	case gatewayv2alpha1.Jwt:
-		f.Log.Info("JWT processing mode detected")
-		return &jwt{vsClient: f.vsClient, arClient: f.arClient, JWKSURI: f.JWKSURI, oathkeeperSvc: f.oathkeeperSvc, oathkeeperSvcPort: f.oathkeeperSvcPort}, nil
-	case gatewayv2alpha1.Oauth:
-		f.Log.Info("OAUTH processing mode detected")
-		return &oauth{vsClient: f.vsClient, arClient: f.arClient, oathkeeperSvc: f.oathkeeperSvc, oathkeeperSvcPort: f.oathkeeperSvcPort}, nil
-	default:
-		return nil, fmt.Errorf("unsupported mode: %s", strategyName)
-	}
-}
+// //StrategyFor .
+// func (f *Factory) StrategyFor(strategyName string) (Strategy, error) {
+// 	switch strategyName {
+// 	case gatewayv2alpha1.Allow:
+// 		f.Log.Info("Allow processing mode detected")
+// 		return &allow{vsClient: f.vsClient, oathkeeperSvc: f.oathkeeperSvc, oathkeeperSvcPort: f.oathkeeperSvcPort}, nil
+// 	case gatewayv2alpha1.Jwt:
+// 		f.Log.Info("JWT processing mode detected")
+// 		return &jwt{vsClient: f.vsClient, arClient: f.arClient, JWKSURI: f.JWKSURI, oathkeeperSvc: f.oathkeeperSvc, oathkeeperSvcPort: f.oathkeeperSvcPort}, nil
+// 	case gatewayv2alpha1.Oauth:
+// 		f.Log.Info("OAUTH processing mode detected")
+// 		return &oauth{vsClient: f.vsClient, arClient: f.arClient, oathkeeperSvc: f.oathkeeperSvc, oathkeeperSvcPort: f.oathkeeperSvcPort}, nil
+// 	default:
+// 		return nil, fmt.Errorf("unsupported mode: %s", strategyName)
+// 	}
+// }
 
 // Run ?
 func (f *Factory) Run(ctx context.Context, api *gatewayv2alpha1.Gate) error {
