@@ -50,3 +50,14 @@ func configNotEmpty(config *runtime.RawExtension) bool {
 	}
 	return len(config.Raw) != 0
 }
+
+func Validate(gate *gatewayv2alpha1.Gate) []GateValidationError {
+
+}
+
+type GateValidationError struct {
+	GateName      string
+	GateNamespace string
+	AttributePath string
+	Message       string
+}
