@@ -17,10 +17,11 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
-	"github.com/Azure/go-autorest/autorest/validation"
 	"github.com/kyma-incubator/api-gateway/internal/processing"
+	"github.com/kyma-incubator/api-gateway/internal/validation"
 
 	"github.com/go-logr/logr"
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
@@ -40,6 +41,12 @@ type APIReconciler struct {
 	OathkeeperSvc     string
 	OathkeeperSvcPort uint32
 	JWKSURI           string
+	Validator         GateValidator
+}
+
+//GateValidator is an interface that allows to validate Gate instances created by the user.
+type GateValidator interface {
+	Validate(gate *gatewayv2alpha1.Gate) []validation.Failure
 }
 
 //Reconcile .
@@ -78,13 +85,15 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if api.Generation != api.Status.ObservedGeneration {
 		r.Log.Info("Api processing")
 
-		err = validation.Validate(api)
-		if err != nil {
-			_, updateStatErr := r.updateStatus(ctx, api, generateErrorStatus(err), virtualServiceStatus, policyStatus, accessRuleStatus)
+		validationProblems := r.Validator.Validate(api)
+		if len(validationProblems) > 0 {
+			_, updateStatErr := r.updateStatus(ctx, api, generateValidationProblemStatus(validationProblems), virtualServiceStatus, policyStatus, accessRuleStatus)
 			if updateStatErr != nil {
-				return reconcile.Result{Requeue: true}, err
+				//In case of status update error, we want to reconcile again
+				return reconcile.Result{}, updateStatErr
 			}
-			return ctrl.Result{}, err
+			//If validation problems are reported in the Status, we don't want to reconcile again
+			return ctrl.Result{}, nil
 		}
 
 		err = processing.NewFactory(r.ExtCRClients.ForVirtualService(), r.ExtCRClients.ForAccessRule(), r.Log, r.OathkeeperSvc, r.OathkeeperSvcPort, r.JWKSURI).Run(ctx, api)
@@ -145,8 +154,32 @@ func (r *APIReconciler) updateStatus(ctx context.Context, api *gatewayv2alpha1.G
 }
 
 func generateErrorStatus(err error) *gatewayv2alpha1.GatewayResourceStatus {
+	return toStatus(gatewayv2alpha1.StatusError, err.Error())
+}
+
+func generateValidationProblemStatus(problems []validation.Failure) *gatewayv2alpha1.GatewayResourceStatus {
+	var description string
+
+	if len(problems) == 1 {
+		description := "Validation error: "
+		description += fmt.Sprintf("Attribute: \"%s\": %s", problems[0].AttributePath, problems[0].Message)
+	} else {
+		const maxEntries = 3
+		description := "Multiple validation errors: \n"
+		for i := 0; i < len(problems) && i < maxEntries; i++ {
+			description += fmt.Sprintf("Attribute: \"%s\": %s\n", problems[i].AttributePath, problems[i].Message)
+		}
+		if len(problems) > maxEntries {
+			description += fmt.Sprintf("%d more...\n", len(problems)-maxEntries)
+		}
+	}
+
+	return toStatus(gatewayv2alpha1.StatusError, description)
+}
+
+func toStatus(c gatewayv2alpha1.StatusCode, desc string) *gatewayv2alpha1.GatewayResourceStatus {
 	return &gatewayv2alpha1.GatewayResourceStatus{
-		Code:        gatewayv2alpha1.StatusError,
-		Description: err.Error(),
+		Code:        c,
+		Description: desc,
 	}
 }

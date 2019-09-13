@@ -6,10 +6,12 @@ import (
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
 )
 
-type jwt struct{}
+//JWT is used to validate accessStrategy of type gatewayv2alpha1.Jwt
+type JWT struct{}
 
-func (j *jwt) Validate(gate *gatewayv2alpha1.Gate) error {
-	// var template gatewayv2alpha1.JWTModeConfig
+//Validate performs the validation
+func (j *JWT) Validate(gate *gatewayv2alpha1.Gate) error {
+	var template gatewayv2alpha1.JWTModeConfig
 
 	if len(gate.Spec.Rules) == 0 {
 		return fmt.Errorf("path is required")

@@ -17,8 +17,7 @@ package validation_test
 // )
 
 // func TestPassthroughValidate(t *testing.T) {
-// 	strategy, err := validation.NewFactory(log).StrategyFor("noop")
-// 	assert.NilError(t, err)
+// 	strategy := &validation.Allow{}
 
 // 	valid := getPassthroughValidGate()
 // 	assert.NilError(t, strategy.Validate(valid))

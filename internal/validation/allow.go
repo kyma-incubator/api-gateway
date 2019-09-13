@@ -6,9 +6,11 @@ import (
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
 )
 
-type allow struct{}
+//Allow is used to validate accessStrategy of type gatewayv2alpha1.Allow
+type Allow struct{}
 
-func (a *allow) Validate(gate *gatewayv2alpha1.Gate) error {
+//Validate performs the validation
+func (a *Allow) Validate(gate *gatewayv2alpha1.Gate) error {
 	if len(gate.Spec.Rules) != 1 {
 		return fmt.Errorf("supplied config should contain exactly one path")
 	}

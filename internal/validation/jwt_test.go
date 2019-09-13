@@ -1,18 +1,18 @@
 package validation_test
 
-// import (
-// 	"testing"
-
-// 	"k8s.io/apimachinery/pkg/types"
-
-// 	"github.com/ghodss/yaml"
-// 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
-// 	"github.com/kyma-incubator/api-gateway/internal/validation"
-// 	"gotest.tools/assert"
-// 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-// 	"k8s.io/apimachinery/pkg/runtime"
-// 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
-// )
+//import (
+//	"testing"
+//
+//	"k8s.io/apimachinery/pkg/types"
+//
+//	"github.com/ghodss/yaml"
+//	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
+//	"github.com/kyma-incubator/api-gateway/internal/validation"
+//	"gotest.tools/assert"
+//	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+//	"k8s.io/apimachinery/pkg/runtime"
+//	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+//)
 
 // var (
 // 	validYamlForJWT = `
@@ -28,10 +28,9 @@ package validation_test
 // `
 // 	logJWT = logf.Log.WithName("jwt-validate-test")
 // )
-
+//
 // func TestJWTValidate(t *testing.T) {
-// 	strategy, err := validation.NewFactory(logJWT).StrategyFor("jwt")
-// 	assert.NilError(t, err)
+// 	strategy := validation.JWT{}
 
 // 	jsonData, err := yaml.YAMLToJSON([]byte(invalidIssuer))
 // 	assert.NilError(t, err)
