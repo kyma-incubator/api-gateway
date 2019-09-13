@@ -126,6 +126,10 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				Code:        gatewayv2alpha1.StatusError,
 				Description: err.Error(),
 			}
+			accessRuleStatus = &gatewayv2alpha1.GatewayResourceStatus{
+				Code:        gatewayv2alpha1.StatusError,
+				Description: err.Error(),
+			}
 
 			_, updateStatErr := r.updateStatus(ctx, api, generateErrorStatus(err), virtualServiceStatus, policyStatus, accessRuleStatus)
 			if updateStatErr != nil {
@@ -135,6 +139,10 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 
 		virtualServiceStatus = &gatewayv2alpha1.GatewayResourceStatus{
+			Code: gatewayv2alpha1.StatusOK,
+		}
+
+		accessRuleStatus = &gatewayv2alpha1.GatewayResourceStatus{
 			Code: gatewayv2alpha1.StatusOK,
 		}
 
