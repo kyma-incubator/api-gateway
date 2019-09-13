@@ -25,7 +25,7 @@ var (
 	serviceHost             = "myService.myDomain.com"
 	servicePort   uint32    = 8080
 	authStrategy            = "ALLOW"
-	jwtScopes               = []string{"write", "read"}
+	apiScopes               = []string{"write", "read"}
 	jwtIssuer               = "https://oauth2.example.com/"
 )
 
@@ -87,9 +87,9 @@ func TestCreateVS_NoOp(t *testing.T) {
 		},
 	}
 
-	exampleAPI := getGateFor(strategies, []*rulev1alpha1.Mutator{})
+	gate := getGateFor(strategies, []*rulev1alpha1.Mutator{})
 
-	vs := generateVirtualService(exampleAPI, serviceName+"."+apiNamespace+".svc.cluster.local", servicePort, apiPath)
+	vs := generateVirtualService(gate, serviceName+"."+apiNamespace+".svc.cluster.local", servicePort, apiPath)
 
 	assert.Equal(len(vs.Spec.Gateways), 1)
 	assert.Equal(vs.Spec.Gateways[0], apiGateway)
@@ -102,7 +102,7 @@ func TestCreateVS_NoOp(t *testing.T) {
 	assert.Equal(len(vs.Spec.HTTP[0].Match), 1)
 	assert.Equal(vs.Spec.HTTP[0].Route[0].Destination.Host, serviceName+"."+apiNamespace+".svc.cluster.local")
 	assert.Equal(vs.Spec.HTTP[0].Route[0].Destination.Port.Number, servicePort)
-	assert.Equal(vs.Spec.HTTP[0].Match[0].URI.Regex, exampleAPI.Spec.Rules[0].Path)
+	assert.Equal(vs.Spec.HTTP[0].Match[0].URI.Regex, gate.Spec.Rules[0].Path)
 
 	assert.Equal(vs.ObjectMeta.Name, apiName+"-"+serviceName)
 	assert.Equal(vs.ObjectMeta.Namespace, apiNamespace)
@@ -122,7 +122,7 @@ func TestCreateVS_JWT(t *testing.T) {
 			"trusted_issuers": ["%s"],
 			"jwks": [],
 			"required_scope": [%s]
-	}`, jwtIssuer, toCSVList(jwtScopes))
+	}`, jwtIssuer, toCSVList(apiScopes))
 
 	strategies := []*rulev1alpha1.Authenticator{
 		{
@@ -135,9 +135,9 @@ func TestCreateVS_JWT(t *testing.T) {
 		},
 	}
 
-	exampleAPI := getGateFor(strategies, []*rulev1alpha1.Mutator{})
+	gate := getGateFor(strategies, []*rulev1alpha1.Mutator{})
 
-	vs := generateVirtualService(exampleAPI, serviceName+"."+apiNamespace+".svc.cluster.local", servicePort, apiPath)
+	vs := generateVirtualService(gate, "test-oathkeeper", 4455, apiPath)
 
 	assert.Equal(len(vs.Spec.Gateways), 1)
 	assert.Equal(vs.Spec.Gateways[0], apiGateway)
@@ -148,9 +148,9 @@ func TestCreateVS_JWT(t *testing.T) {
 	assert.Equal(len(vs.Spec.HTTP), 1)
 	assert.Equal(len(vs.Spec.HTTP[0].Route), 1)
 	assert.Equal(len(vs.Spec.HTTP[0].Match), 1)
-	assert.Equal(vs.Spec.HTTP[0].Route[0].Destination.Host, serviceName+"."+apiNamespace+".svc.cluster.local")
-	assert.Equal(vs.Spec.HTTP[0].Route[0].Destination.Port.Number, servicePort)
-	assert.Equal(vs.Spec.HTTP[0].Match[0].URI.Regex, exampleAPI.Spec.Rules[0].Path)
+	assert.Equal(vs.Spec.HTTP[0].Route[0].Destination.Host, "test-oathkeeper")
+	assert.Equal(vs.Spec.HTTP[0].Route[0].Destination.Port.Number, uint32(4455))
+	assert.Equal(vs.Spec.HTTP[0].Match[0].URI.Regex, gate.Spec.Rules[0].Path)
 
 	assert.Equal(vs.ObjectMeta.Name, apiName+"-"+serviceName)
 	assert.Equal(vs.ObjectMeta.Namespace, apiNamespace)
@@ -170,7 +170,7 @@ func TestPrepareAR_JWT(t *testing.T) {
 			"trusted_issuers": ["%s"],
 			"jwks": [],
 			"required_scope": [%s]
-	}`, jwtIssuer, toCSVList(jwtScopes))
+	}`, jwtIssuer, toCSVList(apiScopes))
 
 	strategies := []*rulev1alpha1.Authenticator{
 		{
@@ -218,52 +218,75 @@ func TestPrepareAR_JWT(t *testing.T) {
 
 }
 
-func TestJwtGenerateAccessRule(t *testing.T) {
+func TestGenerateAR_JWT(t *testing.T) {
 	assert := assert.New(t)
 
-	gate := getGate()
+	configJSON := fmt.Sprintf(`
+		{
+			"trusted_issuers": ["%s"],
+			"jwks": [],
+			"required_scope": [%s]
+	}`, jwtIssuer, toCSVList(apiScopes))
 
-	jwtConfig := []byte(`"required_scope":["write","read"],"trusted_issuers":["http://dex.kyma.local"]`)
-
-	accessStrategy := &rulev1alpha1.Authenticator{
-		Handler: &rulev1alpha1.Handler{
-			Name: "jwt",
-			Config: &runtime.RawExtension{
-				Raw: jwtConfig,
+	strategies := []*rulev1alpha1.Authenticator{
+		{
+			&rulev1alpha1.Handler{
+				Name: "jwt",
+				Config: &runtime.RawExtension{
+					Raw: []byte(configJSON),
+				},
 			},
 		},
 	}
 
-	ar := generateAccessRule(gate, gate.Spec.Rules[0], []*rulev1alpha1.Authenticator{accessStrategy})
+	gate := getGateFor(strategies, []*rulev1alpha1.Mutator{})
+
+	ar := generateAccessRule(gate, gate.Spec.Rules[0], []*rulev1alpha1.Authenticator{strategies[0]})
 
 	assert.Equal(len(ar.Spec.Authenticators), 1)
 	assert.NotEmpty(ar.Spec.Authenticators[0].Config)
 	assert.Equal(ar.Spec.Authenticators[0].Name, "jwt")
-	assert.Equal(string(ar.Spec.Authenticators[0].Config.Raw), string(jwtConfig))
+	assert.Equal(string(ar.Spec.Authenticators[0].Config.Raw), configJSON)
 
 	assert.Equal(len(ar.Spec.Match.Methods), 1)
 	assert.Equal(ar.Spec.Match.Methods, []string{"GET"})
-	assert.Equal(ar.Spec.Match.URL, "<http|https>://myService.myDomain.com</foo>")
+	assert.Equal(ar.Spec.Match.URL, "<http|https>://myService.myDomain.com</.*>")
 
 	assert.Equal(ar.Spec.Authorizer.Name, "allow")
 	assert.Empty(ar.Spec.Authorizer.Config)
 
-	assert.Equal(ar.Spec.Upstream.URL, "http://test-service.test-namespace.svc.cluster.local:8080")
+	assert.Equal(ar.Spec.Upstream.URL, "http://example-service.some-namespace.svc.cluster.local:8080")
 
-	assert.Equal(ar.ObjectMeta.Name, "test-gate-test-service")
-	assert.Equal(ar.ObjectMeta.Namespace, "test-namespace")
+	assert.Equal(ar.ObjectMeta.Name, apiName+"-"+serviceName)
+	assert.Equal(ar.ObjectMeta.Namespace, apiNamespace)
 
-	assert.Equal(ar.ObjectMeta.OwnerReferences[0].APIVersion, "gateway.kyma-project.io/v2alpha1")
-	assert.Equal(ar.ObjectMeta.OwnerReferences[0].Kind, "Gate")
-	assert.Equal(ar.ObjectMeta.OwnerReferences[0].Name, "test-gate")
-	assert.Equal(ar.ObjectMeta.OwnerReferences[0].UID, types.UID("eab0f1c8-c417-11e9-bf11-4ac644044351"))
+	assert.Equal(ar.ObjectMeta.OwnerReferences[0].APIVersion, apiAPIVersion)
+	assert.Equal(ar.ObjectMeta.OwnerReferences[0].Kind, apiKind)
+	assert.Equal(ar.ObjectMeta.OwnerReferences[0].Name, apiName)
+	assert.Equal(ar.ObjectMeta.OwnerReferences[0].UID, apiUID)
 
 }
 
-func TestOauthGenerateVirtualService(t *testing.T) {
+func TestGenerateVS_OAUTH(t *testing.T) {
 	assert := assert.New(t)
 
-	gate := getGate()
+	configJSON := fmt.Sprintf(`
+		{
+			"required_scope": [%s]
+	}`, toCSVList(apiScopes))
+
+	strategies := []*rulev1alpha1.Authenticator{
+		{
+			&rulev1alpha1.Handler{
+				Name: "oauth2_introspection",
+				Config: &runtime.RawExtension{
+					Raw: []byte(configJSON),
+				},
+			},
+		},
+	}
+
+	gate := getGateFor(strategies, []*rulev1alpha1.Mutator{})
 	vs := generateVirtualService(gate, "test-oathkeeper", 4455, gate.Spec.Rules[0].Path)
 
 	assert.Equal(len(vs.Spec.Gateways), 1)
@@ -276,23 +299,39 @@ func TestOauthGenerateVirtualService(t *testing.T) {
 	assert.Equal(len(vs.Spec.HTTP[0].Route), 1)
 	assert.Equal(len(vs.Spec.HTTP[0].Match), 1)
 	assert.Equal(vs.Spec.HTTP[0].Route[0].Destination.Host, "test-oathkeeper")
-	assert.Equal(int(vs.Spec.HTTP[0].Route[0].Destination.Port.Number), 4455)
-	assert.Equal(vs.Spec.HTTP[0].Match[0].URI.Regex, "/foo")
+	assert.Equal(vs.Spec.HTTP[0].Route[0].Destination.Port.Number, uint32(4455))
+	assert.Equal(vs.Spec.HTTP[0].Match[0].URI.Regex, apiPath)
 
-	assert.Equal(vs.ObjectMeta.Name, "test-gate-test-service")
-	assert.Equal(vs.ObjectMeta.Namespace, "test-namespace")
+	assert.Equal(vs.ObjectMeta.Name, apiName+"-"+serviceName)
+	assert.Equal(vs.ObjectMeta.Namespace, apiNamespace)
 
-	assert.Equal(vs.ObjectMeta.OwnerReferences[0].APIVersion, "gateway.kyma-project.io/v2alpha1")
-	assert.Equal(vs.ObjectMeta.OwnerReferences[0].Kind, "Gate")
-	assert.Equal(vs.ObjectMeta.OwnerReferences[0].Name, "test-gate")
-	assert.Equal(vs.ObjectMeta.OwnerReferences[0].UID, types.UID("eab0f1c8-c417-11e9-bf11-4ac644044351"))
+	assert.Equal(vs.ObjectMeta.OwnerReferences[0].APIVersion, apiAPIVersion)
+	assert.Equal(vs.ObjectMeta.OwnerReferences[0].Kind, apiKind)
+	assert.Equal(vs.ObjectMeta.OwnerReferences[0].Name, apiName)
+	assert.Equal(vs.ObjectMeta.OwnerReferences[0].UID, apiUID)
 
 }
 
-func TestOauthPrepareVirtualService(t *testing.T) {
+func TestPrepareVS_OAUTH(t *testing.T) {
 	assert := assert.New(t)
 
-	gate := getGate()
+	configJSON := fmt.Sprintf(`
+		{
+			"required_scope": [%s]
+	}`, toCSVList(apiScopes))
+
+	strategies := []*rulev1alpha1.Authenticator{
+		{
+			&rulev1alpha1.Handler{
+				Name: "oauth2_introspection",
+				Config: &runtime.RawExtension{
+					Raw: []byte(configJSON),
+				},
+			},
+		},
+	}
+
+	gate := getGateFor(strategies, []*rulev1alpha1.Mutator{})
 
 	oldVS := generateVirtualService(gate, "test-oathkeeper", 4455, gate.Spec.Rules[0].Path)
 
@@ -314,139 +353,115 @@ func TestOauthPrepareVirtualService(t *testing.T) {
 	assert.Equal(len(newVS.Spec.HTTP[0].Match), 1)
 	assert.Equal(newVS.Spec.HTTP[0].Route[0].Destination.Host, "test-oathkeeper")
 	assert.Equal(int(newVS.Spec.HTTP[0].Route[0].Destination.Port.Number), 4455)
-	assert.Equal(newVS.Spec.HTTP[0].Match[0].URI.Regex, "/foo")
+	assert.Equal(newVS.Spec.HTTP[0].Match[0].URI.Regex, apiPath)
 
-	assert.Equal(newVS.ObjectMeta.Name, "test-gate-test-service")
-	assert.Equal(newVS.ObjectMeta.Namespace, "test-namespace")
+	assert.Equal(newVS.ObjectMeta.Name, apiName+"-"+serviceName)
+	assert.Equal(newVS.ObjectMeta.Namespace, apiNamespace)
 
-	assert.Equal(newVS.ObjectMeta.OwnerReferences[0].APIVersion, "gateway.kyma-project.io/v2alpha1")
-	assert.Equal(newVS.ObjectMeta.OwnerReferences[0].Kind, "Gate")
-	assert.Equal(newVS.ObjectMeta.OwnerReferences[0].Name, "test-gate")
-	assert.Equal(newVS.ObjectMeta.OwnerReferences[0].UID, types.UID("eab0f1c8-c417-11e9-bf11-4ac644044351"))
+	assert.Equal(newVS.ObjectMeta.OwnerReferences[0].APIVersion, apiAPIVersion)
+	assert.Equal(newVS.ObjectMeta.OwnerReferences[0].Kind, apiKind)
+	assert.Equal(newVS.ObjectMeta.OwnerReferences[0].Name, apiName)
+	assert.Equal(newVS.ObjectMeta.OwnerReferences[0].UID, apiUID)
 
 }
 
-func TestOauthGenerateAccessRule(t *testing.T) {
+func TestGenerateAR_OAUTH(t *testing.T) {
 	assert := assert.New(t)
 
-	gate := getGate()
-	requiredScopes := []byte(`required_scopes: ["write", "read"]`)
+	configJSON := fmt.Sprintf(`
+		{
+			"required_scope": [%s]
+	}`, toCSVList(apiScopes))
 
-	accessStrategy := &rulev1alpha1.Authenticator{
-		Handler: &rulev1alpha1.Handler{
-			Name: "oauth2_introspection",
-			Config: &runtime.RawExtension{
-				Raw: requiredScopes,
+	strategies := []*rulev1alpha1.Authenticator{
+		{
+			&rulev1alpha1.Handler{
+				Name: "oauth2_introspection",
+				Config: &runtime.RawExtension{
+					Raw: []byte(configJSON),
+				},
 			},
 		},
 	}
 
-	ar := generateAccessRule(gate, gate.Spec.Rules[0], []*rulev1alpha1.Authenticator{accessStrategy})
+	gate := getGateFor(strategies, []*rulev1alpha1.Mutator{})
+
+	ar := generateAccessRule(gate, gate.Spec.Rules[0], []*rulev1alpha1.Authenticator{strategies[0]})
 
 	assert.Equal(len(ar.Spec.Authenticators), 1)
 	assert.NotEmpty(ar.Spec.Authenticators[0].Config)
 	assert.Equal(ar.Spec.Authenticators[0].Name, "oauth2_introspection")
-	assert.Equal(string(ar.Spec.Authenticators[0].Config.Raw), string(requiredScopes))
+	assert.Equal(string(ar.Spec.Authenticators[0].Config.Raw), configJSON)
 
 	assert.Equal(len(ar.Spec.Match.Methods), 1)
 	assert.Equal(ar.Spec.Match.Methods[0], "GET")
-	assert.Equal(ar.Spec.Match.URL, "<http|https>://myService.myDomain.com</foo>")
+	assert.Equal(ar.Spec.Match.URL, "<http|https>://myService.myDomain.com</.*>")
 
 	assert.Equal(ar.Spec.Authorizer.Name, "allow")
 	assert.Empty(ar.Spec.Authorizer.Config)
 
-	assert.Equal(ar.Spec.Upstream.URL, "http://test-service.test-namespace.svc.cluster.local:8080")
+	assert.Equal(ar.Spec.Upstream.URL, "http://example-service.some-namespace.svc.cluster.local:8080")
 
-	assert.Equal(ar.ObjectMeta.Name, "test-gate-test-service")
-	assert.Equal(ar.ObjectMeta.Namespace, "test-namespace")
+	assert.Equal(ar.ObjectMeta.Name, apiName+"-"+serviceName)
+	assert.Equal(ar.ObjectMeta.Namespace, apiNamespace)
 
-	assert.Equal(ar.ObjectMeta.OwnerReferences[0].APIVersion, "gateway.kyma-project.io/v2alpha1")
-	assert.Equal(ar.ObjectMeta.OwnerReferences[0].Kind, "Gate")
-	assert.Equal(ar.ObjectMeta.OwnerReferences[0].Name, "test-gate")
-	assert.Equal(ar.ObjectMeta.OwnerReferences[0].UID, types.UID("eab0f1c8-c417-11e9-bf11-4ac644044351"))
+	assert.Equal(ar.ObjectMeta.OwnerReferences[0].APIVersion, apiAPIVersion)
+	assert.Equal(ar.ObjectMeta.OwnerReferences[0].Kind, apiKind)
+	assert.Equal(ar.ObjectMeta.OwnerReferences[0].Name, apiName)
+	assert.Equal(ar.ObjectMeta.OwnerReferences[0].UID, apiUID)
 
 }
 
-func TestOauthPrepareAccessRule(t *testing.T) {
+func TestPreapreAR_OAUTH(t *testing.T) {
 	assert := assert.New(t)
 
-	gate := getGate()
-	requiredScopes := []byte(`required_scopes: ["write", "read"]`)
+	configJSON := fmt.Sprintf(`
+		{
+			"required_scope": [%s]
+	}`, toCSVList(apiScopes))
 
-	accessStrategy := &rulev1alpha1.Authenticator{
-		Handler: &rulev1alpha1.Handler{
-			Name: "oauth2_introspection",
-			Config: &runtime.RawExtension{
-				Raw: requiredScopes,
+	strategies := []*rulev1alpha1.Authenticator{
+		{
+			&rulev1alpha1.Handler{
+				Name: "oauth2_introspection",
+				Config: &runtime.RawExtension{
+					Raw: []byte(configJSON),
+				},
 			},
 		},
 	}
 
-	oldAR := generateAccessRule(gate, gate.Spec.Rules[0], []*rulev1alpha1.Authenticator{accessStrategy})
+	gate := getGateFor(strategies, []*rulev1alpha1.Mutator{})
+
+	oldAR := generateAccessRule(gate, gate.Spec.Rules[0], strategies)
 
 	oldAR.ObjectMeta.Generation = int64(15)
 	oldAR.ObjectMeta.Name = "mst"
 
-	newAR := prepareAccessRule(gate, oldAR, gate.Spec.Rules[0], []*rulev1alpha1.Authenticator{accessStrategy})
+	newAR := prepareAccessRule(gate, oldAR, gate.Spec.Rules[0], strategies)
 
 	assert.Equal(newAR.ObjectMeta.Generation, int64(15))
 
 	assert.Equal(len(newAR.Spec.Authenticators), 1)
 	assert.NotEmpty(newAR.Spec.Authenticators[0].Config)
 	assert.Equal(newAR.Spec.Authenticators[0].Name, "oauth2_introspection")
-	assert.Equal(string(newAR.Spec.Authenticators[0].Config.Raw), string(requiredScopes))
+	assert.Equal(string(newAR.Spec.Authenticators[0].Config.Raw), configJSON)
 
 	assert.Equal(len(newAR.Spec.Match.Methods), 1)
 	assert.Equal(newAR.Spec.Match.Methods[0], "GET")
-	assert.Equal(newAR.Spec.Match.URL, "<http|https>://myService.myDomain.com</foo>")
+	assert.Equal(newAR.Spec.Match.URL, "<http|https>://myService.myDomain.com</.*>")
 
 	assert.Equal(newAR.Spec.Authorizer.Name, "allow")
 	assert.Empty(newAR.Spec.Authorizer.Config)
 
-	assert.Equal(newAR.Spec.Upstream.URL, "http://test-service.test-namespace.svc.cluster.local:8080")
+	assert.Equal(newAR.Spec.Upstream.URL, "http://example-service.some-namespace.svc.cluster.local:8080")
 
-	assert.Equal(newAR.ObjectMeta.Name, "test-gate-test-service")
-	assert.Equal(newAR.ObjectMeta.Namespace, "test-namespace")
+	assert.Equal(newAR.ObjectMeta.Name, apiName+"-"+serviceName)
+	assert.Equal(newAR.ObjectMeta.Namespace, apiNamespace)
 
-	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].APIVersion, "gateway.kyma-project.io/v2alpha1")
-	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].Kind, "Gate")
-	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].Name, "test-gate")
-	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].UID, types.UID("eab0f1c8-c417-11e9-bf11-4ac644044351"))
+	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].APIVersion, apiAPIVersion)
+	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].Kind, apiKind)
+	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].Name, apiName)
+	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].UID, apiUID)
 
-}
-
-func getGate() *gatewayv2alpha1.Gate {
-	var apiUID types.UID = "eab0f1c8-c417-11e9-bf11-4ac644044351"
-	var apiGateway = "some-gateway"
-	var serviceName = "test-service"
-	var serviceHost = "myService.myDomain.com"
-	var servicePort uint32 = 8080
-
-	return &gatewayv2alpha1.Gate{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-gate",
-			UID:       apiUID,
-			Namespace: "test-namespace",
-		},
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "gateway.kyma-project.io/v2alpha1",
-			Kind:       "Gate",
-		},
-		Spec: gatewayv2alpha1.GateSpec{
-			Gateway: &apiGateway,
-			Service: &gatewayv2alpha1.Service{
-				Name: &serviceName,
-				Host: &serviceHost,
-				Port: &servicePort,
-			},
-			Rules: []gatewayv2alpha1.Rule{
-				{
-					Path:     "/foo",
-					Scopes:   []string{"write", "read"},
-					Methods:  []string{"GET"},
-					Mutators: []*rulev1alpha1.Mutator{},
-				},
-			},
-		},
-	}
 }
