@@ -23,11 +23,6 @@ type Factory struct {
 	JWKSURI           string
 }
 
-// //Strategy .
-// type Strategy interface {
-// 	Process(ctx context.Context, api *gatewayv2alpha1.Gate) error
-// }
-
 //NewFactory .
 func NewFactory(vsClient *istioClient.VirtualService, arClient *oryClient.AccessRule, logger logr.Logger, oathkeeperSvc string, oathkeeperSvcPort uint32, jwksURI string) *Factory {
 	return &Factory{
@@ -39,23 +34,6 @@ func NewFactory(vsClient *istioClient.VirtualService, arClient *oryClient.Access
 		JWKSURI:           jwksURI,
 	}
 }
-
-// //StrategyFor .
-// func (f *Factory) StrategyFor(strategyName string) (Strategy, error) {
-// 	switch strategyName {
-// 	case gatewayv2alpha1.Allow:
-// 		f.Log.Info("Allow processing mode detected")
-// 		return &allow{vsClient: f.vsClient, oathkeeperSvc: f.oathkeeperSvc, oathkeeperSvcPort: f.oathkeeperSvcPort}, nil
-// 	case gatewayv2alpha1.Jwt:
-// 		f.Log.Info("JWT processing mode detected")
-// 		return &jwt{vsClient: f.vsClient, arClient: f.arClient, JWKSURI: f.JWKSURI, oathkeeperSvc: f.oathkeeperSvc, oathkeeperSvcPort: f.oathkeeperSvcPort}, nil
-// 	case gatewayv2alpha1.Oauth:
-// 		f.Log.Info("OAUTH processing mode detected")
-// 		return &oauth{vsClient: f.vsClient, arClient: f.arClient, oathkeeperSvc: f.oathkeeperSvc, oathkeeperSvcPort: f.oathkeeperSvcPort}, nil
-// 	default:
-// 		return nil, fmt.Errorf("unsupported mode: %s", strategyName)
-// 	}
-// }
 
 // Run ?
 func (f *Factory) Run(ctx context.Context, api *gatewayv2alpha1.Gate) error {
@@ -148,7 +126,6 @@ func (f *Factory) processVS(ctx context.Context, api *gatewayv2alpha1.Gate, dest
 		return f.updateVirtualService(ctx, newVS)
 	}
 	vs := generateVirtualService(api, destinationHost, destinationPort, api.Spec.Rules[0].Path)
-	// fmt.Printf("---\n%+v\n", vs)
 	return f.createVirtualService(ctx, vs)
 }
 
