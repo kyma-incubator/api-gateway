@@ -87,7 +87,7 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 		validationProblems := r.Validator.Validate(api)
 		if len(validationProblems) > 0 {
-			_, updateStatErr := r.updateStatus(ctx, api, generateValidationProblemStatus(validationProblems), virtualServiceStatus, policyStatus, accessRuleStatus)
+			_, updateStatErr := r.updateStatus(ctx, api, generateValidationFailuresStatus(validationProblems), virtualServiceStatus, policyStatus, accessRuleStatus)
 			if updateStatErr != nil {
 				//In case of status update error, we want to reconcile again
 				return reconcile.Result{}, updateStatErr
@@ -157,20 +157,20 @@ func generateErrorStatus(err error) *gatewayv2alpha1.GatewayResourceStatus {
 	return toStatus(gatewayv2alpha1.StatusError, err.Error())
 }
 
-func generateValidationProblemStatus(problems []validation.Failure) *gatewayv2alpha1.GatewayResourceStatus {
+func generateValidationFailuresStatus(failures []validation.Failure) *gatewayv2alpha1.GatewayResourceStatus {
 	var description string
 
-	if len(problems) == 1 {
-		description := "Validation error: "
-		description += fmt.Sprintf("Attribute: \"%s\": %s", problems[0].AttributePath, problems[0].Message)
+	if len(failures) == 1 {
+		description = "Validation error: "
+		description += fmt.Sprintf("Attribute \"%s\": %s", failures[0].AttributePath, failures[0].Message)
 	} else {
 		const maxEntries = 3
-		description := "Multiple validation errors: \n"
-		for i := 0; i < len(problems) && i < maxEntries; i++ {
-			description += fmt.Sprintf("Attribute: \"%s\": %s\n", problems[i].AttributePath, problems[i].Message)
+		description = "Multiple validation errors: "
+		for i := 0; i < len(failures) && i < maxEntries; i++ {
+			description += fmt.Sprintf("\nAttribute \"%s\": %s", failures[i].AttributePath, failures[i].Message)
 		}
-		if len(problems) > maxEntries {
-			description += fmt.Sprintf("%d more...\n", len(problems)-maxEntries)
+		if len(failures) > maxEntries {
+			description += fmt.Sprintf("\n%d more errors...", len(failures)-maxEntries)
 		}
 	}
 
