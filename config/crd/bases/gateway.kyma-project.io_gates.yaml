@@ -395,10 +395,7 @@ spec:
                     keys vary per strategy.
                   type: object
                 name:
-                  enum:
-                  - JWT
-                  - OAUTH
-                  - ALLOW
+                  description: Deprected, to be deleted
                   type: string
               required:
               - name

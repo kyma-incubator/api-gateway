@@ -103,7 +103,7 @@ type Service struct {
 
 //AuthStrategy .
 type AuthStrategy struct {
-	// +kubebuilder:validation:Enum=JWT;OAUTH;ALLOW
+	// Deprected, to be deleted
 	Name *string `json:"name"`
 	// Config configures the auth strategy. Configuration keys vary per strategy.
 	// +kubebuilder:validation:Type=object

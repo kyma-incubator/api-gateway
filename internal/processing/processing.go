@@ -149,30 +149,30 @@ func (f *Factory) processVS(ctx context.Context, api *gatewayv2alpha1.Gate, dest
 		return f.updateVirtualService(ctx, newVS)
 	}
 	vs := generateVirtualService(api, destinationHost, destinationPort, api.Spec.Rules[0].Path)
-	fmt.Printf("---\n%+v\n", vs)
+	// fmt.Printf("---\n%+v\n", vs)
 	return f.createVirtualService(ctx, vs)
 }
 
 func (f *Factory) processAR(ctx context.Context, api *gatewayv2alpha1.Gate, config []*rulev1alpha1.Authenticator) error {
-	ar := &rulev1alpha1.Rule{}
 	oldAR, err := f.getAccessRule(ctx, api)
 	if err != nil {
 		return err
 	}
 
 	if oldAR != nil {
-		ar = prepareAccessRule(api, oldAR, api.Spec.Rules[0], config)
+		ar := prepareAccessRule(api, oldAR, api.Spec.Rules[0], config)
+		// fmt.Printf("+++\n%+v\n", ar)
 		err = f.updateAccessRule(ctx, ar)
 		if err != nil {
 			return err
 		}
 	} else {
-		ar = generateAccessRule(api, api.Spec.Rules[0], config)
+		ar := generateAccessRule(api, api.Spec.Rules[0], config)
+		// fmt.Printf("===\n%+v\n", ar)
 		err = f.createAccessRule(ctx, ar)
 		if err != nil {
 			return err
 		}
 	}
-	fmt.Printf("+++\n%+v\n", ar)
 	return nil
 }
