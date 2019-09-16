@@ -383,7 +383,7 @@ func testInstance(authStrategyName, name, namespace, serviceName, serviceHost st
 					Mutators: mutators,
 					AccessStrategy: []*rulev1alpha1.Authenticator{
 						{
-							config,
+							Handler: config,
 						},
 					},
 				},

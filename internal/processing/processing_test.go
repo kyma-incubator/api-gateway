@@ -81,7 +81,7 @@ func TestCreateVS_NoOp(t *testing.T) {
 
 	strategies := []*rulev1alpha1.Authenticator{
 		{
-			&rulev1alpha1.Handler{
+			Handler: &rulev1alpha1.Handler{
 				Name: "noop",
 			},
 		},
@@ -126,7 +126,7 @@ func TestCreateVS_JWT(t *testing.T) {
 
 	strategies := []*rulev1alpha1.Authenticator{
 		{
-			&rulev1alpha1.Handler{
+			Handler: &rulev1alpha1.Handler{
 				Name: "jwt",
 				Config: &runtime.RawExtension{
 					Raw: []byte(configJSON),
@@ -174,7 +174,7 @@ func TestPrepareAR_JWT(t *testing.T) {
 
 	strategies := []*rulev1alpha1.Authenticator{
 		{
-			&rulev1alpha1.Handler{
+			Handler: &rulev1alpha1.Handler{
 				Name: "jwt",
 				Config: &runtime.RawExtension{
 					Raw: []byte(configJSON),
@@ -230,7 +230,7 @@ func TestGenerateAR_JWT(t *testing.T) {
 
 	strategies := []*rulev1alpha1.Authenticator{
 		{
-			&rulev1alpha1.Handler{
+			Handler: &rulev1alpha1.Handler{
 				Name: "jwt",
 				Config: &runtime.RawExtension{
 					Raw: []byte(configJSON),
@@ -277,7 +277,7 @@ func TestGenerateVS_OAUTH(t *testing.T) {
 
 	strategies := []*rulev1alpha1.Authenticator{
 		{
-			&rulev1alpha1.Handler{
+			Handler: &rulev1alpha1.Handler{
 				Name: "oauth2_introspection",
 				Config: &runtime.RawExtension{
 					Raw: []byte(configJSON),
@@ -322,7 +322,7 @@ func TestPrepareVS_OAUTH(t *testing.T) {
 
 	strategies := []*rulev1alpha1.Authenticator{
 		{
-			&rulev1alpha1.Handler{
+			Handler: &rulev1alpha1.Handler{
 				Name: "oauth2_introspection",
 				Config: &runtime.RawExtension{
 					Raw: []byte(configJSON),
@@ -375,7 +375,7 @@ func TestGenerateAR_OAUTH(t *testing.T) {
 
 	strategies := []*rulev1alpha1.Authenticator{
 		{
-			&rulev1alpha1.Handler{
+			Handler: &rulev1alpha1.Handler{
 				Name: "oauth2_introspection",
 				Config: &runtime.RawExtension{
 					Raw: []byte(configJSON),
@@ -422,7 +422,7 @@ func TestPreapreAR_OAUTH(t *testing.T) {
 
 	strategies := []*rulev1alpha1.Authenticator{
 		{
-			&rulev1alpha1.Handler{
+			Handler: &rulev1alpha1.Handler{
 				Name: "oauth2_introspection",
 				Config: &runtime.RawExtension{
 					Raw: []byte(configJSON),

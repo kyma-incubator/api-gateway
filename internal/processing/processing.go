@@ -63,14 +63,16 @@ func (f *Factory) Run(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 			// Compile Oathkeeper config from this
 			accessStrategies = append(accessStrategies, api.Spec.Rules[i].AccessStrategy[j])
 		}
+		// Create one AR per path
 		err = f.processAR(ctx, api, accessStrategies)
 		if err != nil {
 			return err
 		}
-		err = f.processVS(ctx, api, destinationHost, destinationPort)
-		if err != nil {
-			return err
-		}
+	}
+	// Compile list of paths, create one VS
+	err = f.processVS(ctx, api, destinationHost, destinationPort)
+	if err != nil {
+		return err
 	}
 	return nil
 }
