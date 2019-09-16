@@ -40,28 +40,20 @@ func (f *Factory) Run(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 	var destinationHost string
 	var destinationPort uint32
 	var err error
-	var accessStrategies []*rulev1alpha1.Authenticator
-	// Get gate
-	// Get list of Paths
-	// Check Paths - validate
-	//Process path one by one
-	for i := range api.Spec.Rules {
-		// Single Path level
-		// Validate
-		// Process
 
-		if isSecured(api.Spec.Rules[i]) {
+	for _, rule := range api.Spec.Rules {
+		if isSecured(rule) {
 			destinationHost = f.oathkeeperSvc
 			destinationPort = f.oathkeeperSvcPort
 		} else {
 			destinationHost = fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace)
 			destinationPort = *api.Spec.Service.Port
 		}
-
-		for j := range api.Spec.Rules[i].AccessStrategy {
+		accessStrategies := []*rulev1alpha1.Authenticator{}
+		for i := range rule.AccessStrategy {
 			// Single Strategy for single Path
 			// Compile Oathkeeper config from this
-			accessStrategies = append(accessStrategies, api.Spec.Rules[i].AccessStrategy[j])
+			accessStrategies = append(accessStrategies, rule.AccessStrategy[i])
 		}
 		// Create one AR per path
 		err = f.processAR(ctx, api, accessStrategies)
@@ -139,14 +131,12 @@ func (f *Factory) processAR(ctx context.Context, api *gatewayv2alpha1.Gate, conf
 
 	if oldAR != nil {
 		ar := prepareAccessRule(api, oldAR, api.Spec.Rules[0], config)
-		// fmt.Printf("+++\n%+v\n", ar)
 		err = f.updateAccessRule(ctx, ar)
 		if err != nil {
 			return err
 		}
 	} else {
 		ar := generateAccessRule(api, api.Spec.Rules[0], config)
-		// fmt.Printf("===\n%+v\n", ar)
 		err = f.createAccessRule(ctx, ar)
 		if err != nil {
 			return err
