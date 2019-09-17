@@ -56,7 +56,7 @@ var _ = Describe("Controller", func() {
 			Expect(failureLines[1]).To(Equal("Attribute \"name\": is wrong"))
 			Expect(failureLines[2]).To(Equal("Attribute \"gateway\": is bad"))
 			Expect(failureLines[3]).To(Equal("Attribute \"service.name\": is too short"))
-			Expect(failureLines[4]).To(Equal("2 more errors..."))
+			Expect(failureLines[4]).To(Equal("2 more error(s)..."))
 		})
 	})
 })

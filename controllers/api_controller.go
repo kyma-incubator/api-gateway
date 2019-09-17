@@ -87,8 +87,6 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 		validationFailures := r.Validator.Validate(api)
 		if len(validationFailures) > 0 {
-			//TODO: Remove it!
-			fmt.Println(generateValidationStatus(validationFailures))
 			_, updateStatErr := r.updateStatus(ctx, api, generateValidationStatus(validationFailures), virtualServiceStatus, accessRuleStatus)
 			if updateStatErr != nil {
 				//In case of status update error, we want to reconcile again
@@ -172,7 +170,7 @@ func generateValidationStatus(failures []validation.Failure) *gatewayv2alpha1.Ga
 			description += fmt.Sprintf("\nAttribute \"%s\": %s", failures[i].AttributePath, failures[i].Message)
 		}
 		if len(failures) > maxEntries {
-			description += fmt.Sprintf("\n%d more errors...", len(failures)-maxEntries)
+			description += fmt.Sprintf("\n%d more error(s)...", len(failures)-maxEntries)
 		}
 	}
 
