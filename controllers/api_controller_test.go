@@ -78,10 +78,6 @@ func fixAPI() *gatewayv2alpha1.Gate {
 				Host:       &host,
 				IsExternal: &isExernal,
 			},
-			Auth: &gatewayv2alpha1.AuthStrategy{
-				Name:   &authStrategy,
-				Config: nil,
-			},
 			Gateway: &gateway,
 			Rules: []gatewayv2alpha1.Rule{
 				{

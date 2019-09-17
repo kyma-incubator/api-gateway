@@ -8,12 +8,9 @@ spec:
     host: https://imgur.com
     name: httpbin
     port: 8000
-  auth:
-    name: ALLOW
   gateway: kyma-gateway.kyma-system.svc.cluster.local
   rules:
     - path: /.*
-      scopes: []
       methods: ["GET"]
       accessStrategy:
         - handler: noop
@@ -28,12 +25,9 @@ spec:
     host: https://imgur.com
     name: httpbin
     port: 8000
-  auth:
-    name: ALLOW
   gateway: short-name-gateway
   rules:
     - path: /.*
-      scopes: []
       methods: ["GET"]
       accessStrategy:
         - handler: noop
@@ -48,8 +42,6 @@ spec:
     host: https://imgur.com
     name: httpbin
     port: 8000
-  auth:
-    name: ALLOW
   gateway: kyma-gateway.kyma-system.svc.cluster.local
   rules: []
 ---
@@ -62,36 +54,15 @@ spec:
     host: https://imgur.com
     name: httpbin
     port: 8000
-  auth:
-    name: ALLOW
   gateway: short-name-gateway
   rules:
     - path: /.*
-      scopes: []
       methods: ["GET"]
       accessStrategy:
         - handler: noop
       mutators: []
     - path: /foo
-      scopes: []
       methods: ["GET"]
       accessStrategy:
         - handler: noop
       mutators: []
----
-apiVersion: gateway.kyma-project.io/v2alpha1
-kind: Gate
-metadata:
-  name: passthrough-secured-scopes
-spec:
-  service:
-    host: httpbin.kyma.local
-    name: httpbin
-    port: 8000
-  auth:
-    name: ALLOW
-  gateway: kyma-gateway.kyma-system.svc.cluster.local
-  rules:
-    - path: /.*
-      scopes: ["foo", "bar"]
-      methods: ["GET"]

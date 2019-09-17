@@ -387,29 +387,16 @@ spec:
           type: object
         spec:
           properties:
-            auth:
-              description: Auth strategy to be used
-              properties:
-                config:
-                  description: Config configures the auth strategy. Configuration
-                    keys vary per strategy.
-                  type: object
-                name:
-                  description: Deprected, to be deleted
-                  type: string
-              required:
-              - name
-              type: object
             gateway:
               description: Gateway to be used
               pattern: ^(?:[_a-z0-9](?:[_a-z0-9-]+[a-z0-9])?\.)+(?:[a-z](?:[a-z0-9-]+[a-z0-9])?)?$
               type: string
             rules:
-              description: Paths represents collection of Path to secure
+              description: Paths represents collection of Path to secure kubebuilder:validation:MinItems=1
               items:
                 properties:
                   accessStrategies:
-                    description: Set of access strategies for a single path
+                    description: Set of access strategies for a single path kubebuilder:validation:MinItems=1
                     items:
                       properties:
                         config:
@@ -447,11 +434,6 @@ spec:
                     description: Path to be exposed
                     pattern: ^/([0-9a-zA-Z./*]+)
                     type: string
-                  scopes:
-                    description: Set of allowed scopes
-                    items:
-                      type: string
-                    type: array
                 required:
                 - path
                 type: object
@@ -485,7 +467,6 @@ spec:
               type: object
           required:
           - service
-          - auth
           - gateway
           type: object
         status:

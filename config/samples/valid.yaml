@@ -8,12 +8,9 @@ spec:
     host: httpbin.kyma.local
     name: httpbin
     port: 8000
-  auth:
-    name: ALLOW
   gateway: kyma-gateway.kyma-system.svc.cluster.local
   rules:
     - path: /.*
-      scopes: []
       methods: ["GET"]
       accessStrategy:
         - handler: noop
@@ -28,8 +25,6 @@ spec:
     host: httpbin.kyma.local
     name: httpbin
     port: 8000
-  auth:
-    name: ALLOW
   gateway: kyma-gateway.kyma-system.svc.cluster.local
   rules:
     - path: /.*
@@ -49,11 +44,6 @@ spec:
     name: foo-service
     port: 8080
     host: foo.bar
-  auth:
-    name: JWT
-    config:
-      issuer: http://dex.kyma.local
-      jwks: []
   rules:
     - path: /.*
       methods: ["GET"]
@@ -74,11 +64,6 @@ spec:
     name: foo-service
     port: 8080
     host: foo.bar
-  auth:
-    name: JWT
-    config:
-      issuer: http://dex.kyma.local
-      jwks: []
   rules:
     - path: /.*
       methods: ["GET"]
@@ -100,11 +85,6 @@ spec:
     name: foo-service
     port: 8080
     host: foo.bar
-  auth: 
-    name: JWT
-    config:
-      issuer: http://dex.kyma.local
-      jwks: []
   rules:
     - path: /.*
       methods: ["GET"]
@@ -125,11 +105,8 @@ spec:
     host: httpbin.kyma.local
     name: httpbin
     port: 8000
-  auth:
-    name: OAUTH
   rules:
     - path: /.*
-      scopes: ["read"]
       methods: ["GET"]
       mutators: []
       accessStrategy:
@@ -147,8 +124,6 @@ spec:
     host: httpbin.kyma.local
     name: httpbin
     port: 8000
-  auth:
-    name: OAUTH
   rules:
     - path: /.*
       methods: ["GET"]
