@@ -107,7 +107,7 @@ type Rule struct {
 	Methods []string `json:"methods,omitempty"`
 	// Set of access strategies for a single path
 	// +kubebuilder:validation:MinItems=1
-	AccessStrategies []*rulev1alpha1.Authenticator `json:"accessStrategies,omitempty"`
+	AccessStrategies []*rulev1alpha1.Authenticator `json:"accessStrategies"`
 	// Mutators to be used
 	// +optional
 	Mutators []*rulev1alpha1.Mutator `json:"mutators,omitempty"`

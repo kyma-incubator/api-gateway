@@ -435,6 +435,7 @@ spec:
                     type: string
                 required:
                 - path
+                - accessStrategies
                 type: object
               minItems: 1
               type: array
