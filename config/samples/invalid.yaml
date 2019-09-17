@@ -12,7 +12,7 @@ spec:
   rules:
     - path: /.*
       methods: ["GET"]
-      accessStrategy:
+      accessStrategies:
         - handler: noop
       mutators: []
 ---
@@ -29,7 +29,7 @@ spec:
   rules:
     - path: /.*
       methods: ["GET"]
-      accessStrategy:
+      accessStrategies:
         - handler: noop
       mutators: []
 ---
@@ -58,11 +58,11 @@ spec:
   rules:
     - path: /.*
       methods: ["GET"]
-      accessStrategy:
+      accessStrategies:
         - handler: noop
       mutators: []
     - path: /foo
       methods: ["GET"]
-      accessStrategy:
+      accessStrategies:
         - handler: noop
       mutators: []

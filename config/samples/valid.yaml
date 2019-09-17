@@ -12,7 +12,7 @@ spec:
   rules:
     - path: /.*
       methods: ["GET"]
-      accessStrategy:
+      accessStrategies:
         - handler: noop
       mutators: []
 ---
@@ -29,7 +29,7 @@ spec:
   rules:
     - path: /.*
       methods: ["GET"]
-      accessStrategy:
+      accessStrategies:
         - handler: noop
       mutators:
         - handler: noop
@@ -48,7 +48,7 @@ spec:
     - path: /.*
       methods: ["GET"]
       mutators: []
-      accessStrategy:
+      accessStrategies:
         - handler: jwt
           config:
             trusted_issuers: ["http://dex.kyma.local"]
@@ -69,7 +69,7 @@ spec:
       methods: ["GET"]
       mutators:
         - handler: noop
-      accessStrategy:
+      accessStrategies:
         - handler: jwt
           config:
             trusted_issuers: ["http://dex.kyma.local"]
@@ -89,7 +89,7 @@ spec:
     - path: /.*
       methods: ["GET"]
       mutators: []
-      accessStrategy:
+      accessStrategies:
         - handler: jwt
           config:
             trusted_issuers: ["http://dex.kyma.local"]
@@ -109,7 +109,7 @@ spec:
     - path: /.*
       methods: ["GET"]
       mutators: []
-      accessStrategy:
+      accessStrategies:
         - handler: oauth2_introspection
           config:
             required_scope: ["foo", "bar"]
@@ -130,7 +130,7 @@ spec:
       mutators:
         - handler: noop
           config: {}
-      accessStrategy:
+      accessStrategies:
         - handler: oauth2_introspection
           config:
             required_scope: []
