@@ -91,3 +91,13 @@ When you fetch an existing Gate CR, the system adds the **status** section which
 | **status.virtualService.desc** | Current state of the Virtual Service. |
 | **status.accessRuleStatus.code** | Status code describing the Oathkeeper Rule. |
 | **status.accessRuleStatus.desc** | Current state of the Oathkeeper Rule. |
+
+### Status codes
+
+These are the status codes used to describe the Virtual Services and Rules:
+
+| Code   |  Description |
+|----------|-------------|
+| **OK** | Resource created. |
+| **SKIPPED** | Skipped creating a resource. |
+| **ERROR** | Resource not created. |
