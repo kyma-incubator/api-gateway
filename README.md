@@ -79,10 +79,10 @@ This table lists all the possible parameters of a given resource together with t
 | **spec.gateway** | **YES** | Specifies Istio Gateway. |
 | **spec.service.name**, **spec.service.port** | **YES** | Specifies the name and the communication port of the exposed service. |
 | **spec.host** | **YES** | Specifies the service's external inbound communication address. |
-| **spec.rules.path** | **YES** | Specifies the exposed service's path. |
-| **spec.rules.methods** | **YES** | Specifies the exposed service's methods. |
+| **spec.rules.path** | **YES** | Specifies the path of the exposed service. |
+| **spec.rules.methods** | **YES** | Specifies the list of HTTP request methods available for **spec.rules.path**. |
 | **spec.rules.mutators** | **YES** | Specifies Oathkeeper mutators. |
-| **spec.rules.accessStrategy** | **YES** | Specifies Oathkeeper Authenticators. |
+| **spec.rules.accessStrategy** | **YES** | Specifies Oathkeeper authenticators. |
 
 ## Additional information
 
@@ -92,6 +92,6 @@ When you fetch an existing Gate CR, the system adds the **status** section which
 |----------|-------------|
 | **status.GateStatus** | Status code describing the Gate CR. |
 | **status.virtualServiceStatus.code** | Status code describing the Virtual Service. |
-| **status.virtualService.desc** | Description of state of the Virtual Service. |
+| **status.virtualService.desc** | Current state of the Virtual Service. |
 | **status.accessRuleStatus.code** | Status code describing the AccessRule. |
-| **status.accessRuleStatus.desc** | Description of state of the Authentication Policy. |
+| **status.accessRuleStatus.desc** | Current state of the Authentication Policy. |
