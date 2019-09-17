@@ -120,7 +120,7 @@ type Rule struct {
 	// Set of allowed HTTP methods
 	Methods []string `json:"methods,omitempty"`
 	// Set of access strategies for a single path
-	AccessStrategy []*rulev1alpha1.Authenticator `json:"accessStrategy,omitempty"`
+	AccessStrategies []*rulev1alpha1.Authenticator `json:"accessStrategies,omitempty"`
 	// Mutators to be used
 	Mutators []*rulev1alpha1.Mutator `json:"mutators,omitempty"`
 }

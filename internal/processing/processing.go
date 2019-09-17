@@ -50,7 +50,7 @@ func (f *Factory) Run(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 			destinationPort = *api.Spec.Service.Port
 		}
 		// Create one AR per path
-		err = f.processAR(ctx, api, rule.AccessStrategy)
+		err = f.processAR(ctx, api, rule.AccessStrategies)
 		if err != nil {
 			return err
 		}

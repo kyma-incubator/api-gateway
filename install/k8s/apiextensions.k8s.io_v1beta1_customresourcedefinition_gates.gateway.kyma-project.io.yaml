@@ -406,7 +406,7 @@ spec:
               description: Paths represents collection of Path to secure
               items:
                 properties:
-                  accessStrategy:
+                  accessStrategies:
                     description: Set of access strategies for a single path
                     items:
                       properties:
