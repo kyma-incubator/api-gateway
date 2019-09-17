@@ -31,6 +31,67 @@ The API Gateway Controller manages Istio authentication Policies, VirtualService
 | **oathkeeper-svc-port** | yes | ory oathkeeper-proxy service port. | `4455` |
 | **jwks-uri** | yes | default jwksUri in the Policy. | any string |
 
-### Example CR structure
+## Custom Resource
 
-Valid examples of the Gate CR can be found in the `config/samples` catalog. 
+The `api.gateway.kyma-project.io` CustomResourceDefinition (CRD) is a detailed description of the kind of data and the format the API Controller listens for. To get the up-to-date CRD and show
+the output in the `yaml` format, run this command:
+```
+kubectl get crd apis.gateway.kyma-project.io -o yaml
+```
+
+### Sample custom resource
+
+This is a sample custom resource (CR) that the API-gateway listens for to expose a service.
+
+```
+apiVersion: gateway.kyma-project.io/v2alpha1
+kind: Gate
+metadata:
+  name: jwt-all-with-scopes
+spec:
+  gateway: kyma-gateway.kyma-system.svc.cluster.local
+  service:
+    name: foo-service
+    port: 8080
+    host: foo.bar
+  auth: 
+    name: JWT
+    config:
+      issuer: http://dex.kyma.local
+      jwks: []
+  rules:
+    - path: /.*
+      methods: ["GET"]
+      mutators: []
+      accessStrategy:
+        - handler: jwt
+          config:
+            trusted_issuers: ["http://dex.kyma.local"]
+            required_scope: ["foo", "bar"]
+
+```
+
+This table lists all the possible parameters of a given resource together with their descriptions:
+
+| Field   |      Mandatory      |  Description |
+|----------|:-------------:|------|
+| **metadata.name** |    **YES**   | Specifies the name of the exposed API |
+| **spec.gateway** | **YES** | Specifies Istio Gateway. |
+| **spec.service.name**, **spec.service.port** | **YES** | Specifies the name and the communication port of the exposed service. |
+| **spec.host** | **YES** | Specifies the service's external inbound communication address. |
+| **spec.rules.path** | **YES** | Specifies the exposed service's path. |
+| **spec.rules.methods** | **YES** | Specifies the exposed service's methods. |
+| **spec.rules.mutators** | **YES** | Specifies Oathkeeper mutators. |
+| **spec.rules.accessStrategy** | **YES** | Specifies Oathkeeper Authenticators. |
+
+## Additional information
+
+When you fetch an existing Gate CR, the system adds the **status** section which describes the status of the Virtual Service and the AccessRule created for this CR. This table lists the fields of the **status** section.
+
+| Field   |  Description |
+|----------|-------------|
+| **status.GateStatus** | Status code describing the Gate CR. |
+| **status.virtualServiceStatus.code** | Status code describing the Virtual Service. |
+| **status.virtualService.desc** | Description of state of the Virtual Service. |
+| **status.accessRuleStatus.code** | Status code describing the AccessRule. |
+| **status.accessRuleStatus.desc** | Description of state of the Authentication Policy. |
