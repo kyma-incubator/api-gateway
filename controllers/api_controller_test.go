@@ -35,7 +35,7 @@ var (
 
 var _ = Describe("Controller", func() {
 	Describe("Reconcile", func() {
-		Context("Gate", func() {
+		Context("APIRule", func() {
 			It("should update status", func() {
 				testAPI := fixAPI()
 
@@ -46,18 +46,18 @@ var _ = Describe("Controller", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(result.Requeue).To(BeFalse())
 
-				res := gatewayv2alpha1.Gate{}
+				res := gatewayv2alpha1.APIRule{}
 				err = ts.mgr.GetClient().Get(context.Background(), types.NamespacedName{Namespace: testAPI.Namespace, Name: testAPI.Name}, &res)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.Status.AccessRuleStatus.Code).To(Equal(gatewayv2alpha1.StatusOK))
 				Expect(res.Status.VirtualServiceStatus.Code).To(Equal(gatewayv2alpha1.StatusOK))
-				Expect(res.Status.GateStatus.Code).To(Equal(gatewayv2alpha1.StatusOK))
+				Expect(res.Status.APIRuleStatus.Code).To(Equal(gatewayv2alpha1.StatusOK))
 			})
 		})
 	})
 })
 
-func fixAPI() *gatewayv2alpha1.Gate {
+func fixAPI() *gatewayv2alpha1.APIRule {
 	serviceName = "test"
 	servicePort = 8000
 	host = "foo.bar"
@@ -65,12 +65,12 @@ func fixAPI() *gatewayv2alpha1.Gate {
 	authStrategy = gatewayv2alpha1.Allow
 	gateway = "some-gateway.some-namespace.foo"
 
-	return &gatewayv2alpha1.Gate{
+	return &gatewayv2alpha1.APIRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       "test",
 			Generation: 1,
 		},
-		Spec: gatewayv2alpha1.GateSpec{
+		Spec: gatewayv2alpha1.APIRuleSpec{
 			Service: &gatewayv2alpha1.Service{
 				Name:       &serviceName,
 				Port:       &servicePort,

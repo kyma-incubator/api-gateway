@@ -8,11 +8,11 @@ import (
 
 type oauth struct{}
 
-func (o *oauth) Validate(gate *gatewayv2alpha1.Gate) error {
-	if len(gate.Spec.Rules) != 1 {
+func (o *oauth) Validate(api *gatewayv2alpha1.APIRule) error {
+	if len(api.Spec.Rules) != 1 {
 		return fmt.Errorf("supplied config should contain exactly one path")
 	}
-	if hasDuplicates(gate.Spec.Rules) {
+	if hasDuplicates(api.Spec.Rules) {
 		return fmt.Errorf("supplied config is invalid: multiple definitions of the same path detected")
 	}
 	return nil

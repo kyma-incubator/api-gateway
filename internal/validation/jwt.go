@@ -8,10 +8,10 @@ import (
 
 type jwt struct{}
 
-func (j *jwt) Validate(gate *gatewayv2alpha1.Gate) error {
+func (j *jwt) Validate(api *gatewayv2alpha1.APIRule) error {
 	// var template gatewayv2alpha1.JWTModeConfig
 
-	if len(gate.Spec.Rules) == 0 {
+	if len(api.Spec.Rules) == 0 {
 		return fmt.Errorf("path is required")
 	}
 

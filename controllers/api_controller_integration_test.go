@@ -34,9 +34,10 @@ const (
 	testNamespace               = "padu-system"
 	testNameBase                = "test"
 	testIDLength                = 5
+	kind                        = "APIRule"
 )
 
-var _ = Describe("Gate Controller", func() {
+var _ = Describe("APIRule Controller", func() {
 	const testServiceName = "httpbin"
 	const testServiceHost = "httpbin.kyma.local"
 	const testServicePort uint32 = 443
@@ -57,7 +58,7 @@ var _ = Describe("Gate Controller", func() {
 		},
 	}
 
-	Context("when creating a Gate for exposing service", func() {
+	Context("when creating a APIRule for exposing service", func() {
 		Context("on all the paths,", func() {
 			Context("secured with Oauth2 introspection,", func() {
 				Context("in a happy-path scenario", func() {
@@ -96,7 +97,7 @@ var _ = Describe("Gate Controller", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						//Meta
-						verifyOwnerReference(vs.ObjectMeta, testName, gatewayv2alpha1.GroupVersion.String(), "Gate")
+						verifyOwnerReference(vs.ObjectMeta, testName, gatewayv2alpha1.GroupVersion.String(), kind)
 						//Spec.Hosts
 						Expect(vs.Spec.Hosts).To(HaveLen(1))
 						Expect(vs.Spec.Hosts[0]).To(Equal(testServiceHost))
@@ -152,7 +153,7 @@ var _ = Describe("Gate Controller", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						//Meta
-						verifyOwnerReference(rl.ObjectMeta, testName, gatewayv2alpha1.GroupVersion.String(), "Gate")
+						verifyOwnerReference(rl.ObjectMeta, testName, gatewayv2alpha1.GroupVersion.String(), kind)
 
 						//Spec.Upstream
 						Expect(rl.Spec.Upstream).NotTo(BeNil())
@@ -225,7 +226,7 @@ var _ = Describe("Gate Controller", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						//Meta
-						verifyOwnerReference(vs.ObjectMeta, testName, gatewayv2alpha1.GroupVersion.String(), "Gate")
+						verifyOwnerReference(vs.ObjectMeta, testName, gatewayv2alpha1.GroupVersion.String(), kind)
 						//Spec.Hosts
 						Expect(vs.Spec.Hosts).To(HaveLen(1))
 						Expect(vs.Spec.Hosts[0]).To(Equal(testServiceHost))
@@ -281,7 +282,7 @@ var _ = Describe("Gate Controller", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						//Meta
-						verifyOwnerReference(rl.ObjectMeta, testName, gatewayv2alpha1.GroupVersion.String(), "Gate")
+						verifyOwnerReference(rl.ObjectMeta, testName, gatewayv2alpha1.GroupVersion.String(), kind)
 
 						//Spec.Upstream
 						Expect(rl.Spec.Upstream).NotTo(BeNil())
@@ -329,7 +330,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	err = c.Watch(&source.Kind{Type: &gatewayv2alpha1.Gate{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &gatewayv2alpha1.APIRule{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -351,15 +352,15 @@ func toCSVList(input []string) string {
 	return res
 }
 
-func testInstance(name, namespace, serviceName, serviceHost string, config *rulev1alpha1.Handler, servicePort uint32, path string, methods []string, scopes []string, mutators []*rulev1alpha1.Mutator) *gatewayv2alpha1.Gate {
+func testInstance(name, namespace, serviceName, serviceHost string, config *rulev1alpha1.Handler, servicePort uint32, path string, methods []string, scopes []string, mutators []*rulev1alpha1.Mutator) *gatewayv2alpha1.APIRule {
 	var gateway = testGatewayURL
 
-	return &gatewayv2alpha1.Gate{
+	return &gatewayv2alpha1.APIRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
-		Spec: gatewayv2alpha1.GateSpec{
+		Spec: gatewayv2alpha1.APIRuleSpec{
 			Gateway: &gateway,
 			Service: &gatewayv2alpha1.Service{
 				Host: &serviceHost,

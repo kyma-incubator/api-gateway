@@ -13,11 +13,11 @@ import (
 )
 
 var (
-	apiName                 = "test-gate"
+	apiName                 = "test-apirule"
 	apiUID        types.UID = "eab0f1c8-c417-11e9-bf11-4ac644044351"
 	apiNamespace            = "some-namespace"
 	apiAPIVersion           = "gateway.kyma-project.io/v2alpha1"
-	apiKind                 = "Gate"
+	apiKind                 = "ApiRule"
 	apiGateway              = "some-gateway"
 	apiPath                 = "/.*"
 	apiMethods              = []string{"GET"}
@@ -29,8 +29,8 @@ var (
 	jwtIssuer               = "https://oauth2.example.com/"
 )
 
-func getGateFor(strategies []*rulev1alpha1.Authenticator, mutators []*rulev1alpha1.Mutator) *gatewayv2alpha1.Gate {
-	return &gatewayv2alpha1.Gate{
+func getGateFor(strategies []*rulev1alpha1.Authenticator, mutators []*rulev1alpha1.Mutator) *gatewayv2alpha1.APIRule {
+	return &gatewayv2alpha1.APIRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      apiName,
 			UID:       apiUID,
@@ -40,7 +40,7 @@ func getGateFor(strategies []*rulev1alpha1.Authenticator, mutators []*rulev1alph
 			APIVersion: apiAPIVersion,
 			Kind:       apiKind,
 		},
-		Spec: gatewayv2alpha1.GateSpec{
+		Spec: gatewayv2alpha1.APIRuleSpec{
 			Gateway: &apiGateway,
 			Service: &gatewayv2alpha1.Service{
 				Name: &serviceName,

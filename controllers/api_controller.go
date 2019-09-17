@@ -42,15 +42,15 @@ type APIReconciler struct {
 }
 
 //Reconcile .
-// +kubebuilder:rbac:groups=gateway.kyma-project.io,resources=gates,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=gateway.kyma-project.io,resources=gates/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=gateway.kyma-project.io,resources=apirules,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=gateway.kyma-project.io,resources=apirules/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=networking.istio.io,resources=virtualservices,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=oathkeeper.ory.sh,resources=rules,verbs=get;list;watch;create;update;patch;delete
 func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	_ = r.Log.WithValues("api", req.NamespacedName)
 
-	api := &gatewayv2alpha1.Gate{}
+	api := &gatewayv2alpha1.APIRule{}
 
 	err := r.Get(ctx, req.NamespacedName, api)
 	if err != nil {
@@ -59,16 +59,16 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
-	APIStatus := &gatewayv2alpha1.GatewayResourceStatus{
+	APIStatus := &gatewayv2alpha1.APIRuleResourceStatus{
 		Code: gatewayv2alpha1.StatusOK,
 	}
 
-	virtualServiceStatus := &gatewayv2alpha1.GatewayResourceStatus{
+	virtualServiceStatus := &gatewayv2alpha1.APIRuleResourceStatus{
 		Code:        gatewayv2alpha1.StatusSkipped,
 		Description: "Skipped setting Istio Virtual Service",
 	}
 
-	accessRuleStatus := &gatewayv2alpha1.GatewayResourceStatus{
+	accessRuleStatus := &gatewayv2alpha1.APIRuleResourceStatus{
 		Code:        gatewayv2alpha1.StatusSkipped,
 		Description: "Skipped setting Oathkeeper Access Rule",
 	}
@@ -77,11 +77,11 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		r.Log.Info("Api processing")
 		err = processing.NewFactory(r.ExtCRClients.ForVirtualService(), r.ExtCRClients.ForAccessRule(), r.Log, r.OathkeeperSvc, r.OathkeeperSvcPort, r.JWKSURI).Run(ctx, api)
 		if err != nil {
-			virtualServiceStatus = &gatewayv2alpha1.GatewayResourceStatus{
+			virtualServiceStatus = &gatewayv2alpha1.APIRuleResourceStatus{
 				Code:        gatewayv2alpha1.StatusError,
 				Description: err.Error(),
 			}
-			accessRuleStatus = &gatewayv2alpha1.GatewayResourceStatus{
+			accessRuleStatus = &gatewayv2alpha1.APIRuleResourceStatus{
 				Code:        gatewayv2alpha1.StatusError,
 				Description: err.Error(),
 			}
@@ -93,11 +93,11 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			return ctrl.Result{}, err
 		}
 
-		virtualServiceStatus = &gatewayv2alpha1.GatewayResourceStatus{
+		virtualServiceStatus = &gatewayv2alpha1.APIRuleResourceStatus{
 			Code: gatewayv2alpha1.StatusOK,
 		}
 
-		accessRuleStatus = &gatewayv2alpha1.GatewayResourceStatus{
+		accessRuleStatus = &gatewayv2alpha1.APIRuleResourceStatus{
 			Code: gatewayv2alpha1.StatusOK,
 		}
 
@@ -114,14 +114,14 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 //SetupWithManager .
 func (r *APIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&gatewayv2alpha1.Gate{}).
+		For(&gatewayv2alpha1.APIRule{}).
 		Complete(r)
 }
 
-func (r *APIReconciler) updateStatus(ctx context.Context, api *gatewayv2alpha1.Gate, APIStatus, virtualServiceStatus, accessRuleStatus *gatewayv2alpha1.GatewayResourceStatus) (*gatewayv2alpha1.Gate, error) {
+func (r *APIReconciler) updateStatus(ctx context.Context, api *gatewayv2alpha1.APIRule, APIStatus, virtualServiceStatus, accessRuleStatus *gatewayv2alpha1.APIRuleResourceStatus) (*gatewayv2alpha1.APIRule, error) {
 	api.Status.ObservedGeneration = api.Generation
 	api.Status.LastProcessedTime = &v1.Time{Time: time.Now()}
-	api.Status.GateStatus = APIStatus
+	api.Status.APIRuleStatus = APIStatus
 	api.Status.VirtualServiceStatus = virtualServiceStatus
 	api.Status.AccessRuleStatus = accessRuleStatus
 
@@ -132,8 +132,8 @@ func (r *APIReconciler) updateStatus(ctx context.Context, api *gatewayv2alpha1.G
 	return api, nil
 }
 
-func generateErrorStatus(err error) *gatewayv2alpha1.GatewayResourceStatus {
-	return &gatewayv2alpha1.GatewayResourceStatus{
+func generateErrorStatus(err error) *gatewayv2alpha1.APIRuleResourceStatus {
+	return &gatewayv2alpha1.APIRuleResourceStatus{
 		Code:        gatewayv2alpha1.StatusError,
 		Description: err.Error(),
 	}

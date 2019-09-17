@@ -16,7 +16,7 @@ type Factory struct {
 
 //Strategy .
 type Strategy interface {
-	Validate(gate *gatewayv2alpha1.Gate) error
+	Validate(api *gatewayv2alpha1.APIRule) error
 }
 
 //NewFactory .

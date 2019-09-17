@@ -1,6 +1,6 @@
 ---
 apiVersion: gateway.kyma-project.io/v2alpha1
-kind: Gate
+kind: ApiRule
 metadata:
   name: passthrough-bad-host
 spec:
@@ -17,7 +17,7 @@ spec:
       mutators: []
 ---
 apiVersion: gateway.kyma-project.io/v2alpha1
-kind: Gate
+kind: ApiRule
 metadata:
   name: passthrough-bad-host
 spec:
@@ -34,7 +34,7 @@ spec:
       mutators: []
 ---
 apiVersion: gateway.kyma-project.io/v2alpha1
-kind: Gate
+kind: ApiRule
 metadata:
   name: gate-no-rules
 spec:
@@ -46,7 +46,7 @@ spec:
   rules: []
 ---
 apiVersion: gateway.kyma-project.io/v2alpha1
-kind: Gate
+kind: ApiRule
 metadata:
   name: gate-multiple-hosts
 spec:

@@ -26,8 +26,8 @@ func (c *AccessRule) Create(ctx context.Context, ar *rulev1alpha1.Rule) error {
 	return c.crClient.Create(ctx, ar)
 }
 
-//GetForAPI method gets Oathkeeper Access Rule for given Gate
-func (c *AccessRule) GetForAPI(ctx context.Context, api *gatewayv2alpha1.Gate) (*rulev1alpha1.Rule, error) {
+//GetForAPI method gets Oathkeeper Access Rule for given APIRule
+func (c *AccessRule) GetForAPI(ctx context.Context, api *gatewayv2alpha1.APIRule) (*rulev1alpha1.Rule, error) {
 	accessRuleName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	return c.Get(ctx, accessRuleName, api.GetNamespace())
 }

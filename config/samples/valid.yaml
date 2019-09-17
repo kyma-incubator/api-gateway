@@ -1,6 +1,6 @@
 ---
 apiVersion: gateway.kyma-project.io/v2alpha1
-kind: Gate
+kind: ApiRule
 metadata:
   name: passthrough-unsecured
 spec:
@@ -17,7 +17,7 @@ spec:
       mutators: []
 ---
 apiVersion: gateway.kyma-project.io/v2alpha1
-kind: Gate
+kind: ApiRule
 metadata:
   name: passthrough-secured-mutators
 spec:
@@ -35,7 +35,7 @@ spec:
         - handler: noop
 ---
 apiVersion: gateway.kyma-project.io/v2alpha1
-kind: Gate
+kind: ApiRule
 metadata:
   name: jwt-all-no-scopes
 spec:
@@ -55,7 +55,7 @@ spec:
             required_scope: []
 ---
 apiVersion: gateway.kyma-project.io/v2alpha1
-kind: Gate
+kind: ApiRule
 metadata:
   name: jwt-all-mutators
 spec:
@@ -76,7 +76,7 @@ spec:
             required_scope: []
 ---
 apiVersion: gateway.kyma-project.io/v2alpha1
-kind: Gate
+kind: ApiRule
 metadata:
   name: jwt-all-with-scopes
 spec:
@@ -96,7 +96,7 @@ spec:
             required_scope: ["foo", "bar"]
 ---
 apiVersion: gateway.kyma-project.io/v2alpha1
-kind: Gate
+kind: ApiRule
 metadata:
   name: oauth
 spec:
@@ -115,7 +115,7 @@ spec:
             required_scope: ["foo", "bar"]
 ---
 apiVersion: gateway.kyma-project.io/v2alpha1
-kind: Gate
+kind: ApiRule
 metadata:
   name: oauth-mutators
 spec:

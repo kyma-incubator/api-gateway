@@ -10,7 +10,7 @@ import (
 	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 )
 
-func prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Rule, rule gatewayv2alpha1.Rule, accessStrategies []*rulev1alpha1.Authenticator) *rulev1alpha1.Rule {
+func prepareAccessRule(api *gatewayv2alpha1.APIRule, ar *rulev1alpha1.Rule, rule gatewayv2alpha1.Rule, accessStrategies []*rulev1alpha1.Authenticator) *rulev1alpha1.Rule {
 	ar.ObjectMeta.OwnerReferences = []k8sMeta.OwnerReference{generateOwnerRef(api)}
 	ar.ObjectMeta.Name = fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	ar.ObjectMeta.Namespace = api.ObjectMeta.Namespace
@@ -20,7 +20,7 @@ func prepareAccessRule(api *gatewayv2alpha1.Gate, ar *rulev1alpha1.Rule, rule ga
 		Get()
 }
 
-func generateAccessRule(api *gatewayv2alpha1.Gate, rule gatewayv2alpha1.Rule, accessStrategies []*rulev1alpha1.Authenticator) *rulev1alpha1.Rule {
+func generateAccessRule(api *gatewayv2alpha1.APIRule, rule gatewayv2alpha1.Rule, accessStrategies []*rulev1alpha1.Authenticator) *rulev1alpha1.Rule {
 	name := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	namespace := api.ObjectMeta.Namespace
 	ownerRef := generateOwnerRef(api)
@@ -33,7 +33,7 @@ func generateAccessRule(api *gatewayv2alpha1.Gate, rule gatewayv2alpha1.Rule, ac
 		Get()
 }
 
-func generateAccessRuleSpec(api *gatewayv2alpha1.Gate, rule gatewayv2alpha1.Rule, accessStrategies []*rulev1alpha1.Authenticator) *rulev1alpha1.RuleSpec {
+func generateAccessRuleSpec(api *gatewayv2alpha1.APIRule, rule gatewayv2alpha1.Rule, accessStrategies []*rulev1alpha1.Authenticator) *rulev1alpha1.RuleSpec {
 	return builders.AccessRuleSpec().
 		Upstream(builders.Upstream().
 			URL(fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", *api.Spec.Service.Name, api.ObjectMeta.Namespace, int(*api.Spec.Service.Port)))).
@@ -46,7 +46,7 @@ func generateAccessRuleSpec(api *gatewayv2alpha1.Gate, rule gatewayv2alpha1.Rule
 		Mutators(builders.Mutators().From(rule.Mutators)).Get()
 }
 
-func generateVirtualService(api *gatewayv2alpha1.Gate, destinationHost string, destinationPort uint32, path string) *networkingv1alpha3.VirtualService {
+func generateVirtualService(api *gatewayv2alpha1.APIRule, destinationHost string, destinationPort uint32, path string) *networkingv1alpha3.VirtualService {
 	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	ownerRef := generateOwnerRef(api)
 	return builders.VirtualService().
@@ -75,7 +75,7 @@ func isSecured(rule gatewayv2alpha1.Rule) bool {
 	return false
 }
 
-func generateOwnerRef(api *gatewayv2alpha1.Gate) k8sMeta.OwnerReference {
+func generateOwnerRef(api *gatewayv2alpha1.APIRule) k8sMeta.OwnerReference {
 	return *builders.OwnerReference().
 		Name(api.ObjectMeta.Name).
 		APIVersion(api.TypeMeta.APIVersion).
@@ -85,7 +85,7 @@ func generateOwnerRef(api *gatewayv2alpha1.Gate) k8sMeta.OwnerReference {
 		Get()
 }
 
-func generateObjectMeta(api *gatewayv2alpha1.Gate) k8sMeta.ObjectMeta {
+func generateObjectMeta(api *gatewayv2alpha1.APIRule) k8sMeta.ObjectMeta {
 	ownerRef := generateOwnerRef(api)
 	return *builders.ObjectMeta().
 		Name(fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)).
@@ -94,7 +94,7 @@ func generateObjectMeta(api *gatewayv2alpha1.Gate) k8sMeta.ObjectMeta {
 		Get()
 }
 
-func prepareVirtualService(api *gatewayv2alpha1.Gate, vs *networkingv1alpha3.VirtualService, destinationHost string, destinationPort uint32, path string) *networkingv1alpha3.VirtualService {
+func prepareVirtualService(api *gatewayv2alpha1.APIRule, vs *networkingv1alpha3.VirtualService, destinationHost string, destinationPort uint32, path string) *networkingv1alpha3.VirtualService {
 	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	ownerRef := generateOwnerRef(api)
 
