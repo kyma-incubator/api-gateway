@@ -49,14 +49,8 @@ func (f *Factory) Run(ctx context.Context, api *gatewayv2alpha1.Gate) error {
 			destinationHost = fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace)
 			destinationPort = *api.Spec.Service.Port
 		}
-		accessStrategies := []*rulev1alpha1.Authenticator{}
-		for i := range rule.AccessStrategy {
-			// Single Strategy for single Path
-			// Compile Oathkeeper config from this
-			accessStrategies = append(accessStrategies, rule.AccessStrategy[i])
-		}
 		// Create one AR per path
-		err = f.processAR(ctx, api, accessStrategies)
+		err = f.processAR(ctx, api, rule.AccessStrategy)
 		if err != nil {
 			return err
 		}
