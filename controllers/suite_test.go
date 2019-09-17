@@ -82,7 +82,7 @@ var _ = BeforeSuite(func(done Done) {
 		Log:               ctrl.Log.WithName("controllers").WithName("Gate"),
 		OathkeeperSvc:     testOathkeeperSvcURL,
 		OathkeeperSvcPort: testOathkeeperPort,
-		Validator:         &validation.Validator{},
+		Validator:         &validation.Gate{},
 	}
 
 	var recFn reconcile.Reconciler

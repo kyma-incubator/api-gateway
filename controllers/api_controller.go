@@ -85,14 +85,14 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if api.Generation != api.Status.ObservedGeneration {
 		r.Log.Info("Api processing")
 
-		validationProblems := r.Validator.Validate(api)
-		if len(validationProblems) > 0 {
-			_, updateStatErr := r.updateStatus(ctx, api, generateValidationFailuresStatus(validationProblems), virtualServiceStatus, policyStatus, accessRuleStatus)
+		validationFailures := r.Validator.Validate(api)
+		if len(validationFailures) > 0 {
+			_, updateStatErr := r.updateStatus(ctx, api, generateValidationStatus(validationFailures), virtualServiceStatus, policyStatus, accessRuleStatus)
 			if updateStatErr != nil {
 				//In case of status update error, we want to reconcile again
 				return reconcile.Result{}, updateStatErr
 			}
-			//If validation problems are reported in the Status, we don't want to reconcile again
+			//If validation failures are reported in the Status, we don't want to reconcile again
 			return ctrl.Result{}, nil
 		}
 
@@ -157,7 +157,7 @@ func generateErrorStatus(err error) *gatewayv2alpha1.GatewayResourceStatus {
 	return toStatus(gatewayv2alpha1.StatusError, err.Error())
 }
 
-func generateValidationFailuresStatus(failures []validation.Failure) *gatewayv2alpha1.GatewayResourceStatus {
+func generateValidationStatus(failures []validation.Failure) *gatewayv2alpha1.GatewayResourceStatus {
 	var description string
 
 	if len(failures) == 1 {

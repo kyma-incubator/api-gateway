@@ -15,12 +15,12 @@ func configNotEmpty(config *runtime.RawExtension) bool {
 	return len(config.Raw) != 0
 }
 
-//Validator is used to validate github.com/kyma-incubator/api-gateway/api/v2alpha1/Gate instances
-type Validator struct {
+//Gate is used to validate github.com/kyma-incubator/api-gateway/api/v2alpha1/Gate instances
+type Gate struct {
 }
 
 //Validate performs Gate validation
-func (v *Validator) Validate(gate *gatewayv2alpha1.Gate) []Failure {
+func (v *Gate) Validate(gate *gatewayv2alpha1.Gate) []Failure {
 
 	res := []Failure{}
 	//Validate service
@@ -39,15 +39,15 @@ type Failure struct {
 	Message       string
 }
 
-func (v *Validator) validateService(service *gatewayv2alpha1.Service) []Failure {
+func (v *Gate) validateService(service *gatewayv2alpha1.Service) []Failure {
 	return nil
 }
 
-func (v *Validator) validateGateway(gateway *string) []Failure {
+func (v *Gate) validateGateway(gateway *string) []Failure {
 	return nil
 }
 
-func (v *Validator) validateRules(rules []gatewayv2alpha1.Rule) []Failure {
+func (v *Gate) validateRules(rules []gatewayv2alpha1.Rule) []Failure {
 	var problems []Failure
 	if len(rules) == 0 {
 		problems = append(problems, Failure{AttributePath: ".rules", Message: "No rules defined"})

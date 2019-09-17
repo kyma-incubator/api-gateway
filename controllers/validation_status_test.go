@@ -13,15 +13,15 @@ import (
 var _ = Describe("Controller", func() {
 	Describe("generateValidationProblemStatus", func() {
 
-		f1 := validation.Failure{"name", "is wrong"}
-		f2 := validation.Failure{"gateway", "is wrong"}
-		f3 := validation.Failure{"service.name", "is wrong"}
-		f4 := validation.Failure{"service.port", "is wrong"}
-		f5 := validation.Failure{"service.host", "is wrong"}
+		f1 := validation.Failure{AttributePath: "name", Message: "is wrong"}
+		f2 := validation.Failure{AttributePath: "gateway", Message: "is bad"}
+		f3 := validation.Failure{AttributePath: "service.name", Message: "is too short"}
+		f4 := validation.Failure{AttributePath: "service.port", Message: "is too big"}
+		f5 := validation.Failure{AttributePath: "service.host", Message: "is invalid"}
 
 		It("should genereate status for single failure", func() {
 			failures := []validation.Failure{f1}
-			st := generateValidationFailuresStatus(failures)
+			st := generateValidationStatus(failures)
 
 			Expect(st).NotTo(BeNil())
 			Expect(st.Code).To(Equal(gatewayv2alpha1.StatusError))
@@ -33,7 +33,7 @@ var _ = Describe("Controller", func() {
 
 		It("should genereate status for three failures", func() {
 			failures := []validation.Failure{f1, f2, f3}
-			st := generateValidationFailuresStatus(failures)
+			st := generateValidationStatus(failures)
 
 			Expect(st).NotTo(BeNil())
 			Expect(st.Code).To(Equal(gatewayv2alpha1.StatusError))
@@ -41,13 +41,13 @@ var _ = Describe("Controller", func() {
 			Expect(failureLines).To(HaveLen(4))
 			Expect(failureLines[0]).To(Equal("Multiple validation errors: "))
 			Expect(failureLines[1]).To(Equal("Attribute \"name\": is wrong"))
-			Expect(failureLines[2]).To(Equal("Attribute \"gateway\": is wrong"))
-			Expect(failureLines[3]).To(Equal("Attribute \"service.name\": is wrong"))
+			Expect(failureLines[2]).To(Equal("Attribute \"gateway\": is bad"))
+			Expect(failureLines[3]).To(Equal("Attribute \"service.name\": is too short"))
 		})
 
 		It("should genereate status for five failures", func() {
 			failures := []validation.Failure{f1, f2, f3, f4, f5}
-			st := generateValidationFailuresStatus(failures)
+			st := generateValidationStatus(failures)
 
 			fmt.Println(st.Description)
 			Expect(st).NotTo(BeNil())
@@ -56,8 +56,8 @@ var _ = Describe("Controller", func() {
 			Expect(failureLines).To(HaveLen(5))
 			Expect(failureLines[0]).To(Equal("Multiple validation errors: "))
 			Expect(failureLines[1]).To(Equal("Attribute \"name\": is wrong"))
-			Expect(failureLines[2]).To(Equal("Attribute \"gateway\": is wrong"))
-			Expect(failureLines[3]).To(Equal("Attribute \"service.name\": is wrong"))
+			Expect(failureLines[2]).To(Equal("Attribute \"gateway\": is bad"))
+			Expect(failureLines[3]).To(Equal("Attribute \"service.name\": is too short"))
 			Expect(failureLines[4]).To(Equal("2 more errors..."))
 		})
 	})
