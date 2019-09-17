@@ -48,7 +48,7 @@ fi
 ##
 
 go install golang.org/x/lint/golint
-golint ./...
+golint ./... | grep -v internal/
 
 ##
 # GO FMT
