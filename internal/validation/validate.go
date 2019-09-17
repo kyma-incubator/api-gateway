@@ -4,17 +4,18 @@ import (
 	"fmt"
 
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
+	"github.com/ory/oathkeeper-maester/api/v1alpha1"
 	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-//All known validators for AccessStrategies
-var vldAllow = &allow{}
-var vldJWT = &jwt{}
-var vldOAuth = &oauth{}
+//Validators for AccessStrategies
+var vldNoConfig = &noConfigAccStrValidator{}
+var vldJWT = &jwtAccStrValidator{}
+var vldDummy = &dummyAccStrValidator{}
 
 type accessStrategyValidator interface {
-	Validate(attrPath string, accStrConfig *runtime.RawExtension) []Failure
+	Validate(attrPath string, Handler *v1alpha1.Handler) []Failure
 }
 
 //configNotEmpty Verify if the config object is not empty
@@ -79,13 +80,7 @@ func (v *Gate) validateRules(rules []gatewayv2alpha1.Rule) []Failure {
 }
 
 func (v *Gate) validateMethods(attributePath string, methods []string) []Failure {
-	var problems []Failure
-
-	if len(methods) == 0 {
-		problems = append(problems, Failure{AttributePath: attributePath, Message: "No methods defined for rule"})
-	}
-
-	return problems
+	return nil
 }
 
 func (v *Gate) validateAccessStrategies(attributePath string, accessStrategies []*rulev1alpha1.Authenticator) []Failure {
@@ -110,16 +105,24 @@ func (v *Gate) validateAccessStrategy(attributePath string, accessStrategy *rule
 	var vld accessStrategyValidator
 
 	switch accessStrategy.Handler.Name {
-	case gatewayv2alpha1.Allow:
-		vld = vldAllow
-	case gatewayv2alpha1.Jwt:
+	case "noop":
+		vld = vldNoConfig
+	case "unauthorized":
+		vld = vldNoConfig
+	case "anonymous":
+		vld = vldNoConfig
+	case "cookie_session":
+		vld = vldNoConfig
+	case "oauth2_client_credentials":
+		vld = vldDummy
+	case "oauth2_introspection":
+		vld = vldDummy
+	case "jwt":
 		vld = vldJWT
-	case gatewayv2alpha1.Oauth:
-		vld = vldOAuth
 	default:
-		problems = append(problems, Failure{AttributePath: attributePath, Message: fmt.Sprintf("Unsupported accessStrategy: %s", accessStrategy.Handler.Name)})
+		problems = append(problems, Failure{AttributePath: attributePath, Message: fmt.Sprintf("Unsupported accessStrategy: %s", accessStrategy.Handler)})
 		return problems
 	}
 
-	return vld.Validate(attributePath+".config", accessStrategy.Handler.Config)
+	return vld.Validate(attributePath, accessStrategy.Handler)
 }

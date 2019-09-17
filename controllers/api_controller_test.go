@@ -63,7 +63,7 @@ func fixAPI() *gatewayv2alpha1.Gate {
 	servicePort = 8000
 	host = "foo.bar"
 	isExernal = false
-	authStrategy = gatewayv2alpha1.Allow
+	authStrategy = "noop"
 	gateway = "some-gateway.some-namespace.foo"
 
 	return &gatewayv2alpha1.Gate{
@@ -83,6 +83,14 @@ func fixAPI() *gatewayv2alpha1.Gate {
 				{
 					Path:    "/.*",
 					Methods: []string{"GET"},
+					AccessStrategies: []*rulev1alpha1.Authenticator{
+						&rulev1alpha1.Authenticator{
+							Handler: &rulev1alpha1.Handler{
+								Name:   authStrategy,
+								Config: nil,
+							},
+						},
+					},
 				},
 			},
 		},

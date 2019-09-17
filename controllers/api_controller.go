@@ -87,6 +87,7 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 		validationFailures := r.Validator.Validate(api)
 		if len(validationFailures) > 0 {
+			fmt.Println(generateValidationStatus(validationFailures))
 			_, updateStatErr := r.updateStatus(ctx, api, generateValidationStatus(validationFailures), virtualServiceStatus, policyStatus, accessRuleStatus)
 			if updateStatErr != nil {
 				//In case of status update error, we want to reconcile again

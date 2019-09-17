@@ -2,30 +2,36 @@ package validation
 
 import (
 	"encoding/json"
+	"fmt"
 
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
-	"k8s.io/apimachinery/pkg/runtime"
+	"github.com/ory/oathkeeper-maester/api/v1alpha1"
 )
 
-//jwt is used to validate accessStrategy of type gatewayv2alpha1.Jwt
-type jwt struct{}
+//jwtAccStrValidator is an accessStrategy validator for jwt ORY authenticator
+type jwtAccStrValidator struct{}
 
-func (j *jwt) Validate(attributePath string, accStrConfig *runtime.RawExtension) []Failure {
+func (j *jwtAccStrValidator) Validate(attributePath string, handler *v1alpha1.Handler) []Failure {
 	var problems []Failure
 
-	var template gatewayv2alpha1.JWTModeConfig
+	var template gatewayv2alpha1.JWTAccStrConfig
 
-	if !configNotEmpty(accStrConfig) {
-		problems = append(problems, Failure{AttributePath: attributePath, Message: "supplied config cannot be empty"})
+	if !configNotEmpty(handler.Config) {
+		problems = append(problems, Failure{AttributePath: attributePath + ".config", Message: "supplied config cannot be empty"})
 		return problems
 	}
-	err := json.Unmarshal(accStrConfig.Raw, &template)
+	err := json.Unmarshal(handler.Config.Raw, &template)
 	if err != nil {
-		problems = append(problems, Failure{AttributePath: attributePath, Message: "Can't read json: " + err.Error()})
+		problems = append(problems, Failure{AttributePath: attributePath + ".config", Message: "Can't read json: " + err.Error()})
 		return problems
 	}
-	if !isValidURL(template.Issuer) {
-		problems = append(problems, Failure{AttributePath: attributePath + ".issuer", Message: "issuer field is empty or not a valid url"})
+	if len(template.TrustedIssuers) > 0 {
+		for i := 0; i < len(template.TrustedIssuers); i++ {
+			if !isValidURL(template.TrustedIssuers[i]) {
+				attrPath := fmt.Sprintf("%s[%d]", attributePath+".config.trusted_issuers", i)
+				problems = append(problems, Failure{AttributePath: attrPath, Message: "trusted_issuers field is empty or not a valid url"})
+			}
+		}
 	}
 	return problems
 }

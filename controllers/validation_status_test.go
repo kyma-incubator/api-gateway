@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"strings"
 
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
@@ -49,7 +48,6 @@ var _ = Describe("Controller", func() {
 			failures := []validation.Failure{f1, f2, f3, f4, f5}
 			st := generateValidationStatus(failures)
 
-			fmt.Println(st.Description)
 			Expect(st).NotTo(BeNil())
 			Expect(st.Code).To(Equal(gatewayv2alpha1.StatusError))
 			failureLines := strings.Split(st.Description, "\n")
