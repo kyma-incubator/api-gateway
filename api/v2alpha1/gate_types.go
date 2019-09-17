@@ -46,7 +46,7 @@ type GateSpec struct {
 	// +kubebuilder:validation:Pattern=^(?:[_a-z0-9](?:[_a-z0-9-]+[a-z0-9])?\.)+(?:[a-z](?:[a-z0-9-]+[a-z0-9])?)?$
 	Gateway *string `json:"gateway"`
 	//Paths represents collection of Path to secure
-	// kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MinItems=1
 	Rules []Rule `json:"rules,omitempty"`
 }
 
@@ -107,7 +107,7 @@ type Rule struct {
 	// Set of allowed HTTP methods
 	Methods []string `json:"methods,omitempty"`
 	// Set of access strategies for a single path
-	// kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MinItems=1
 	AccessStrategies []*rulev1alpha1.Authenticator `json:"accessStrategies,omitempty"`
 	// Mutators to be used
 	// +optional

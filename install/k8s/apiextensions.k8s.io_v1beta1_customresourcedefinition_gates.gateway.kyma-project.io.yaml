@@ -390,11 +390,11 @@ spec:
               pattern: ^(?:[_a-z0-9](?:[_a-z0-9-]+[a-z0-9])?\.)+(?:[a-z](?:[a-z0-9-]+[a-z0-9])?)?$
               type: string
             rules:
-              description: Paths represents collection of Path to secure kubebuilder:validation:MinItems=1
+              description: Paths represents collection of Path to secure
               items:
                 properties:
                   accessStrategies:
-                    description: Set of access strategies for a single path kubebuilder:validation:MinItems=1
+                    description: Set of access strategies for a single path
                     items:
                       properties:
                         config:
@@ -407,6 +407,7 @@ spec:
                       required:
                       - handler
                       type: object
+                    minItems: 1
                     type: array
                   methods:
                     description: Set of allowed HTTP methods
@@ -435,6 +436,7 @@ spec:
                 required:
                 - path
                 type: object
+              minItems: 1
               type: array
             service:
               description: Definition of the service to expose
