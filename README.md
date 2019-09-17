@@ -54,11 +54,6 @@ spec:
     name: foo-service
     port: 8080
     host: foo.bar
-  auth: 
-    name: JWT
-    config:
-      issuer: http://dex.kyma.local
-      jwks: []
   rules:
     - path: /.*
       methods: ["GET"]
