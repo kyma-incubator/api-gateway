@@ -1,21 +1,19 @@
 package validation
 
 import (
-	"fmt"
-
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
-//Allow is used to validate accessStrategy of type gatewayv2alpha1.Allow
-type Allow struct{}
+//allow is used to validate accessStrategy of type gatewayv2alpha1.Allow
+type allow struct{}
 
-//Validate performs the validation
-func (a *Allow) Validate(gate *gatewayv2alpha1.Gate) error {
-	if len(gate.Spec.Rules) != 1 {
-		return fmt.Errorf("supplied config should contain exactly one path")
+func (a *allow) Validate(attrPath string, accStrConfig *runtime.RawExtension) []Failure {
+	var problems []Failure
+
+	if len(accStrConfig.Raw) > 0 {
+		problems = append(problems, Failure{AttributePath: attrPath, Message: "strategy: " + gatewayv2alpha1.Allow + " does not support configuration"})
 	}
-	if hasDuplicates(gate.Spec.Rules) {
-		return fmt.Errorf("supplied config is invalid: multiple definitions of the same path detected")
-	}
-	return nil
+
+	return problems
 }

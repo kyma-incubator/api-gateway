@@ -4,8 +4,18 @@ import (
 	"fmt"
 
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
+	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
+
+//All known validators for AccessStrategies
+var vldAllow = &allow{}
+var vldJWT = &jwt{}
+var vldOAuth = &oauth{}
+
+type accessStrategyValidator interface {
+	Validate(attrPath string, accStrConfig *runtime.RawExtension) []Failure
+}
 
 //configNotEmpty Verify if the config object is not empty
 func configNotEmpty(config *runtime.RawExtension) bool {
@@ -49,17 +59,67 @@ func (v *Gate) validateGateway(gateway *string) []Failure {
 
 func (v *Gate) validateRules(rules []gatewayv2alpha1.Rule) []Failure {
 	var problems []Failure
+
 	if len(rules) == 0 {
 		problems = append(problems, Failure{AttributePath: ".rules", Message: "No rules defined"})
 		return problems
 	}
 
+	if hasDuplicates(rules) {
+		problems = append(problems, Failure{AttributePath: ".rules", Message: "multiple rules defined for the same path"})
+	}
+
 	for i, r := range rules {
-		if len(r.Methods) == 0 {
-			attributePath := fmt.Sprintf(".rules[%d]", i)
-			problems = append(problems, Failure{AttributePath: attributePath, Message: "No methods defined"})
-		}
+		attributePath := fmt.Sprintf(".rules[%d]", i)
+		problems = append(problems, v.validateMethods(attributePath+".methods", r.Methods)...)
+		problems = append(problems, v.validateAccessStrategies(attributePath+".accessStrategies", r.AccessStrategies)...)
 	}
 
 	return problems
+}
+
+func (v *Gate) validateMethods(attributePath string, methods []string) []Failure {
+	var problems []Failure
+
+	if len(methods) == 0 {
+		problems = append(problems, Failure{AttributePath: attributePath, Message: "No methods defined for rule"})
+	}
+
+	return problems
+}
+
+func (v *Gate) validateAccessStrategies(attributePath string, accessStrategies []*rulev1alpha1.Authenticator) []Failure {
+	var problems []Failure
+
+	if len(accessStrategies) == 0 {
+		problems = append(problems, Failure{AttributePath: attributePath, Message: "No accessStrategies defined"})
+		return problems
+	}
+
+	for i, r := range accessStrategies {
+		strategyAttrPath := attributePath + fmt.Sprintf("[%d]", i)
+		problems = append(problems, v.validateAccessStrategy(strategyAttrPath, r)...)
+	}
+
+	return problems
+}
+
+func (v *Gate) validateAccessStrategy(attributePath string, accessStrategy *rulev1alpha1.Authenticator) []Failure {
+	var problems []Failure
+
+	var vld accessStrategyValidator
+
+	switch accessStrategy.Handler.Name {
+	case gatewayv2alpha1.Allow:
+		vld = vldAllow
+	case gatewayv2alpha1.Jwt:
+		vld = vldJWT
+	case gatewayv2alpha1.Oauth:
+		vld = vldOAuth
+	default:
+		problems = append(problems, Failure{AttributePath: attributePath, Message: fmt.Sprintf("Unsupported accessStrategy: %s", accessStrategy.Handler.Name)})
+		return problems
+	}
+
+	return vld.Validate(attributePath+".config", accessStrategy.Handler.Config)
 }

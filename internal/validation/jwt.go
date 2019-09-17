@@ -1,31 +1,31 @@
 package validation
 
 import (
-	"fmt"
+	"encoding/json"
 
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
-//JWT is used to validate accessStrategy of type gatewayv2alpha1.Jwt
-type JWT struct{}
+//jwt is used to validate accessStrategy of type gatewayv2alpha1.Jwt
+type jwt struct{}
 
-//Validate performs the validation
-func (j *JWT) Validate(gate *gatewayv2alpha1.Gate) error {
+func (j *jwt) Validate(attributePath string, accStrConfig *runtime.RawExtension) []Failure {
+	var problems []Failure
+
 	var template gatewayv2alpha1.JWTModeConfig
 
-	if len(gate.Spec.Rules) == 0 {
-		return fmt.Errorf("path is required")
+	if !configNotEmpty(accStrConfig) {
+		problems = append(problems, Failure{AttributePath: attributePath, Message: "supplied config cannot be empty"})
+		return problems
 	}
-
-	// if !configNotEmpty(gate.Spec.Auth.Config) {
-	// 	return fmt.Errorf("supplied config cannot be empty")
-	// }
-	// err := json.Unmarshal(gate.Spec.Auth.Config.Raw, &template)
-	// if err != nil {
-	// 	return errors.WithStack(err)
-	// }
-	// if !isValidURL(template.Issuer) {
-	// 	return fmt.Errorf("issuer field is empty or not a valid url")
-	// }
-	return nil
+	err := json.Unmarshal(accStrConfig.Raw, &template)
+	if err != nil {
+		problems = append(problems, Failure{AttributePath: attributePath, Message: "Can't read json: " + err.Error()})
+		return problems
+	}
+	if !isValidURL(template.Issuer) {
+		problems = append(problems, Failure{AttributePath: attributePath + ".issuer", Message: "issuer field is empty or not a valid url"})
+	}
+	return problems
 }
