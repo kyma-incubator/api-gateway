@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"bytes"
 	"fmt"
 
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
@@ -19,11 +20,17 @@ type accessStrategyValidator interface {
 }
 
 //configNotEmpty Verify if the config object is not empty
+func configEmpty(config *runtime.RawExtension) bool {
+
+	return config == nil ||
+		len(config.Raw) == 0 ||
+		bytes.Equal(config.Raw, []byte("null")) ||
+		bytes.Equal(config.Raw, []byte("{}"))
+}
+
+//configNotEmpty Verify if the config object is not empty
 func configNotEmpty(config *runtime.RawExtension) bool {
-	if config == nil {
-		return false
-	}
-	return len(config.Raw) != 0
+	return !configEmpty(config)
 }
 
 //Gate is used to validate github.com/kyma-incubator/api-gateway/api/v2alpha1/Gate instances
@@ -35,11 +42,11 @@ func (v *Gate) Validate(gate *gatewayv2alpha1.Gate) []Failure {
 
 	res := []Failure{}
 	//Validate service
-	res = append(res, v.validateService(gate.Spec.Service)...)
+	res = append(res, v.validateService(".spec.service", gate.Spec.Service)...)
 	//Validate Gateway
-	res = append(res, v.validateGateway(gate.Spec.Gateway)...)
+	res = append(res, v.validateGateway(".spec.gateway", gate.Spec.Gateway)...)
 	//Validate Rules
-	res = append(res, v.validateRules(gate.Spec.Rules)...)
+	res = append(res, v.validateRules(".spec.rules", gate.Spec.Rules)...)
 
 	return res
 }
@@ -50,30 +57,30 @@ type Failure struct {
 	Message       string
 }
 
-func (v *Gate) validateService(service *gatewayv2alpha1.Service) []Failure {
+func (v *Gate) validateService(attributePath string, service *gatewayv2alpha1.Service) []Failure {
 	return nil
 }
 
-func (v *Gate) validateGateway(gateway *string) []Failure {
+func (v *Gate) validateGateway(attributePath string, gateway *string) []Failure {
 	return nil
 }
 
-func (v *Gate) validateRules(rules []gatewayv2alpha1.Rule) []Failure {
+func (v *Gate) validateRules(attributePath string, rules []gatewayv2alpha1.Rule) []Failure {
 	var problems []Failure
 
 	if len(rules) == 0 {
-		problems = append(problems, Failure{AttributePath: ".rules", Message: "No rules defined"})
+		problems = append(problems, Failure{AttributePath: attributePath, Message: "No rules defined"})
 		return problems
 	}
 
 	if hasDuplicates(rules) {
-		problems = append(problems, Failure{AttributePath: ".rules", Message: "multiple rules defined for the same path"})
+		problems = append(problems, Failure{AttributePath: attributePath, Message: "multiple rules defined for the same path"})
 	}
 
 	for i, r := range rules {
-		attributePath := fmt.Sprintf(".rules[%d]", i)
-		problems = append(problems, v.validateMethods(attributePath+".methods", r.Methods)...)
-		problems = append(problems, v.validateAccessStrategies(attributePath+".accessStrategies", r.AccessStrategies)...)
+		attrPath := fmt.Sprintf("%s[%d]", attributePath, i)
+		problems = append(problems, v.validateMethods(attrPath+".methods", r.Methods)...)
+		problems = append(problems, v.validateAccessStrategies(attrPath+".accessStrategies", r.AccessStrategies)...)
 	}
 
 	return problems
@@ -122,7 +129,7 @@ func (v *Gate) validateAccessStrategy(attributePath string, accessStrategy *rule
 	case "jwt":
 		vld = vldJWT
 	default:
-		problems = append(problems, Failure{AttributePath: attributePath, Message: fmt.Sprintf("Unsupported accessStrategy: %s", accessStrategy.Handler)})
+		problems = append(problems, Failure{AttributePath: attributePath + ".handler", Message: fmt.Sprintf("Unsupported accessStrategy: %s", accessStrategy.Handler.Name)})
 		return problems
 	}
 
