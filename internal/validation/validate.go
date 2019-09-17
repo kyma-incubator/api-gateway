@@ -105,6 +105,8 @@ func (v *Gate) validateAccessStrategy(attributePath string, accessStrategy *rule
 	var vld accessStrategyValidator
 
 	switch accessStrategy.Handler.Name {
+	case "allow": //our internal constant, does not exist in ORY
+		vld = vldNoConfig
 	case "noop":
 		vld = vldNoConfig
 	case "unauthorized":
