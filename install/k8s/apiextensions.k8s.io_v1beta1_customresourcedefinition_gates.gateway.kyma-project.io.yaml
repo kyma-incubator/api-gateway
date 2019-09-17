@@ -491,13 +491,6 @@ spec:
             observedGeneration:
               format: int64
               type: integer
-            policyStatus:
-              properties:
-                code:
-                  type: string
-                desc:
-                  type: string
-              type: object
             virtualServiceStatus:
               properties:
                 code:

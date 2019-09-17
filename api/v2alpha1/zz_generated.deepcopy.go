@@ -134,11 +134,6 @@ func (in *GateStatus) DeepCopyInto(out *GateStatus) {
 		*out = new(GatewayResourceStatus)
 		**out = **in
 	}
-	if in.PolicyServiceStatus != nil {
-		in, out := &in.PolicyServiceStatus, &out.PolicyServiceStatus
-		*out = new(GatewayResourceStatus)
-		**out = **in
-	}
 	if in.AccessRuleStatus != nil {
 		in, out := &in.AccessRuleStatus, &out.AccessRuleStatus
 		*out = new(GatewayResourceStatus)

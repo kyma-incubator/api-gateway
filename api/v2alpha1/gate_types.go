@@ -56,7 +56,6 @@ type GateStatus struct {
 	ObservedGeneration   int64                  `json:"observedGeneration,omitempty"`
 	GateStatus           *GatewayResourceStatus `json:"GateStatus,omitempty"`
 	VirtualServiceStatus *GatewayResourceStatus `json:"virtualServiceStatus,omitempty"`
-	PolicyServiceStatus  *GatewayResourceStatus `json:"policyStatus,omitempty"`
 	AccessRuleStatus     *GatewayResourceStatus `json:"accessRuleStatus,omitempty"`
 }
 
