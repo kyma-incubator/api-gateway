@@ -29,7 +29,7 @@ func (j *jwtAccStrValidator) Validate(attributePath string, handler *v1alpha1.Ha
 		for i := 0; i < len(template.TrustedIssuers); i++ {
 			if !isValidURL(template.TrustedIssuers[i]) {
 				attrPath := fmt.Sprintf("%s[%d]", attributePath+".config.trusted_issuers", i)
-				problems = append(problems, Failure{AttributePath: attrPath, Message: "trusted_issuers field is empty or not a valid url"})
+				problems = append(problems, Failure{AttributePath: attrPath, Message: "value is empty or not a valid url"})
 			}
 		}
 	}

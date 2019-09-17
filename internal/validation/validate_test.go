@@ -2,7 +2,6 @@ package validation
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"testing"
 
@@ -21,6 +20,7 @@ func TestValidators(t *testing.T) {
 }
 
 var _ = Describe("Validate function", func() {
+
 	It("Should fail for empty rules", func() {
 		//given
 		input := &gatewayv2alpha1.Gate{
@@ -62,6 +62,10 @@ var _ = Describe("Validate function", func() {
 							toAuthenticator("non-existing", nil),
 						},
 					},
+					gatewayv2alpha1.Rule{
+						Path:             "/ghi",
+						AccessStrategies: []*rulev1alpha1.Authenticator{},
+					},
 				},
 			},
 		}
@@ -69,7 +73,7 @@ var _ = Describe("Validate function", func() {
 		problems := (&Gate{}).Validate(input)
 
 		//then
-		Expect(problems).To(HaveLen(5))
+		Expect(problems).To(HaveLen(6))
 		Expect(problems[0].AttributePath).To(Equal(".spec.rules"))
 		Expect(problems[0].Message).To(Equal("multiple rules defined for the same path"))
 
@@ -84,6 +88,9 @@ var _ = Describe("Validate function", func() {
 
 		Expect(problems[4].AttributePath).To(Equal(".spec.rules[2].accessStrategies[0].handler"))
 		Expect(problems[4].Message).To(Equal("Unsupported accessStrategy: non-existing"))
+
+		Expect(problems[5].AttributePath).To(Equal(".spec.rules[3].accessStrategies"))
+		Expect(problems[5].Message).To(Equal("No accessStrategies defined"))
 	})
 
 	It("Should succedd for valid input", func() {
@@ -175,6 +182,33 @@ var _ = Describe("Validator for", func() {
 			Expect(problems[0].AttributePath).To(Equal("some.attribute.config"))
 			Expect(problems[0].Message).To(Equal("supplied config cannot be empty"))
 		})
+
+		It("Should fail for config with invalid trustedIssuers", func() {
+			//given
+			handler := &v1alpha1.Handler{Name: "jwt", Config: simpleJWTConfig("a t g o")}
+
+			//when
+			problems := (&jwtAccStrValidator{}).Validate("some.attribute", handler)
+
+			//then
+			Expect(problems).To(HaveLen(1))
+			Expect(problems[0].AttributePath).To(Equal("some.attribute.config.trusted_issuers[0]"))
+			Expect(problems[0].Message).To(Equal("value is empty or not a valid url"))
+		})
+
+		It("Should fail for invalid JSON", func() {
+			//given
+			handler := &v1alpha1.Handler{Name: "jwt", Config: &runtime.RawExtension{Raw: []byte("/abc]")}}
+
+			//when
+			problems := (&jwtAccStrValidator{}).Validate("some.attribute", handler)
+
+			//then
+			Expect(problems).To(HaveLen(1))
+			Expect(problems[0].AttributePath).To(Equal("some.attribute.config"))
+			Expect(problems[0].Message).To(Equal("Can't read json: invalid character '/' looking for beginning of value"))
+		})
+
 		It("Should succeed with valid config", func() {
 			//given
 			handler := &v1alpha1.Handler{Name: "jwt", Config: simpleJWTConfig()}
@@ -204,7 +238,6 @@ func simpleJWTConfig(trustedIssuers ...string) *runtime.RawExtension {
 func getRawConfig(config *v2alpha1.JWTAccStrConfig) *runtime.RawExtension {
 	bytes, err := json.Marshal(config)
 	Expect(err).To(BeNil())
-	fmt.Println(string(bytes))
 	return &runtime.RawExtension{
 		Raw: bytes,
 	}
