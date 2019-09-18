@@ -109,7 +109,6 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			if updateStatErr != nil {
 				//Log original error (it will be silently lost otherwise)
 				r.Log.Error(err, "Error during reconcilation")
-				//Retry reconcile with original error
 				return retryReconcile(updateStatErr)
 			}
 			//Fail fast: If status is updated we don't want to reconcile again.
