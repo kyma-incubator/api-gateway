@@ -81,7 +81,7 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		Description: "Skipped setting Oathkeeper Access Rule",
 	}
 
-	//Status update "trigger" detection
+	//Prevent reconciliation after status update. It should be solved by controller-runtime implementation but still isn't.
 	if api.Generation != api.Status.ObservedGeneration {
 		r.Log.Info("Api processing")
 
