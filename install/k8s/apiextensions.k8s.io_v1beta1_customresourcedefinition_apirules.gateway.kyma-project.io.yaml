@@ -472,7 +472,7 @@ spec:
           type: object
         status:
           properties:
-            GateStatus:
+            APIRuleStatus:
               properties:
                 code:
                   type: string
