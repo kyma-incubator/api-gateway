@@ -1,16 +1,18 @@
 package controllers_test
 
 import (
+	"path/filepath"
+	"sync"
+	"testing"
+
 	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
 	"github.com/kyma-incubator/api-gateway/controllers"
 	crClients "github.com/kyma-incubator/api-gateway/internal/clients"
+	"github.com/kyma-incubator/api-gateway/internal/validation"
 	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
-	"path/filepath"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sync"
-	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -77,9 +79,10 @@ var _ = BeforeSuite(func(done Done) {
 	reconciler := &controllers.APIReconciler{
 		Client:            mgr.GetClient(),
 		ExtCRClients:      crClients.New(mgr.GetClient()),
-		Log:               ctrl.Log.WithName("controllers").WithName("Gate"),
+		Log:               ctrl.Log.WithName("controllers").WithName("Api"),
 		OathkeeperSvc:     testOathkeeperSvcURL,
 		OathkeeperSvcPort: testOathkeeperPort,
+		Validator:         &validation.APIRule{},
 	}
 
 	var recFn reconcile.Reconciler
