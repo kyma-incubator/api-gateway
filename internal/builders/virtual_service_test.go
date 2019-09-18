@@ -1,8 +1,6 @@
 package builders
 
 import (
-	"fmt"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	k8sTypes "k8s.io/apimachinery/pkg/types"
@@ -32,14 +30,13 @@ var _ = Describe("Builder for", func() {
 			initialVs.Name = "shoudBeOverwritten"
 			initialVs.Spec.Hosts = []string{"a,", "b", "c"}
 
-			vs := VirtualService().Name(name).Namespace(namespace).
+			vs := VirtualService().From(&initialVs).Name(name).Namespace(namespace).
 				Owner(OwnerReference().Name(refName).APIVersion(refVersion).Kind(refKind).UID(refUID).Controller(true)).
 				Spec(
 					VirtualServiceSpec().
 						Host(host).
 						Gateway(gateway)).
-				Set(&initialVs)
-			fmt.Printf("%#v", vs)
+				Get()
 			Expect(vs.Name).To(Equal(name))
 			Expect(vs.Namespace).To(Equal(namespace))
 			Expect(vs.OwnerReferences).To(HaveLen(1))
@@ -76,7 +73,7 @@ var _ = Describe("Builder for", func() {
 				HTTP(HTTPRoute().
 					Match(MatchRequest().URI().Regex(matchURIRegex3)).
 					Route(RouteDestination().Host(destHost2).Port(destPort2))).
-				New()
+				Get()
 
 			Expect(result.Hosts).To(HaveLen(2))
 			Expect(result.Hosts[0]).To(Equal(host))
@@ -86,7 +83,10 @@ var _ = Describe("Builder for", func() {
 			Expect(result.Gateways[0]).To(Equal(gateway))
 			Expect(result.Gateways[1]).To(Equal(gateway2))
 
+			//Two HTTPRoute elements
 			Expect(result.HTTP).To(HaveLen(2))
+
+			//Two HTTPMatchRequest elements
 			Expect(result.HTTP[0].Match).To(HaveLen(2))
 			Expect(result.HTTP[0].Match[0].URI.Regex).To(Equal(matchURIRegex))
 			Expect(result.HTTP[0].Match[1].URI.Regex).To(Equal(matchURIRegex2))
@@ -95,6 +95,7 @@ var _ = Describe("Builder for", func() {
 			Expect(result.HTTP[0].Route[0].Destination.Port.Number).To(Equal(destPort))
 			Expect(result.HTTP[0].Route[0].Destination.Port.Name).To(BeEmpty())
 
+			//One HTTPMatchRequest element
 			Expect(result.HTTP[1].Match).To(HaveLen(1))
 			Expect(result.HTTP[1].Match[0].URI.Regex).To(Equal(matchURIRegex3))
 			Expect(result.HTTP[1].Route).To(HaveLen(1))

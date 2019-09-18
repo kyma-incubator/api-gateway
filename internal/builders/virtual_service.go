@@ -16,6 +16,10 @@ type virtualService struct {
 	value *networkingv1alpha3.VirtualService
 }
 
+func (vs *virtualService) Get() *networkingv1alpha3.VirtualService {
+	return vs.value
+}
+
 func (vs *virtualService) From(val *networkingv1alpha3.VirtualService) *virtualService {
 	vs.value = val
 	return vs
@@ -39,10 +43,6 @@ func (vs *virtualService) Owner(val *ownerReference) *virtualService {
 func (vs *virtualService) Spec(val *virtualServiceSpec) *virtualService {
 	vs.value.Spec = *val.Get()
 	return vs
-}
-
-func (vs *virtualService) Get() *networkingv1alpha3.VirtualService {
-	return vs.value
 }
 
 // VirtualServiceSpec returns builder for knative.dev/pkg/apis/istio/v1alpha3/VirtualServiceSpec type
@@ -71,25 +71,8 @@ func (vss *virtualServiceSpec) Gateway(val string) *virtualServiceSpec {
 	return vss
 }
 
-func (vss *virtualServiceSpec) HTTP(mr *matchRequest, rd *routeDestination) *virtualServiceSpec {
-	var httpMatch []networkingv1alpha3.HTTPMatchRequest
-	var routeDest []networkingv1alpha3.HTTPRouteDestination
-
-	if mr != nil {
-		httpMatch = append(httpMatch, *mr.Get())
-	}
-
-	if rd != nil {
-		routeDest = append(routeDest, *rd.Get())
-	}
-
-	vss.value.HTTP = []networkingv1alpha3.HTTPRoute{
-		{
-			Match: httpMatch,
-			Route: routeDest,
-		},
-	}
-
+func (vss *virtualServiceSpec) HTTP(hr *httpRoute) *virtualServiceSpec {
+	vss.value.HTTP = append(vss.value.HTTP, *hr.Get())
 	return vss
 }
 
@@ -97,23 +80,49 @@ func (vss *virtualServiceSpec) Get() *networkingv1alpha3.VirtualServiceSpec {
 	return vss.value
 }
 
+// HTTPRoute returns builder for knative.dev/pkg/apis/istio/v1alpha3/HTTPRoute type
+func HTTPRoute() *httpRoute {
+	return &httpRoute{
+		value: &networkingv1alpha3.HTTPRoute{},
+	}
+}
+
+type httpRoute struct {
+	value *networkingv1alpha3.HTTPRoute
+}
+
+func (hr *httpRoute) Get() *networkingv1alpha3.HTTPRoute {
+	return hr.value
+}
+
+func (hr *httpRoute) Match(mr *matchRequest) *httpRoute {
+	hr.value.Match = append(hr.value.Match, *mr.Get())
+	return hr
+}
+
+func (hr *httpRoute) Route(rd *routeDestination) *httpRoute {
+	hr.value.Route = append(hr.value.Route, *rd.Get())
+	return hr
+}
+
 // MatchRequest returns builder for knative.dev/pkg/apis/istio/v1alpha3/HTTPMatchRequest type
 func MatchRequest() *matchRequest {
-	return &matchRequest{}
+	return &matchRequest{
+		value: &networkingv1alpha3.HTTPMatchRequest{},
+	}
 }
 
 type matchRequest struct {
-	data *networkingv1alpha3.HTTPMatchRequest
+	value *networkingv1alpha3.HTTPMatchRequest
 }
 
 func (mr *matchRequest) Get() *networkingv1alpha3.HTTPMatchRequest {
-	return mr.data
+	return mr.value
 }
 
 func (mr *matchRequest) URI() *stringMatch {
-	mr.data = &networkingv1alpha3.HTTPMatchRequest{}
-	mr.data.URI = &networkingv1alpha1.StringMatch{}
-	return &stringMatch{mr.data.URI, func() *matchRequest { return mr }}
+	mr.value.URI = &networkingv1alpha1.StringMatch{}
+	return &stringMatch{mr.value.URI, func() *matchRequest { return mr }}
 }
 
 type stringMatch struct {
@@ -135,6 +144,10 @@ type routeDestination struct {
 	value *networkingv1alpha3.HTTPRouteDestination
 }
 
+func (rd *routeDestination) Get() *networkingv1alpha3.HTTPRouteDestination {
+	return rd.value
+}
+
 func (rd *routeDestination) Host(val string) *routeDestination {
 	rd.value.Destination.Host = val
 	return rd
@@ -142,7 +155,4 @@ func (rd *routeDestination) Host(val string) *routeDestination {
 func (rd *routeDestination) Port(val uint32) *routeDestination {
 	rd.value.Destination.Port.Number = val
 	return rd
-}
-func (rd *routeDestination) Get() *networkingv1alpha3.HTTPRouteDestination {
-	return rd.value
 }
