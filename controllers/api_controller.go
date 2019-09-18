@@ -47,7 +47,7 @@ type APIReconciler struct {
 
 //APIRuleValidator allows to validate APIRule instances created by the user.
 type APIRuleValidator interface {
-	Validate(gate *gatewayv1alpha1.APIRule) []validation.Failure
+	Validate(apiRule *gatewayv1alpha1.APIRule) []validation.Failure
 }
 
 //Reconcile .
@@ -88,10 +88,10 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		validationFailures := r.Validator.Validate(api)
 		if len(validationFailures) > 0 {
 			r.Log.Info(fmt.Sprintf(`Validation failure {"controller": "Api", "request": "%s/%s"}`, api.Namespace, api.Name))
-			gateValidationStatus := generateValidationStatus(validationFailures)
-			_, updateStatErr := r.updateStatus(ctx, api, gateValidationStatus, virtualServiceStatus, accessRuleStatus)
+			apiRuleValidationStatus := generateValidationStatus(validationFailures)
+			_, updateStatErr := r.updateStatus(ctx, api, apiRuleValidationStatus, virtualServiceStatus, accessRuleStatus)
 			if updateStatErr != nil {
-				r.Log.Error(errors.New("Status couldn't be updated with validation failures"), gateValidationStatus.Description)
+				r.Log.Error(errors.New("Status couldn't be updated with validation failures"), apiRuleValidationStatus.Description)
 				return retryReconcile(updateStatErr)
 			}
 			return doneReconcile()

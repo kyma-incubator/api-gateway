@@ -38,7 +38,7 @@ const (
 	testIDLength                = 5
 )
 
-var _ = Describe("Gate Controller", func() {
+var _ = Describe("APIRule Controller", func() {
 	const testServiceName = "httpbin"
 	const testServiceHost = "httpbin.kyma.local"
 	const testServicePort uint32 = 443
@@ -59,7 +59,7 @@ var _ = Describe("Gate Controller", func() {
 		},
 	}
 
-	Context("when creating a Gate for exposing service", func() {
+	Context("when creating an APIRule for exposing service", func() {
 
 		It("Should report validation errors in CR status", func() {
 			configJSON := fmt.Sprintf(`{

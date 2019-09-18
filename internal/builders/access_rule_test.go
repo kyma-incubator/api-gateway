@@ -28,7 +28,7 @@ var _ = Describe("Builder for", func() {
 
 			refName := "refName"
 			refVersion := "v1alpha1"
-			refKind := "Gate"
+			refKind := "APIRule"
 			var refUID k8sTypes.UID = "123"
 
 			testUpstreamURL := fmt.Sprintf("http://%s:%d", destHost, destPort)

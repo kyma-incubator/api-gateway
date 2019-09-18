@@ -37,7 +37,7 @@ func configNotEmpty(config *runtime.RawExtension) bool {
 type APIRule struct {
 }
 
-//Validate performs Gate validation
+//Validate performs APIRule validation
 func (v *APIRule) Validate(api *gatewayv1alpha1.APIRule) []Failure {
 
 	res := []Failure{}
