@@ -44,7 +44,7 @@ type APIReconciler struct {
 	Validator         GateValidator
 }
 
-//GateValidator is an interface that allows to validate Gate instances created by the user.
+//GateValidator allows to validate Gate instances created by the user.
 type GateValidator interface {
 	Validate(gate *gatewayv2alpha1.Gate) []validation.Failure
 }
