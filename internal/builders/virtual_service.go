@@ -56,6 +56,10 @@ type virtualServiceSpec struct {
 	value *networkingv1alpha3.VirtualServiceSpec
 }
 
+func (vss *virtualServiceSpec) Get() *networkingv1alpha3.VirtualServiceSpec {
+	return vss.value
+}
+
 func (vss *virtualServiceSpec) From(val *networkingv1alpha3.VirtualServiceSpec) *virtualServiceSpec {
 	vss.value = val
 	return vss
@@ -74,10 +78,6 @@ func (vss *virtualServiceSpec) Gateway(val string) *virtualServiceSpec {
 func (vss *virtualServiceSpec) HTTP(hr *httpRoute) *virtualServiceSpec {
 	vss.value.HTTP = append(vss.value.HTTP, *hr.Get())
 	return vss
-}
-
-func (vss *virtualServiceSpec) Get() *networkingv1alpha3.VirtualServiceSpec {
-	return vss.value
 }
 
 // HTTPRoute returns builder for knative.dev/pkg/apis/istio/v1alpha3/HTTPRoute type
@@ -152,6 +152,7 @@ func (rd *routeDestination) Host(val string) *routeDestination {
 	rd.value.Destination.Host = val
 	return rd
 }
+
 func (rd *routeDestination) Port(val uint32) *routeDestination {
 	rd.value.Destination.Port.Number = val
 	return rd
