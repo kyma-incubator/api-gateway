@@ -48,7 +48,7 @@ type APIRuleSpec struct {
 type APIRuleStatus struct {
 	LastProcessedTime    *metav1.Time           `json:"lastProcessedTime,omitempty"`
 	ObservedGeneration   int64                  `json:"observedGeneration,omitempty"`
-	APIRuleStatus        *APIRuleResourceStatus `json:"GateStatus,omitempty"`
+	APIRuleStatus        *APIRuleResourceStatus `json:"APIRuleStatus,omitempty"`
 	VirtualServiceStatus *APIRuleResourceStatus `json:"virtualServiceStatus,omitempty"`
 	AccessRuleStatus     *APIRuleResourceStatus `json:"accessRuleStatus,omitempty"`
 }
