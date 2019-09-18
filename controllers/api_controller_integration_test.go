@@ -8,7 +8,7 @@ import (
 
 	"encoding/json"
 
-	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
+	gatewayv1alpha1 "github.com/kyma-incubator/api-gateway/api/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
@@ -91,10 +91,10 @@ var _ = Describe("Gate Controller", func() {
 			Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
 
 			//Verify APIRule
-			created := gatewayv2alpha1.APIRule{}
+			created := gatewayv1alpha1.APIRule{}
 			err = c.Get(context.TODO(), client.ObjectKey{Name: testName, Namespace: testNamespace}, &created)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(created.Status.APIRuleStatus.Code).To(Equal(gatewayv2alpha1.StatusError))
+			Expect(created.Status.APIRuleStatus.Code).To(Equal(gatewayv1alpha1.StatusError))
 			Expect(created.Status.APIRuleStatus.Description).To(ContainSubstring("Multiple validation errors:"))
 			Expect(created.Status.APIRuleStatus.Description).To(ContainSubstring("Attribute \".spec.rules\": multiple rules defined for the same path"))
 			Expect(created.Status.APIRuleStatus.Description).To(ContainSubstring("Attribute \".spec.rules[0].accessStrategies[0].config\": strategy: noop does not support configuration"))
@@ -147,7 +147,7 @@ var _ = Describe("Gate Controller", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						//Meta
-						verifyOwnerReference(vs.ObjectMeta, testName, gatewayv2alpha1.GroupVersion.String(), kind)
+						verifyOwnerReference(vs.ObjectMeta, testName, gatewayv1alpha1.GroupVersion.String(), kind)
 						//Spec.Hosts
 						Expect(vs.Spec.Hosts).To(HaveLen(1))
 						Expect(vs.Spec.Hosts[0]).To(Equal(testServiceHost))
@@ -203,7 +203,7 @@ var _ = Describe("Gate Controller", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						//Meta
-						verifyOwnerReference(rl.ObjectMeta, testName, gatewayv2alpha1.GroupVersion.String(), kind)
+						verifyOwnerReference(rl.ObjectMeta, testName, gatewayv1alpha1.GroupVersion.String(), kind)
 
 						//Spec.Upstream
 						Expect(rl.Spec.Upstream).NotTo(BeNil())
@@ -276,7 +276,7 @@ var _ = Describe("Gate Controller", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						//Meta
-						verifyOwnerReference(vs.ObjectMeta, testName, gatewayv2alpha1.GroupVersion.String(), kind)
+						verifyOwnerReference(vs.ObjectMeta, testName, gatewayv1alpha1.GroupVersion.String(), kind)
 						//Spec.Hosts
 						Expect(vs.Spec.Hosts).To(HaveLen(1))
 						Expect(vs.Spec.Hosts[0]).To(Equal(testServiceHost))
@@ -332,7 +332,7 @@ var _ = Describe("Gate Controller", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						//Meta
-						verifyOwnerReference(rl.ObjectMeta, testName, gatewayv2alpha1.GroupVersion.String(), kind)
+						verifyOwnerReference(rl.ObjectMeta, testName, gatewayv1alpha1.GroupVersion.String(), kind)
 
 						//Spec.Upstream
 						Expect(rl.Spec.Upstream).NotTo(BeNil())
@@ -380,7 +380,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	err = c.Watch(&source.Kind{Type: &gatewayv2alpha1.APIRule{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &gatewayv1alpha1.APIRule{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -402,22 +402,22 @@ func toCSVList(input []string) string {
 	return res
 }
 
-func testInstance(name, namespace, serviceName, serviceHost string, config *rulev1alpha1.Handler, servicePort uint32, path string, methods []string, scopes []string, mutators []*rulev1alpha1.Mutator) *gatewayv2alpha1.APIRule {
+func testInstance(name, namespace, serviceName, serviceHost string, config *rulev1alpha1.Handler, servicePort uint32, path string, methods []string, scopes []string, mutators []*rulev1alpha1.Mutator) *gatewayv1alpha1.APIRule {
 	var gateway = testGatewayURL
 
-	return &gatewayv2alpha1.APIRule{
+	return &gatewayv1alpha1.APIRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
-		Spec: gatewayv2alpha1.APIRuleSpec{
+		Spec: gatewayv1alpha1.APIRuleSpec{
 			Gateway: &gateway,
-			Service: &gatewayv2alpha1.Service{
+			Service: &gatewayv1alpha1.Service{
 				Host: &serviceHost,
 				Name: &serviceName,
 				Port: &servicePort,
 			},
-			Rules: []gatewayv2alpha1.Rule{
+			Rules: []gatewayv1alpha1.Rule{
 				{
 					Path:     path,
 					Methods:  methods,

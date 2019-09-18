@@ -44,8 +44,8 @@ kubectl get crd apirule.gateway.kyma-project.io -o yaml
 This is a sample custom resource (CR) that the API-gateway listens for to expose a service.
 
 ```
-apiVersion: gateway.kyma-project.io/v2alpha1
-kind: ApiRule
+apiVersion: gateway.kyma-project.io/v1alpha1
+kind: APIRule
 metadata:
   name: jwt-all-with-scopes
 spec:

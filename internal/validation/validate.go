@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
-	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
+	gatewayv1alpha1 "github.com/kyma-incubator/api-gateway/api/v1alpha1"
 	"github.com/ory/oathkeeper-maester/api/v1alpha1"
 	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,12 +33,12 @@ func configNotEmpty(config *runtime.RawExtension) bool {
 	return !configEmpty(config)
 }
 
-//APIRule is used to validate github.com/kyma-incubator/api-gateway/api/v2alpha1/APIRule instances
+//APIRule is used to validate github.com/kyma-incubator/api-gateway/api/v1alpha1/APIRule instances
 type APIRule struct {
 }
 
 //Validate performs Gate validation
-func (v *APIRule) Validate(api *gatewayv2alpha1.APIRule) []Failure {
+func (v *APIRule) Validate(api *gatewayv1alpha1.APIRule) []Failure {
 
 	res := []Failure{}
 	//Validate service
@@ -57,7 +57,7 @@ type Failure struct {
 	Message       string
 }
 
-func (v *APIRule) validateService(attributePath string, service *gatewayv2alpha1.Service) []Failure {
+func (v *APIRule) validateService(attributePath string, service *gatewayv1alpha1.Service) []Failure {
 	return nil
 }
 
@@ -65,7 +65,7 @@ func (v *APIRule) validateGateway(attributePath string, gateway *string) []Failu
 	return nil
 }
 
-func (v *APIRule) validateRules(attributePath string, rules []gatewayv2alpha1.Rule) []Failure {
+func (v *APIRule) validateRules(attributePath string, rules []gatewayv1alpha1.Rule) []Failure {
 	var problems []Failure
 
 	if len(rules) == 0 {

@@ -504,7 +504,7 @@ spec:
           type: object
       type: object
   versions:
-  - name: v2alpha1
+  - name: v1alpha1
     served: true
     storage: true
 status:

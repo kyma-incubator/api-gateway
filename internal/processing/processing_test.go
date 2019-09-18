@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
+	gatewayv1alpha1 "github.com/kyma-incubator/api-gateway/api/v1alpha1"
 	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,7 +16,7 @@ var (
 	apiName                 = "test-apirule"
 	apiUID        types.UID = "eab0f1c8-c417-11e9-bf11-4ac644044351"
 	apiNamespace            = "some-namespace"
-	apiAPIVersion           = "gateway.kyma-project.io/v2alpha1"
+	apiAPIVersion           = "gateway.kyma-project.io/v1alpha1"
 	apiKind                 = "ApiRule"
 	apiGateway              = "some-gateway"
 	apiPath                 = "/.*"
@@ -29,8 +29,8 @@ var (
 	jwtIssuer               = "https://oauth2.example.com/"
 )
 
-func getGateFor(strategies []*rulev1alpha1.Authenticator, mutators []*rulev1alpha1.Mutator) *gatewayv2alpha1.APIRule {
-	return &gatewayv2alpha1.APIRule{
+func getGateFor(strategies []*rulev1alpha1.Authenticator, mutators []*rulev1alpha1.Mutator) *gatewayv1alpha1.APIRule {
+	return &gatewayv1alpha1.APIRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      apiName,
 			UID:       apiUID,
@@ -40,14 +40,14 @@ func getGateFor(strategies []*rulev1alpha1.Authenticator, mutators []*rulev1alph
 			APIVersion: apiAPIVersion,
 			Kind:       apiKind,
 		},
-		Spec: gatewayv2alpha1.APIRuleSpec{
+		Spec: gatewayv1alpha1.APIRuleSpec{
 			Gateway: &apiGateway,
-			Service: &gatewayv2alpha1.Service{
+			Service: &gatewayv1alpha1.Service{
 				Name: &serviceName,
 				Host: &serviceHost,
 				Port: &servicePort,
 			},
-			Rules: []gatewayv2alpha1.Rule{
+			Rules: []gatewayv1alpha1.Rule{
 				{
 					Path:             apiPath,
 					Methods:          apiMethods,

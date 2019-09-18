@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	gatewayv2alpha1 "github.com/kyma-incubator/api-gateway/api/v2alpha1"
+	gatewayv1alpha1 "github.com/kyma-incubator/api-gateway/api/v1alpha1"
 	"github.com/kyma-incubator/api-gateway/controllers"
 	crClients "github.com/kyma-incubator/api-gateway/internal/clients"
 	"github.com/kyma-incubator/api-gateway/internal/validation"
@@ -40,7 +40,7 @@ var (
 
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
-	_ = gatewayv2alpha1.AddToScheme(scheme)
+	_ = gatewayv1alpha1.AddToScheme(scheme)
 	_ = networkingv1alpha3.AddToScheme(scheme)
 	_ = rulev1alpha1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
