@@ -84,10 +84,10 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	//Prevent reconciliation after status update. It should be solved by controller-runtime implementation but still isn't.
 	if api.Generation != api.Status.ObservedGeneration {
-		r.Log.Info("Api processing")
 
 		validationFailures := r.Validator.Validate(api)
 		if len(validationFailures) > 0 {
+			r.Log.Info(fmt.Sprintf(`Validation failure {"controller": "gate", "request": "%s/%s"}`, api.Namespace, api.Name))
 			gateValidationStatus := generateValidationStatus(validationFailures)
 			_, updateStatErr := r.updateStatus(ctx, api, gateValidationStatus, virtualServiceStatus, accessRuleStatus)
 			if updateStatErr != nil {
