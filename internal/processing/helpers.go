@@ -47,6 +47,7 @@ func generateAccessRuleSpec(api *gatewayv1alpha1.APIRule, rule gatewayv1alpha1.R
 }
 
 func generateVirtualService(api *gatewayv1alpha1.APIRule, destinationHost string, destinationPort uint32, path string) *networkingv1alpha3.VirtualService {
+	//TODO implement support for "allow" & oathkeeper authn (many http objects)
 	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	ownerRef := generateOwnerRef(api)
 	return builders.VirtualService().
@@ -58,7 +59,7 @@ func generateVirtualService(api *gatewayv1alpha1.APIRule, destinationHost string
 				Host(*api.Spec.Service.Host).
 				Gateway(*api.Spec.Gateway).
 				HTTP(builders.HTTPRoute().
-					Match(builders.MatchRequest().URI().Regex(path)).
+					Match(builders.MatchRequest().URI().Regex("/.*")).
 					Route(builders.RouteDestination().Host(destinationHost).Port(destinationPort)))).
 		Get()
 }
@@ -95,6 +96,7 @@ func generateObjectMeta(api *gatewayv1alpha1.APIRule) k8sMeta.ObjectMeta {
 }
 
 func prepareVirtualService(api *gatewayv1alpha1.APIRule, vs *networkingv1alpha3.VirtualService, destinationHost string, destinationPort uint32, path string) *networkingv1alpha3.VirtualService {
+	//TODO implement support for "allow" & oathkeeper authn (many http objects)
 	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	ownerRef := generateOwnerRef(api)
 
@@ -107,7 +109,7 @@ func prepareVirtualService(api *gatewayv1alpha1.APIRule, vs *networkingv1alpha3.
 				Host(*api.Spec.Service.Host).
 				Gateway(*api.Spec.Gateway).
 				HTTP(builders.HTTPRoute().
-					Match(builders.MatchRequest().URI().Regex(path)).
+					Match(builders.MatchRequest().URI().Regex("/.*")).
 					Route(builders.RouteDestination().Host(destinationHost).Port(destinationPort)))).
 		Get()
 }
