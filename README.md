@@ -82,11 +82,11 @@ This table lists all the possible parameters of a given resource together with t
 
 ## Additional information
 
-When you fetch an existing Gate CR, the system adds the **status** section which describes the status of the Virtual Service and the Rule created for this CR. This table lists the fields of the **status** section.
+When you fetch an existing APIRule CR, the system adds the **status** section which describes the status of the Virtual Service and the Rule created for this CR. This table lists the fields of the **status** section.
 
 | Field   |  Description |
 |:---|:---|
-| **status.apiRuleStatus** | Status code describing the Gate CR. |
+| **status.apiRuleStatus** | Status code describing the APIRule CR. |
 | **status.virtualServiceStatus.code** | Status code describing the Virtual Service. |
 | **status.virtualService.desc** | Current state of the Virtual Service. |
 | **status.accessRuleStatus.code** | Status code describing the Oathkeeper Rule. |
