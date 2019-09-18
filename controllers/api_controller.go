@@ -63,7 +63,7 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	err := r.Get(ctx, req.NamespacedName, api)
 	if err != nil {
 		if !apierrs.IsNotFound(err) {
-			return reconcile.Result{}, err
+			return retryReconcile(err)
 		}
 	}
 
@@ -89,11 +89,9 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		if len(validationFailures) > 0 {
 			_, updateStatErr := r.updateStatus(ctx, api, generateValidationStatus(validationFailures), virtualServiceStatus, accessRuleStatus)
 			if updateStatErr != nil {
-				//In case of status update error, we want to reconcile again
-				return reconcile.Result{}, updateStatErr
+				return retryReconcile(updateStatErr)
 			}
-			//If validation failures are reported in the Status, we don't want to reconcile again
-			return ctrl.Result{}, nil
+			return doneReconcile()
 		}
 
 		err = processing.NewFactory(r.ExtCRClients.ForVirtualService(), r.ExtCRClients.ForAccessRule(), r.Log, r.OathkeeperSvc, r.OathkeeperSvcPort, r.JWKSURI).Run(ctx, api)
@@ -109,9 +107,13 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 			_, updateStatErr := r.updateStatus(ctx, api, generateErrorStatus(err), virtualServiceStatus, accessRuleStatus)
 			if updateStatErr != nil {
-				return reconcile.Result{Requeue: true}, err
+				//Log original error (it will be silently lost otherwise)
+				r.Log.Error(err, "Error during reconcilation")
+				//Retry reconcile with original error
+				return retryReconcile(updateStatErr)
 			}
-			return ctrl.Result{}, err
+			//Fail fast: If status is updated we don't want to reconcile again.
+			return doneReconcile()
 		}
 
 		virtualServiceStatus = &gatewayv2alpha1.GatewayResourceStatus{
@@ -125,11 +127,19 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		_, err = r.updateStatus(ctx, api, APIStatus, virtualServiceStatus, accessRuleStatus)
 
 		if err != nil {
-			return reconcile.Result{Requeue: true}, err
+			return retryReconcile(err)
 		}
 	}
 
+	return doneReconcile()
+}
+
+func doneReconcile() (ctrl.Result, error) {
 	return ctrl.Result{}, nil
+}
+
+func retryReconcile(err error) (ctrl.Result, error) {
+	return reconcile.Result{Requeue: true}, err
 }
 
 //SetupWithManager .
