@@ -196,7 +196,7 @@ var _ = Describe("APIRule Controller", func() {
 						Expect(vs.Spec.TLS).To(BeNil())
 
 						//Verify Rule
-						expectedRuleName := testName + "-" + testServiceName
+						expectedRuleName := testName + "-" + testServiceName + "-0"
 						expectedRuleNamespace := testNamespace
 						rl := rulev1alpha1.Rule{}
 						err = c.Get(context.TODO(), client.ObjectKey{Name: expectedRuleName, Namespace: expectedRuleNamespace}, &rl)
@@ -325,7 +325,7 @@ var _ = Describe("APIRule Controller", func() {
 						Expect(vs.Spec.TLS).To(BeNil())
 
 						//Verify Rule
-						expectedRuleName := testName + "-" + testServiceName
+						expectedRuleName := testName + "-" + testServiceName + "-0"
 						expectedRuleNamespace := testNamespace
 						rl := rulev1alpha1.Rule{}
 						err = c.Get(context.TODO(), client.ObjectKey{Name: expectedRuleName, Namespace: expectedRuleNamespace}, &rl)
