@@ -6,266 +6,143 @@ import (
 )
 
 // VirtualService returns builder for knative.dev/pkg/apis/istio/v1alpha3/VirtualService type
-// This builder is deferred - it records all requested changes and then "replays" them on existing object with `Set()` method or on a new one with `New()` method
 func VirtualService() *virtualService {
-	return &virtualService{}
+	return &virtualService{
+		value: &networkingv1alpha3.VirtualService{},
+	}
 }
 
 type virtualService struct {
-	fns []virtualServiceFunc
+	value *networkingv1alpha3.VirtualService
 }
 
-type virtualServiceFunc func(target *networkingv1alpha3.VirtualService)
-
-func (vs *virtualService) add(fn virtualServiceFunc) {
-	vs.fns = append(vs.fns, fn)
-}
-
-func (vs *virtualService) set(target *networkingv1alpha3.VirtualService) *networkingv1alpha3.VirtualService {
-	for i := 0; i < len(vs.fns); i++ {
-		vs.fns[i](target)
-	}
-	return target
-}
-
-func (vs *virtualService) Name(value string) *virtualService {
-	vs.add(func(target *networkingv1alpha3.VirtualService) {
-		target.Name = value
-	})
+func (vs *virtualService) From(val *networkingv1alpha3.VirtualService) *virtualService {
+	vs.value = val
 	return vs
 }
 
-func (vs *virtualService) Namespace(value string) *virtualService {
-	vs.add(func(target *networkingv1alpha3.VirtualService) {
-		target.Namespace = value
-	})
+func (vs *virtualService) Name(val string) *virtualService {
+	vs.value.Name = val
 	return vs
 }
 
-func (vs *virtualService) Owner(value *ownerReference) *virtualService {
-	vs.add(func(target *networkingv1alpha3.VirtualService) {
-		target.OwnerReferences = append(target.OwnerReferences, *value.Get())
-	})
+func (vs *virtualService) Namespace(val string) *virtualService {
+	vs.value.Namespace = val
 	return vs
 }
 
-func (vs *virtualService) Spec(specBuilder *virtualServiceSpec) *virtualService {
-	vs.add(func(target *networkingv1alpha3.VirtualService) {
-		target.Spec = *specBuilder.New() //replaces entire Spec with data returned by given builder, merge is not supported.
-	})
+func (vs *virtualService) Owner(val *ownerReference) *virtualService {
+	vs.value.OwnerReferences = append(vs.value.OwnerReferences, *val.Get())
 	return vs
 }
 
-//New replays all requested changes on a new networkingv1alpha3.VirtualService instance
-func (vs *virtualService) New() *networkingv1alpha3.VirtualService {
-	return vs.set(&networkingv1alpha3.VirtualService{})
+func (vs *virtualService) Spec(val *virtualServiceSpec) *virtualService {
+	vs.value.Spec = *val.Get()
+	return vs
 }
 
-//Set replays all requested changes on an existing networkingv1alpha3.VirtualService instance
-func (vs *virtualService) Set(target *networkingv1alpha3.VirtualService) *networkingv1alpha3.VirtualService {
-	return vs.set(target)
+func (vs *virtualService) Get() *networkingv1alpha3.VirtualService {
+	return vs.value
 }
 
 // VirtualServiceSpec returns builder for knative.dev/pkg/apis/istio/v1alpha3/VirtualServiceSpec type
-// This builder is deferred - it records all requested changes and then "replays" them on existing object with `Set()` method or on a new one with `New()` method
 func VirtualServiceSpec() *virtualServiceSpec {
-	return &virtualServiceSpec{}
+	return &virtualServiceSpec{
+		value: &networkingv1alpha3.VirtualServiceSpec{},
+	}
 }
 
 type virtualServiceSpec struct {
-	fns []virtualServiceSpecFunc
+	value *networkingv1alpha3.VirtualServiceSpec
 }
 
-type virtualServiceSpecFunc func(target *networkingv1alpha3.VirtualServiceSpec)
-
-func (vss *virtualServiceSpec) add(fn virtualServiceSpecFunc) {
-	vss.fns = append(vss.fns, fn)
+func (vss *virtualServiceSpec) From(val *networkingv1alpha3.VirtualServiceSpec) *virtualServiceSpec {
+	vss.value = val
+	return vss
 }
 
-func (vss *virtualServiceSpec) set(target *networkingv1alpha3.VirtualServiceSpec) *networkingv1alpha3.VirtualServiceSpec {
-	for i := 0; i < len(vss.fns); i++ {
-		vss.fns[i](target)
+func (vss *virtualServiceSpec) Host(val string) *virtualServiceSpec {
+	vss.value.Hosts = append(vss.value.Hosts, val)
+	return vss
+}
+
+func (vss *virtualServiceSpec) Gateway(val string) *virtualServiceSpec {
+	vss.value.Gateways = append(vss.value.Gateways, val)
+	return vss
+}
+
+func (vss *virtualServiceSpec) HTTP(mr *matchRequest, rd *routeDestination) *virtualServiceSpec {
+	var httpMatch []networkingv1alpha3.HTTPMatchRequest
+	var routeDest []networkingv1alpha3.HTTPRouteDestination
+
+	if mr != nil {
+		httpMatch = append(httpMatch, *mr.Get())
 	}
-	return target
-}
 
-func (vss *virtualServiceSpec) Host(value string) *virtualServiceSpec {
-	vss.add(func(target *networkingv1alpha3.VirtualServiceSpec) {
-		target.Hosts = append(target.Hosts, value)
-	})
-	return vss
-}
-
-func (vss *virtualServiceSpec) Gateway(value string) *virtualServiceSpec {
-	vss.add(func(target *networkingv1alpha3.VirtualServiceSpec) {
-		target.Gateways = append(target.Gateways, value)
-	})
-	return vss
-}
-
-func (vss *virtualServiceSpec) HTTP(hr *httpRoute) *virtualServiceSpec {
-	vss.add(func(target *networkingv1alpha3.VirtualServiceSpec) {
-		target.HTTP = append(target.HTTP, *hr.New())
-	})
-	return vss
-}
-
-//New replays all requested changes on a new networkingv1alpha3.VirtualServiceSpec instance
-func (vss *virtualServiceSpec) New() *networkingv1alpha3.VirtualServiceSpec {
-	return vss.set(&networkingv1alpha3.VirtualServiceSpec{})
-}
-
-//Set replays all requested changes on an existing networkingv1alpha3.VirtualServiceSpec instance
-func (vss *virtualServiceSpec) Set(val *networkingv1alpha3.VirtualServiceSpec) *networkingv1alpha3.VirtualServiceSpec {
-	return vss.set(val)
-}
-
-// HTTPRoute returns builder for knative.dev/pkg/apis/istio/v1alpha3/HTTPRoute type
-// This builder is deferred - it records all requested changes and then "replays" them on existing object with `Set()` method or on a new one with `New()` method
-func HTTPRoute() *httpRoute {
-	return &httpRoute{}
-}
-
-type httpRoute struct {
-	fns []httpRouteFunc
-}
-
-type httpRouteFunc func(target *networkingv1alpha3.HTTPRoute)
-
-func (hr *httpRoute) add(fn httpRouteFunc) {
-	hr.fns = append(hr.fns, fn)
-}
-
-func (hr *httpRoute) set(target *networkingv1alpha3.HTTPRoute) *networkingv1alpha3.HTTPRoute {
-	for i := 0; i < len(hr.fns); i++ {
-		hr.fns[i](target)
+	if rd != nil {
+		routeDest = append(routeDest, *rd.Get())
 	}
-	return target
+
+	vss.value.HTTP = []networkingv1alpha3.HTTPRoute{
+		{
+			Match: httpMatch,
+			Route: routeDest,
+		},
+	}
+
+	return vss
 }
 
-func (hr *httpRoute) Match(mr *matchRequest) *httpRoute {
-	hr.add(func(target *networkingv1alpha3.HTTPRoute) {
-		target.Match = append(target.Match, *mr.New())
-	})
-	return hr
-}
-
-func (hr *httpRoute) Route(rd *routeDestination) *httpRoute {
-	hr.add(func(target *networkingv1alpha3.HTTPRoute) {
-		target.Route = append(target.Route, *rd.New())
-	})
-	return hr
-}
-
-//New replays all requested changes on a new networkingv1alpha3.HTTPRoute instance
-func (hr *httpRoute) New() *networkingv1alpha3.HTTPRoute {
-	return hr.set(&networkingv1alpha3.HTTPRoute{})
-}
-
-//Set replays all requested changes on an existing networkingv1alpha3.HTTPRoute instance
-func (hr *httpRoute) Set(target *networkingv1alpha3.HTTPRoute) *networkingv1alpha3.HTTPRoute {
-	return hr.set(target)
+func (vss *virtualServiceSpec) Get() *networkingv1alpha3.VirtualServiceSpec {
+	return vss.value
 }
 
 // MatchRequest returns builder for knative.dev/pkg/apis/istio/v1alpha3/HTTPMatchRequest type
-// This builder is deferred - it records all requested changes and then "replays" them on existing object with `Set()` method or on a new one with `New()` method
 func MatchRequest() *matchRequest {
 	return &matchRequest{}
 }
 
 type matchRequest struct {
-	fns []matchRequestFunc
+	data *networkingv1alpha3.HTTPMatchRequest
 }
 
-type matchRequestFunc func(target *networkingv1alpha3.HTTPMatchRequest)
-
-func (mr *matchRequest) add(fn matchRequestFunc) {
-	mr.fns = append(mr.fns, fn)
-}
-
-func (mr *matchRequest) set(target *networkingv1alpha3.HTTPMatchRequest) *networkingv1alpha3.HTTPMatchRequest {
-	for i := 0; i < len(mr.fns); i++ {
-		mr.fns[i](target)
-	}
-	return target
+func (mr *matchRequest) Get() *networkingv1alpha3.HTTPMatchRequest {
+	return mr.data
 }
 
 func (mr *matchRequest) URI() *stringMatch {
-	res := &networkingv1alpha1.StringMatch{}
-
-	mr.add(func(target *networkingv1alpha3.HTTPMatchRequest) {
-		target.URI = res
-	})
-
-	return &stringMatch{
-		parent: mr,
-		value:  res,
-	}
-}
-
-//New replays all requested changes on a new networkingv1alpha3.HTTPMatchRequest instance
-func (mr *matchRequest) New() *networkingv1alpha3.HTTPMatchRequest {
-	return mr.set(&networkingv1alpha3.HTTPMatchRequest{})
-}
-
-//Set replays all requested changes on an existing networkingv1alpha3.HTTPMatchRequest instance
-func (mr *matchRequest) Set(target *networkingv1alpha3.HTTPMatchRequest) *networkingv1alpha3.HTTPMatchRequest {
-	return mr.set(target)
+	mr.data = &networkingv1alpha3.HTTPMatchRequest{}
+	mr.data.URI = &networkingv1alpha1.StringMatch{}
+	return &stringMatch{mr.data.URI, func() *matchRequest { return mr }}
 }
 
 type stringMatch struct {
-	parent *matchRequest
 	value  *networkingv1alpha1.StringMatch
+	parent func() *matchRequest
 }
 
 func (st *stringMatch) Regex(val string) *matchRequest {
 	st.value.Regex = val
-	return st.parent
+	return st.parent()
 }
 
 // RouteDestination returns builder for knative.dev/pkg/apis/istio/v1alpha3/HTTPRouteDestination type
-// This builder is deferred - it records all requested changes and then "replays" them on existing object with `Set()` method or on a new one with `New()` method
 func RouteDestination() *routeDestination {
-	return &routeDestination{}
+	return &routeDestination{&networkingv1alpha3.HTTPRouteDestination{}}
 }
 
 type routeDestination struct {
-	fns []routeDestinationFunc
+	value *networkingv1alpha3.HTTPRouteDestination
 }
 
-type routeDestinationFunc func(target *networkingv1alpha3.HTTPRouteDestination)
-
-func (rd *routeDestination) add(fn routeDestinationFunc) {
-	rd.fns = append(rd.fns, fn)
-}
-
-func (rd *routeDestination) set(target *networkingv1alpha3.HTTPRouteDestination) *networkingv1alpha3.HTTPRouteDestination {
-	for i := 0; i < len(rd.fns); i++ {
-		rd.fns[i](target)
-	}
-	return target
-}
-
-func (rd *routeDestination) Host(value string) *routeDestination {
-	rd.add(func(target *networkingv1alpha3.HTTPRouteDestination) {
-		target.Destination.Host = value
-	})
+func (rd *routeDestination) Host(val string) *routeDestination {
+	rd.value.Destination.Host = val
 	return rd
 }
-
-func (rd *routeDestination) Port(value uint32) *routeDestination {
-	rd.add(func(target *networkingv1alpha3.HTTPRouteDestination) {
-		target.Destination.Port.Number = value
-	})
+func (rd *routeDestination) Port(val uint32) *routeDestination {
+	rd.value.Destination.Port.Number = val
 	return rd
 }
-
-//New replays all requested changes on a new networkingv1alpha3.HTTPRouteDestination instance
-func (rd *routeDestination) New() *networkingv1alpha3.HTTPRouteDestination {
-	return rd.set(&networkingv1alpha3.HTTPRouteDestination{})
-}
-
-//Set replays all requested changes on an existing networkingv1alpha3.HTTPRouteDestination instance
-func (rd *routeDestination) Set(target *networkingv1alpha3.HTTPRouteDestination) *networkingv1alpha3.HTTPRouteDestination {
-	return rd.set(target)
+func (rd *routeDestination) Get() *networkingv1alpha3.HTTPRouteDestination {
+	return rd.value
 }
