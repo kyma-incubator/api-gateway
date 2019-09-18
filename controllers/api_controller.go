@@ -17,6 +17,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -87,8 +88,10 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 		validationFailures := r.Validator.Validate(api)
 		if len(validationFailures) > 0 {
-			_, updateStatErr := r.updateStatus(ctx, api, generateValidationStatus(validationFailures), virtualServiceStatus, accessRuleStatus)
+			gateValidationStatus := generateValidationStatus(validationFailures)
+			_, updateStatErr := r.updateStatus(ctx, api, gateValidationStatus, virtualServiceStatus, accessRuleStatus)
 			if updateStatErr != nil {
+				r.Log.Error(errors.New("Status couldn't be updated with validation failures"), gateValidationStatus.Description)
 				return retryReconcile(updateStatErr)
 			}
 			return doneReconcile()
@@ -167,6 +170,17 @@ func generateErrorStatus(err error) *gatewayv2alpha1.GatewayResourceStatus {
 }
 
 func generateValidationStatus(failures []validation.Failure) *gatewayv2alpha1.GatewayResourceStatus {
+	return toStatus(gatewayv2alpha1.StatusError, generateValidationDescription(failures))
+}
+
+func toStatus(c gatewayv2alpha1.StatusCode, desc string) *gatewayv2alpha1.GatewayResourceStatus {
+	return &gatewayv2alpha1.GatewayResourceStatus{
+		Code:        c,
+		Description: desc,
+	}
+}
+
+func generateValidationDescription(failures []validation.Failure) string {
 	var description string
 
 	if len(failures) == 1 {
@@ -183,12 +197,5 @@ func generateValidationStatus(failures []validation.Failure) *gatewayv2alpha1.Ga
 		}
 	}
 
-	return toStatus(gatewayv2alpha1.StatusError, description)
-}
-
-func toStatus(c gatewayv2alpha1.StatusCode, desc string) *gatewayv2alpha1.GatewayResourceStatus {
-	return &gatewayv2alpha1.GatewayResourceStatus{
-		Code:        c,
-		Description: desc,
-	}
+	return description
 }
