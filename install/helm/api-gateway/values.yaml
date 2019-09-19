@@ -31,7 +31,6 @@ config:
   jwksURI: https://example.com/.well-known/jwks.json
   blackList:
     - kubernetes
-    - kubernetes.default
     - kube-dns
 
   # Node labels for pod assignment.
