@@ -41,10 +41,12 @@ func (f *Factory) Run(ctx context.Context, api *gatewayv1alpha1.APIRule) error {
 	var err error
 
 	for i, rule := range api.Spec.Rules {
-		// Create one AR per path
-		err = f.processAR(ctx, api, api.Spec.Rules[i], i, rule.AccessStrategies)
-		if err != nil {
-			return err
+		if isSecured(rule) {
+			// Create one AR per path
+			err = f.processAR(ctx, api, api.Spec.Rules[i], i, rule.AccessStrategies)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	// Compile list of paths, create one VS
