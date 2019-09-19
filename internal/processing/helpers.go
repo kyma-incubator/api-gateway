@@ -69,7 +69,7 @@ func isSecured(rule gatewayv1alpha1.Rule) bool {
 		return true
 	}
 	for _, strat := range rule.AccessStrategies {
-		if strat.Name != "noop" {
+		if strat.Name != "allow" {
 			return true
 		}
 	}

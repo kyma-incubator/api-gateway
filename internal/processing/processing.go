@@ -3,6 +3,7 @@ package processing
 import (
 	"context"
 	"fmt"
+	"github.com/kyma-incubator/api-gateway/internal/builders"
 
 	"github.com/go-logr/logr"
 	gatewayv1alpha1 "github.com/kyma-incubator/api-gateway/api/v1alpha1"
@@ -110,10 +111,10 @@ func (f *Factory) processVS(ctx context.Context, api *gatewayv1alpha1.APIRule, d
 	}
 
 	if oldVS != nil {
-		newVS := prepareVirtualService(api, oldVS, destinationHost, destinationPort, api.Spec.Rules[0].Path)
+		newVS := f.prepareVirtualService(api, oldVS, destinationHost, destinationPort, api.Spec.Rules[0].Path)
 		return f.updateVirtualService(ctx, newVS)
 	}
-	vs := generateVirtualService(api, destinationHost, destinationPort, api.Spec.Rules[0].Path)
+	vs := f.generateVirtualService(api, destinationHost, destinationPort, api.Spec.Rules[0].Path)
 	return f.createVirtualService(ctx, vs)
 }
 
@@ -137,4 +138,75 @@ func (f *Factory) processAR(ctx context.Context, api *gatewayv1alpha1.APIRule, r
 		}
 	}
 	return nil
+}
+
+func (f *Factory) prepareVirtualService(api *gatewayv1alpha1.APIRule, vs *networkingv1alpha3.VirtualService, destinationHost string, destinationPort uint32, path string) *networkingv1alpha3.VirtualService {
+	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
+	ownerRef := generateOwnerRef(api)
+
+	vsSpecBuilder := builders.VirtualServiceSpec()
+	vsSpecBuilder.Host(*api.Spec.Service.Host)
+	vsSpecBuilder.Gateway(*api.Spec.Gateway)
+
+	for _,rule := range api.Spec.Rules {
+		if isSecured(rule) {
+			destinationHost = f.oathkeeperSvc
+			destinationPort = f.oathkeeperSvcPort
+		} else {
+			destinationHost = fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace)
+			destinationPort = *api.Spec.Service.Port
+		}
+
+		httpRouteBuilder := builders.HTTPRoute()
+		httpRouteBuilder.Match(builders.MatchRequest().URI().Regex(rule.Path))
+		httpRouteBuilder.Route(builders.RouteDestination().Host(destinationHost).Port(destinationPort))
+
+		vsSpecBuilder.HTTP(httpRouteBuilder)
+	}
+
+	vsBuilder := builders.VirtualService().From(vs).
+		Name(virtualServiceName).
+		Namespace(api.ObjectMeta.Namespace).
+		Owner(builders.OwnerReference().From(&ownerRef))
+
+	vsBuilder.Spec(vsSpecBuilder)
+
+	return vsBuilder.Get()
+}
+
+func (f *Factory) generateVirtualService(api *gatewayv1alpha1.APIRule, destinationHost string, destinationPort uint32, path string) *networkingv1alpha3.VirtualService {
+	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
+	ownerRef := generateOwnerRef(api)
+
+	vsSpecBuilder := builders.VirtualServiceSpec()
+	vsSpecBuilder.Host(*api.Spec.Service.Host)
+	vsSpecBuilder.Gateway(*api.Spec.Gateway)
+
+	for _,rule := range api.Spec.Rules {
+		fmt.Println("hello?")
+		if isSecured(rule) {
+			fmt.Println("hello secured?")
+			destinationHost = f.oathkeeperSvc
+			destinationPort = f.oathkeeperSvcPort
+		} else {
+			fmt.Println("hello insecured?")
+			destinationHost = fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace)
+			destinationPort = *api.Spec.Service.Port
+		}
+
+		httpRouteBuilder := builders.HTTPRoute()
+		httpRouteBuilder.Match(builders.MatchRequest().URI().Regex(rule.Path))
+		httpRouteBuilder.Route(builders.RouteDestination().Host(destinationHost).Port(destinationPort))
+
+		vsSpecBuilder.HTTP(httpRouteBuilder)
+	}
+
+	vsBuilder := builders.VirtualService().
+		Name(virtualServiceName).
+		Namespace(api.ObjectMeta.Namespace).
+		Owner(builders.OwnerReference().From(&ownerRef))
+
+	vsBuilder.Spec(vsSpecBuilder)
+
+	return vsBuilder.Get()
 }
