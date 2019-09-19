@@ -91,8 +91,8 @@ func (f *Factory) updateAccessRule(ctx context.Context, ar *rulev1alpha1.Rule) e
 	return f.arClient.Update(ctx, ar)
 }
 
-func (f *Factory) getAccessRule(ctx context.Context, api *gatewayv1alpha1.APIRule) (*rulev1alpha1.Rule, error) {
-	ar, err := f.arClient.GetForAPI(ctx, api)
+func (f *Factory) getAccessRule(ctx context.Context, api *gatewayv1alpha1.APIRule, ruleInd int) (*rulev1alpha1.Rule, error) {
+	ar, err := f.arClient.GetForAPI(ctx, api, ruleInd)
 	if err != nil {
 		if apierrs.IsNotFound(err) {
 			return nil, nil
@@ -118,7 +118,7 @@ func (f *Factory) processVS(ctx context.Context, api *gatewayv1alpha1.APIRule, d
 }
 
 func (f *Factory) processAR(ctx context.Context, api *gatewayv1alpha1.APIRule, rule gatewayv1alpha1.Rule, ruleInd int, config []*rulev1alpha1.Authenticator) error {
-	oldAR, err := f.getAccessRule(ctx, api)
+	oldAR, err := f.getAccessRule(ctx, api, ruleInd)
 	if err != nil {
 		return err
 	}
