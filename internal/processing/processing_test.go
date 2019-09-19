@@ -79,14 +79,15 @@ func TestCreateVS_NoOp(t *testing.T) {
 	strategies := []*rulev1alpha1.Authenticator{
 		{
 			Handler: &rulev1alpha1.Handler{
-				Name: "noop",
+				Name: "allow",
 			},
 		},
 	}
 
 	apiRule := getAPIRuleFor(strategies, []*rulev1alpha1.Mutator{})
+	f := &Factory{oathkeeperSvcPort: 1234, oathkeeperSvc: "fake.oathkeeper"}
 
-	vs := generateVirtualService(apiRule, serviceName+"."+apiNamespace+".svc.cluster.local", servicePort, apiPath)
+	vs := f.generateVirtualService(apiRule)
 
 	assert.Equal(len(vs.Spec.Gateways), 1)
 	assert.Equal(vs.Spec.Gateways[0], apiGateway)
@@ -133,8 +134,9 @@ func TestCreateVS_JWT(t *testing.T) {
 	}
 
 	apiRule := getAPIRuleFor(strategies, []*rulev1alpha1.Mutator{})
+	f := &Factory{oathkeeperSvcPort: 4455, oathkeeperSvc: "test-oathkeeper"}
 
-	vs := generateVirtualService(apiRule, "test-oathkeeper", 4455, apiPath)
+	vs := f.generateVirtualService(apiRule)
 
 	assert.Equal(len(vs.Spec.Gateways), 1)
 	assert.Equal(vs.Spec.Gateways[0], apiGateway)
@@ -283,7 +285,8 @@ func TestGenerateVS_OAUTH(t *testing.T) {
 	}
 
 	apiRule := getAPIRuleFor(strategies, []*rulev1alpha1.Mutator{})
-	vs := generateVirtualService(apiRule, "test-oathkeeper", 4455, apiRule.Spec.Rules[0].Path)
+	f := &Factory{oathkeeperSvcPort: 4455, oathkeeperSvc: "test-oathkeeper"}
+	vs := f.generateVirtualService(apiRule)
 
 	assert.Equal(len(vs.Spec.Gateways), 1)
 	assert.Equal(vs.Spec.Gateways[0], apiGateway)
@@ -328,13 +331,14 @@ func TestPrepareVS_OAUTH(t *testing.T) {
 	}
 
 	apiRule := getAPIRuleFor(strategies, []*rulev1alpha1.Mutator{})
+	f := &Factory{oathkeeperSvcPort: 4455, oathkeeperSvc: "test-oathkeeper"}
 
-	oldVS := generateVirtualService(apiRule, "test-oathkeeper", 4455, apiRule.Spec.Rules[0].Path)
+	oldVS := f.generateVirtualService(apiRule)
 
 	oldVS.ObjectMeta.Generation = int64(15)
 	oldVS.ObjectMeta.Name = "mst"
 
-	newVS := prepareVirtualService(apiRule, oldVS, "test-oathkeeper", 4455, apiRule.Spec.Rules[0].Path)
+	newVS := f.prepareVirtualService(apiRule, oldVS)
 
 	assert.Equal(newVS.ObjectMeta.Generation, int64(15))
 

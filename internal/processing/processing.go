@@ -38,18 +38,9 @@ func NewFactory(vsClient *istioClient.VirtualService, arClient *oryClient.Access
 
 // Run ?
 func (f *Factory) Run(ctx context.Context, api *gatewayv1alpha1.APIRule) error {
-	var destinationHost string
-	var destinationPort uint32
 	var err error
 
 	for i, rule := range api.Spec.Rules {
-		if isSecured(rule) {
-			destinationHost = f.oathkeeperSvc
-			destinationPort = f.oathkeeperSvcPort
-		} else {
-			destinationHost = fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace)
-			destinationPort = *api.Spec.Service.Port
-		}
 		// Create one AR per path
 		err = f.processAR(ctx, api, api.Spec.Rules[i], i, rule.AccessStrategies)
 		if err != nil {
@@ -57,7 +48,7 @@ func (f *Factory) Run(ctx context.Context, api *gatewayv1alpha1.APIRule) error {
 		}
 	}
 	// Compile list of paths, create one VS
-	err = f.processVS(ctx, api, destinationHost, destinationPort)
+	err = f.processVS(ctx, api)
 	if err != nil {
 		return err
 	}
@@ -104,17 +95,17 @@ func (f *Factory) getAccessRule(ctx context.Context, api *gatewayv1alpha1.APIRul
 	return ar, nil
 }
 
-func (f *Factory) processVS(ctx context.Context, api *gatewayv1alpha1.APIRule, destinationHost string, destinationPort uint32) error {
+func (f *Factory) processVS(ctx context.Context, api *gatewayv1alpha1.APIRule) error {
 	oldVS, err := f.getVirtualService(ctx, api)
 	if err != nil {
 		return err
 	}
 
 	if oldVS != nil {
-		newVS := f.prepareVirtualService(api, oldVS, destinationHost, destinationPort, api.Spec.Rules[0].Path)
+		newVS := f.prepareVirtualService(api, oldVS)
 		return f.updateVirtualService(ctx, newVS)
 	}
-	vs := f.generateVirtualService(api, destinationHost, destinationPort, api.Spec.Rules[0].Path)
+	vs := f.generateVirtualService(api)
 	return f.createVirtualService(ctx, vs)
 }
 
@@ -140,7 +131,7 @@ func (f *Factory) processAR(ctx context.Context, api *gatewayv1alpha1.APIRule, r
 	return nil
 }
 
-func (f *Factory) prepareVirtualService(api *gatewayv1alpha1.APIRule, vs *networkingv1alpha3.VirtualService, destinationHost string, destinationPort uint32, path string) *networkingv1alpha3.VirtualService {
+func (f *Factory) prepareVirtualService(api *gatewayv1alpha1.APIRule, vs *networkingv1alpha3.VirtualService) *networkingv1alpha3.VirtualService {
 	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	ownerRef := generateOwnerRef(api)
 
@@ -148,19 +139,17 @@ func (f *Factory) prepareVirtualService(api *gatewayv1alpha1.APIRule, vs *networ
 	vsSpecBuilder.Host(*api.Spec.Service.Host)
 	vsSpecBuilder.Gateway(*api.Spec.Gateway)
 
-	for _,rule := range api.Spec.Rules {
+	for _, rule := range api.Spec.Rules {
+		httpRouteBuilder := builders.HTTPRoute()
+
 		if isSecured(rule) {
-			destinationHost = f.oathkeeperSvc
-			destinationPort = f.oathkeeperSvcPort
+			httpRouteBuilder.Route(builders.RouteDestination().Host(f.oathkeeperSvc).Port(f.oathkeeperSvcPort))
 		} else {
-			destinationHost = fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace)
-			destinationPort = *api.Spec.Service.Port
+			destinationHost := fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace)
+			httpRouteBuilder.Route(builders.RouteDestination().Host(destinationHost).Port(*api.Spec.Service.Port))
 		}
 
-		httpRouteBuilder := builders.HTTPRoute()
 		httpRouteBuilder.Match(builders.MatchRequest().URI().Regex(rule.Path))
-		httpRouteBuilder.Route(builders.RouteDestination().Host(destinationHost).Port(destinationPort))
-
 		vsSpecBuilder.HTTP(httpRouteBuilder)
 	}
 
@@ -174,7 +163,7 @@ func (f *Factory) prepareVirtualService(api *gatewayv1alpha1.APIRule, vs *networ
 	return vsBuilder.Get()
 }
 
-func (f *Factory) generateVirtualService(api *gatewayv1alpha1.APIRule, destinationHost string, destinationPort uint32, path string) *networkingv1alpha3.VirtualService {
+func (f *Factory) generateVirtualService(api *gatewayv1alpha1.APIRule) *networkingv1alpha3.VirtualService {
 	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
 	ownerRef := generateOwnerRef(api)
 
@@ -182,22 +171,17 @@ func (f *Factory) generateVirtualService(api *gatewayv1alpha1.APIRule, destinati
 	vsSpecBuilder.Host(*api.Spec.Service.Host)
 	vsSpecBuilder.Gateway(*api.Spec.Gateway)
 
-	for _,rule := range api.Spec.Rules {
-		fmt.Println("hello?")
+	for _, rule := range api.Spec.Rules {
+		httpRouteBuilder := builders.HTTPRoute()
+
 		if isSecured(rule) {
-			fmt.Println("hello secured?")
-			destinationHost = f.oathkeeperSvc
-			destinationPort = f.oathkeeperSvcPort
+			httpRouteBuilder.Route(builders.RouteDestination().Host(f.oathkeeperSvc).Port(f.oathkeeperSvcPort))
 		} else {
-			fmt.Println("hello insecured?")
-			destinationHost = fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace)
-			destinationPort = *api.Spec.Service.Port
+			destinationHost := fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace)
+			httpRouteBuilder.Route(builders.RouteDestination().Host(destinationHost).Port(*api.Spec.Service.Port))
 		}
 
-		httpRouteBuilder := builders.HTTPRoute()
 		httpRouteBuilder.Match(builders.MatchRequest().URI().Regex(rule.Path))
-		httpRouteBuilder.Route(builders.RouteDestination().Host(destinationHost).Port(destinationPort))
-
 		vsSpecBuilder.HTTP(httpRouteBuilder)
 	}
 

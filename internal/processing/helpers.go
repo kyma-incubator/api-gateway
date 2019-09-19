@@ -7,7 +7,6 @@ import (
 	"github.com/kyma-incubator/api-gateway/internal/builders"
 	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
 	k8sMeta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 )
 
 func prepareAccessRule(api *gatewayv1alpha1.APIRule, ar *rulev1alpha1.Rule, rule gatewayv1alpha1.Rule, ruleInd int, accessStrategies []*rulev1alpha1.Authenticator) *rulev1alpha1.Rule {
@@ -46,24 +45,6 @@ func generateAccessRuleSpec(api *gatewayv1alpha1.APIRule, rule gatewayv1alpha1.R
 		Mutators(builders.Mutators().From(rule.Mutators)).Get()
 }
 
-func generateVirtualService(api *gatewayv1alpha1.APIRule, destinationHost string, destinationPort uint32, path string) *networkingv1alpha3.VirtualService {
-	//TODO implement support for "allow" & oathkeeper authn (many http objects)
-	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
-	ownerRef := generateOwnerRef(api)
-	return builders.VirtualService().
-		Name(virtualServiceName).
-		Namespace(api.ObjectMeta.Namespace).
-		Owner(builders.OwnerReference().From(&ownerRef)).
-		Spec(
-			builders.VirtualServiceSpec().
-				Host(*api.Spec.Service.Host).
-				Gateway(*api.Spec.Gateway).
-				HTTP(builders.HTTPRoute().
-					Match(builders.MatchRequest().URI().Regex("/.*")).
-					Route(builders.RouteDestination().Host(destinationHost).Port(destinationPort)))).
-		Get()
-}
-
 func isSecured(rule gatewayv1alpha1.Rule) bool {
 	if len(rule.Mutators) > 0 {
 		return true
@@ -83,24 +64,5 @@ func generateOwnerRef(api *gatewayv1alpha1.APIRule) k8sMeta.OwnerReference {
 		Kind(api.TypeMeta.Kind).
 		UID(api.ObjectMeta.UID).
 		Controller(true).
-		Get()
-}
-
-func prepareVirtualService(api *gatewayv1alpha1.APIRule, vs *networkingv1alpha3.VirtualService, destinationHost string, destinationPort uint32, path string) *networkingv1alpha3.VirtualService {
-	//TODO implement support for "allow" & oathkeeper authn (many http objects)
-	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
-	ownerRef := generateOwnerRef(api)
-
-	return builders.VirtualService().From(vs).
-		Name(virtualServiceName).
-		Namespace(api.ObjectMeta.Namespace).
-		Owner(builders.OwnerReference().From(&ownerRef)).
-		Spec(
-			builders.VirtualServiceSpec().
-				Host(*api.Spec.Service.Host).
-				Gateway(*api.Spec.Gateway).
-				HTTP(builders.HTTPRoute().
-					Match(builders.MatchRequest().URI().Regex("/.*")).
-					Route(builders.RouteDestination().Host(destinationHost).Port(destinationPort)))).
 		Get()
 }
