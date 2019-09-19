@@ -36,6 +36,30 @@ var _ = Describe("Validate function", func() {
 		Expect(problems[0].Message).To(Equal("No rules defined"))
 	})
 
+	It("Should fail for blacklisted service", func() {
+		var testService string = "kubernetes"
+		var testPort uint32 = 443
+		//given
+		input := &gatewayv1alpha1.APIRule{
+			Spec: gatewayv1alpha1.APIRuleSpec{
+				Service: &gatewayv1alpha1.Service{
+					Name: &testService,
+					Port: &testPort,
+				},
+			}}
+
+		//when
+		problems := (&APIRule{BlackList: []string{"kubernetes", "kube-dns"}}).Validate(input)
+
+		//then
+		Expect(problems).To(HaveLen(2))
+		Expect(problems[0].AttributePath).To(Equal(".spec.service.name"))
+		Expect(problems[0].Message).To(Equal("This service has been blacklisted"))
+
+		Expect(problems[1].AttributePath).To(Equal(".spec.rules"))
+		Expect(problems[1].Message).To(Equal("No rules defined"))
+	})
+
 	It("Should detect several problems", func() {
 		//given
 		input := &gatewayv1alpha1.APIRule{
