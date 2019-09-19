@@ -39,6 +39,7 @@ var _ = Describe("Validate function", func() {
 	It("Should fail for blacklisted service", func() {
 		var testService string = "kubernetes"
 		var testPort uint32 = 443
+		testBlackList := []string{"kubernetes", "kube-dns", "kubernetes.default"}
 		//given
 		input := &gatewayv1alpha1.APIRule{
 			Spec: gatewayv1alpha1.APIRuleSpec{
@@ -49,7 +50,7 @@ var _ = Describe("Validate function", func() {
 			}}
 
 		//when
-		problems := (&APIRule{BlackList: []string{"kubernetes", "kube-dns"}}).Validate(input)
+		problems := (&APIRule{BlackList: testBlackList}).Validate(input)
 
 		//then
 		Expect(problems).To(HaveLen(2))
@@ -115,7 +116,7 @@ var _ = Describe("Validate function", func() {
 		Expect(problems[5].Message).To(Equal("No accessStrategies defined"))
 	})
 
-	It("Should succedd for valid input", func() {
+	It("Should succeed for valid input", func() {
 		//given
 		input := &gatewayv1alpha1.APIRule{
 			Spec: gatewayv1alpha1.APIRuleSpec{

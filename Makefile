@@ -98,7 +98,7 @@ CONTROLLER_GEN=$(shell which controller-gen)
 endif
 
 run: build
-	go run . --oathkeeper-svc-address=${OATHKEEPER_SVC_ADDRESS} --oathkeeper-svc-port=${OATHKEEPER_SVC_PORT} --jwks-uri=${JWKS_URI} --service-blacklist="kubernetes, kube-dns"
+	go run . --oathkeeper-svc-address=${OATHKEEPER_SVC_ADDRESS} --oathkeeper-svc-port=${OATHKEEPER_SVC_PORT} --jwks-uri=${JWKS_URI}
 
 samples-clean:
 	kubectl delete -f config/samples/valid.yaml --ignore-not-found=true

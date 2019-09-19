@@ -61,7 +61,7 @@ func main() {
 	flag.StringVar(&jwksURI, "jwks-uri", "", "URL of the provider's public key set to validate signature of the JWT")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
-	flag.StringVar(&blackListedServices, "service-blacklist", "kubernetes", "List of services to be blacklisted from exposure.")
+	flag.StringVar(&blackListedServices, "service-blacklist", "kubernetes.default, kubernetes", "List of services to be blacklisted from exposure.")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.Logger(true))
@@ -112,7 +112,6 @@ func main() {
 
 func parseServices(raw string) []string {
 	var result []string
-	// list := strings.Split(raw, ",")
 	for _, s := range strings.Split(raw, ",") {
 		trim := strings.TrimSpace(s)
 		if trim != "" {
