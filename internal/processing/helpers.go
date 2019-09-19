@@ -86,15 +86,6 @@ func generateOwnerRef(api *gatewayv1alpha1.APIRule) k8sMeta.OwnerReference {
 		Get()
 }
 
-func generateObjectMeta(api *gatewayv1alpha1.APIRule) k8sMeta.ObjectMeta {
-	ownerRef := generateOwnerRef(api)
-	return *builders.ObjectMeta().
-		Name(fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)).
-		Namespace(api.ObjectMeta.Namespace).
-		OwnerReference(builders.OwnerReference().From(&ownerRef)).
-		Get()
-}
-
 func prepareVirtualService(api *gatewayv1alpha1.APIRule, vs *networkingv1alpha3.VirtualService, destinationHost string, destinationPort uint32, path string) *networkingv1alpha3.VirtualService {
 	//TODO implement support for "allow" & oathkeeper authn (many http objects)
 	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
