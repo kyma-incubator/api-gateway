@@ -185,6 +185,7 @@ func TestPrepareAR_JWT(t *testing.T) {
 	apiRule := getAPIRuleFor(strategies, []*rulev1alpha1.Mutator{})
 
 	oldAR := generateAccessRule(apiRule, apiRule.Spec.Rules[0], 0, []*rulev1alpha1.Authenticator{strategies[0]})
+	oldAROnwerRef := oldAR.OwnerReferences[0]
 	newAR := prepareAccessRule(apiRule, oldAR, apiRule.Spec.Rules[0], 0, []*rulev1alpha1.Authenticator{strategies[0]})
 
 	assert.Equal(len(newAR.Spec.Authenticators), 1)
@@ -200,6 +201,16 @@ func TestPrepareAR_JWT(t *testing.T) {
 	assert.Empty(newAR.Spec.Authorizer.Config)
 
 	assert.Equal(newAR.Spec.Upstream.URL, "http://example-service.some-namespace.svc.cluster.local:8080")
+
+	assert.Equal(newAR.ObjectMeta.Name, apiName+"-"+serviceName+"-0")
+	assert.Equal(newAR.ObjectMeta.Namespace, apiNamespace)
+
+	assert.Equal(len(newAR.ObjectMeta.OwnerReferences), 1)
+
+	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].APIVersion, oldAROnwerRef.APIVersion)
+	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].Kind, oldAROnwerRef.Kind)
+	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].Name, oldAROnwerRef.Name)
+	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].UID, oldAROnwerRef.UID)
 }
 
 func TestGenerateAR_JWT(t *testing.T) {
@@ -320,6 +331,7 @@ func TestPrepareVS_OAUTH(t *testing.T) {
 	f := &Factory{oathkeeperSvcPort: 4455, oathkeeperSvc: "test-oathkeeper"}
 
 	oldVS := f.generateVirtualService(apiRule)
+	oldVSOnwerRef := oldVS.OwnerReferences[0]
 	newVS := f.prepareVirtualService(apiRule, oldVS)
 
 	assert.Equal(len(newVS.Spec.Gateways), 1)
@@ -334,6 +346,12 @@ func TestPrepareVS_OAUTH(t *testing.T) {
 	assert.Equal(newVS.Spec.HTTP[0].Route[0].Destination.Host, "test-oathkeeper")
 	assert.Equal(int(newVS.Spec.HTTP[0].Route[0].Destination.Port.Number), 4455)
 	assert.Equal(newVS.Spec.HTTP[0].Match[0].URI.Regex, apiPath)
+
+	assert.Equal(len(newVS.ObjectMeta.OwnerReferences), 1)
+	assert.Equal(newVS.ObjectMeta.OwnerReferences[0].APIVersion, oldVSOnwerRef.APIVersion)
+	assert.Equal(newVS.ObjectMeta.OwnerReferences[0].Kind, oldVSOnwerRef.Kind)
+	assert.Equal(newVS.ObjectMeta.OwnerReferences[0].Name, oldVSOnwerRef.Name)
+	assert.Equal(newVS.ObjectMeta.OwnerReferences[0].UID, oldVSOnwerRef.UID)
 }
 
 func TestGenerateAR_OAUTH(t *testing.T) {
