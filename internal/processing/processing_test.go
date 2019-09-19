@@ -423,6 +423,7 @@ func TestPreapreAR_OAUTH(t *testing.T) {
 	apiRule := getAPIRuleFor(strategies, []*rulev1alpha1.Mutator{})
 
 	oldAR := generateAccessRule(apiRule, apiRule.Spec.Rules[0], 0, strategies)
+	oldAROnwerRef := oldAR.OwnerReferences[0]
 	newAR := prepareAccessRule(apiRule, oldAR, apiRule.Spec.Rules[0], 0, strategies)
 
 	assert.Equal(len(newAR.Spec.Authenticators), 1)
@@ -438,4 +439,10 @@ func TestPreapreAR_OAUTH(t *testing.T) {
 	assert.Empty(newAR.Spec.Authorizer.Config)
 
 	assert.Equal(newAR.Spec.Upstream.URL, "http://example-service.some-namespace.svc.cluster.local:8080")
+
+	assert.Equal(len(newAR.ObjectMeta.OwnerReferences), 1)
+	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].APIVersion, oldAROnwerRef.APIVersion)
+	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].Kind, oldAROnwerRef.Kind)
+	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].Name, oldAROnwerRef.Name)
+	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].UID, oldAROnwerRef.UID)
 }
