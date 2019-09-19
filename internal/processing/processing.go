@@ -134,9 +134,6 @@ func (f *Factory) processAR(ctx context.Context, api *gatewayv1alpha1.APIRule, r
 }
 
 func (f *Factory) prepareVirtualService(api *gatewayv1alpha1.APIRule, vs *networkingv1alpha3.VirtualService) *networkingv1alpha3.VirtualService {
-	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
-	ownerRef := generateOwnerRef(api)
-
 	vsSpecBuilder := builders.VirtualServiceSpec()
 	vsSpecBuilder.Host(*api.Spec.Service.Host)
 	vsSpecBuilder.Gateway(*api.Spec.Gateway)
@@ -155,12 +152,9 @@ func (f *Factory) prepareVirtualService(api *gatewayv1alpha1.APIRule, vs *networ
 		vsSpecBuilder.HTTP(httpRouteBuilder)
 	}
 
-	vsBuilder := builders.VirtualService().From(vs).
-		Name(virtualServiceName).
-		Namespace(api.ObjectMeta.Namespace).
-		Owner(builders.OwnerReference().From(&ownerRef))
-
-	vsBuilder.Spec(vsSpecBuilder)
+	vsBuilder := builders.VirtualService().
+		From(vs).
+		Spec(vsSpecBuilder)
 
 	return vsBuilder.Get()
 }

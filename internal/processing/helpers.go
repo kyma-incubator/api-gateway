@@ -10,10 +10,6 @@ import (
 )
 
 func prepareAccessRule(api *gatewayv1alpha1.APIRule, ar *rulev1alpha1.Rule, rule gatewayv1alpha1.Rule, ruleInd int, accessStrategies []*rulev1alpha1.Authenticator) *rulev1alpha1.Rule {
-	ar.ObjectMeta.OwnerReferences = []k8sMeta.OwnerReference{generateOwnerRef(api)}
-	ar.ObjectMeta.Name = fmt.Sprintf("%s-%s-%d", api.ObjectMeta.Name, *api.Spec.Service.Name, ruleInd)
-	ar.ObjectMeta.Namespace = api.ObjectMeta.Namespace
-
 	return builders.AccessRule().From(ar).
 		Spec(builders.AccessRuleSpec().From(generateAccessRuleSpec(api, rule, accessStrategies))).
 		Get()

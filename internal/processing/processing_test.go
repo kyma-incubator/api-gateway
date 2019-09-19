@@ -185,12 +185,7 @@ func TestPrepareAR_JWT(t *testing.T) {
 	apiRule := getAPIRuleFor(strategies, []*rulev1alpha1.Mutator{})
 
 	oldAR := generateAccessRule(apiRule, apiRule.Spec.Rules[0], 0, []*rulev1alpha1.Authenticator{strategies[0]})
-	oldAR.ObjectMeta.Generation = int64(15)
-	oldAR.ObjectMeta.Name = "mst"
-
 	newAR := prepareAccessRule(apiRule, oldAR, apiRule.Spec.Rules[0], 0, []*rulev1alpha1.Authenticator{strategies[0]})
-
-	assert.Equal(newAR.ObjectMeta.Generation, int64(15))
 
 	assert.Equal(len(newAR.Spec.Authenticators), 1)
 	assert.Equal(newAR.Spec.Authenticators[0].Name, "jwt")
@@ -205,15 +200,6 @@ func TestPrepareAR_JWT(t *testing.T) {
 	assert.Empty(newAR.Spec.Authorizer.Config)
 
 	assert.Equal(newAR.Spec.Upstream.URL, "http://example-service.some-namespace.svc.cluster.local:8080")
-
-	assert.Equal(newAR.ObjectMeta.Name, apiName+"-"+serviceName+"-0")
-	assert.Equal(newAR.ObjectMeta.Namespace, apiNamespace)
-
-	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].APIVersion, apiAPIVersion)
-	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].Kind, apiKind)
-	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].Name, apiName)
-	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].UID, apiUID)
-
 }
 
 func TestGenerateAR_JWT(t *testing.T) {
@@ -334,13 +320,7 @@ func TestPrepareVS_OAUTH(t *testing.T) {
 	f := &Factory{oathkeeperSvcPort: 4455, oathkeeperSvc: "test-oathkeeper"}
 
 	oldVS := f.generateVirtualService(apiRule)
-
-	oldVS.ObjectMeta.Generation = int64(15)
-	oldVS.ObjectMeta.Name = "mst"
-
 	newVS := f.prepareVirtualService(apiRule, oldVS)
-
-	assert.Equal(newVS.ObjectMeta.Generation, int64(15))
 
 	assert.Equal(len(newVS.Spec.Gateways), 1)
 	assert.Equal(newVS.Spec.Gateways[0], apiGateway)
@@ -354,15 +334,6 @@ func TestPrepareVS_OAUTH(t *testing.T) {
 	assert.Equal(newVS.Spec.HTTP[0].Route[0].Destination.Host, "test-oathkeeper")
 	assert.Equal(int(newVS.Spec.HTTP[0].Route[0].Destination.Port.Number), 4455)
 	assert.Equal(newVS.Spec.HTTP[0].Match[0].URI.Regex, apiPath)
-
-	assert.Equal(newVS.ObjectMeta.Name, apiName+"-"+serviceName)
-	assert.Equal(newVS.ObjectMeta.Namespace, apiNamespace)
-
-	assert.Equal(newVS.ObjectMeta.OwnerReferences[0].APIVersion, apiAPIVersion)
-	assert.Equal(newVS.ObjectMeta.OwnerReferences[0].Kind, apiKind)
-	assert.Equal(newVS.ObjectMeta.OwnerReferences[0].Name, apiName)
-	assert.Equal(newVS.ObjectMeta.OwnerReferences[0].UID, apiUID)
-
 }
 
 func TestGenerateAR_OAUTH(t *testing.T) {
@@ -434,13 +405,7 @@ func TestPreapreAR_OAUTH(t *testing.T) {
 	apiRule := getAPIRuleFor(strategies, []*rulev1alpha1.Mutator{})
 
 	oldAR := generateAccessRule(apiRule, apiRule.Spec.Rules[0], 0, strategies)
-
-	oldAR.ObjectMeta.Generation = int64(15)
-	oldAR.ObjectMeta.Name = "mst"
-
 	newAR := prepareAccessRule(apiRule, oldAR, apiRule.Spec.Rules[0], 0, strategies)
-
-	assert.Equal(newAR.ObjectMeta.Generation, int64(15))
 
 	assert.Equal(len(newAR.Spec.Authenticators), 1)
 	assert.NotEmpty(newAR.Spec.Authenticators[0].Config)
@@ -455,13 +420,4 @@ func TestPreapreAR_OAUTH(t *testing.T) {
 	assert.Empty(newAR.Spec.Authorizer.Config)
 
 	assert.Equal(newAR.Spec.Upstream.URL, "http://example-service.some-namespace.svc.cluster.local:8080")
-
-	assert.Equal(newAR.ObjectMeta.Name, apiName+"-"+serviceName+"-0")
-	assert.Equal(newAR.ObjectMeta.Namespace, apiNamespace)
-
-	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].APIVersion, apiAPIVersion)
-	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].Kind, apiKind)
-	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].Name, apiName)
-	assert.Equal(newAR.ObjectMeta.OwnerReferences[0].UID, apiUID)
-
 }
