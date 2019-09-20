@@ -32,6 +32,20 @@ func (c *AccessRule) GetForAPI(ctx context.Context, api *gatewayv1alpha1.APIRule
 	return c.Get(ctx, accessRuleName, api.GetNamespace())
 }
 
+func (c *AccessRule) GetForLabels(ctx context.Context, labels map[string]string)([]*rulev1alpha1.Rule, error){
+	var list rulev1alpha1.Rule
+
+	listOptionsFunc := crClient.MatchingLabels(labels)
+
+	err := c.crClient.List(ctx, &list, listOptionsFunc)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	return nil, nil
+}
+
 //Get method get Oathkeeper Access Rule for given name and namespace
 func (c *AccessRule) Get(ctx context.Context, vsName, vsNamespace string) (*rulev1alpha1.Rule, error) {
 	namespacedName := crClient.ObjectKey{Namespace: vsNamespace, Name: vsName}

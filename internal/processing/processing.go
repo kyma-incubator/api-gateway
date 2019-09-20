@@ -3,6 +3,7 @@ package processing
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/kyma-incubator/api-gateway/internal/builders"
 
@@ -37,47 +38,157 @@ func NewFactory(vsClient *istioClient.VirtualService, arClient *oryClient.Access
 	}
 }
 
-// RequiredObjects carries required state of the cluster after reconciliation
-type RequiredObjects struct {
-	virtualServices []*networkingv1alpha3.VirtualService
-	accessRules     []*rulev1alpha1.Rule
-}
+//// RequiredObjects carries required state of the cluster after reconciliation
+//type RequiredObjects struct {
+//	virtualServices []*networkingv1alpha3.VirtualService
+//	accessRules     []*rulev1alpha1.Rule
+//}
 
 // CalculateRequiredState returns required state of all objects related to given api
-func (f *Factory) CalculateRequiredState(api *gatewayv1alpha1.APIRule) RequiredObjects {
-	var res RequiredObjects
+func (f *Factory) CalculateRequiredState(api *gatewayv1alpha1.APIRule) State {
+	var res State
+
+	res.accessRules = make(map[string]*rulev1alpha1.Rule)
 
 	for i, rule := range api.Spec.Rules {
 		if isSecured(rule) {
 			ar := generateAccessRule(api, api.Spec.Rules[i], i, rule.AccessStrategies)
-			res.accessRules = append(res.accessRules, ar)
+			res.accessRules[rule.Path] = ar
 		}
 	}
 
 	//Only one vs
 	vs := f.generateVirtualService(api)
-	res.virtualServices = append(res.virtualServices, vs)
+	res.virtualService = vs
 
 	return res
 }
 
+type State struct {
+	virtualService *networkingv1alpha3.VirtualService
+	accessRules    map[string]*rulev1alpha1.Rule
+}
+
+func (f *Factory) GetActualState(ctx context.Context, api *gatewayv1alpha1.APIRule) (error, State) {
+	labels := make(map[string]string)
+	labels["owner"] = fmt.Sprintf("%s.%s", api.ObjectMeta.Name, api.ObjectMeta.Namespace)
+	var obj State
+
+	vsList, err := f.vsClient.GetForLabels(ctx, labels)
+	if err != nil {
+		return err, obj
+	}
+
+	//what to do if len(vsList) > 1?
+
+	obj.virtualService = vsList[0]
+
+	arList, err := f.arClient.GetForLabels(ctx, labels)
+	if err != nil {
+		return err, obj
+	}
+
+	obj.accessRules = make(map[string]*rulev1alpha1.Rule)
+
+	for _, ar := range arList {
+		obj.accessRules[ar.Spec.Match.URL] = ar
+	}
+
+	return nil, obj
+}
+
+type Patch struct {
+	virtualService *idk
+	accessRule     map[string]*idk
+}
+
+type idk struct {
+	action string
+	obj    runtime.Object
+}
+
+func (f *Factory) CalculateDiff(requiredState State, actualState State) *Patch {
+	arPatch := make(map[string]*idk)
+
+	for path, rule := range requiredState.accessRules {
+		if actualState.accessRules[path] != nil {
+			arPatch[path].action = "update"
+			modifyAccessRule(actualState.accessRules[path], rule)
+		} else {
+			arPatch[path].action = "create"
+		}
+		arPatch[path].obj = rule
+	}
+
+	for path, rule := range actualState.accessRules {
+		if arPatch[path] == nil {
+			arPatch[path].action = "delete"
+			arPatch[path].obj = rule
+		}
+	}
+
+	vsPatch := &idk{}
+
+	if actualState.virtualService != nil {
+		vsPatch.action = "update"
+		f.modifyVirtualService(actualState.virtualService, requiredState.virtualService)
+	} else {
+		vsPatch.action = "create"
+	}
+
+	vsPatch.obj = requiredState.virtualService
+
+	objPatch := &Patch{}
+	objPatch.accessRule = arPatch
+	objPatch.virtualService = vsPatch
+
+	return objPatch
+}
+
+func (f *Factory) ApplyDiff(ctx context.Context, patch *Patch) error{
+	if patch.virtualService.action == "create" {
+		f.vsClient.Create(ctx, networkingv1alpha3.VirtualService(patch.virtualService.obj))
+	}
+
+	if patch.virtualService.action == "update" {
+		f.vsClient.Update(ctx, patch.virtualService.obj)
+	}
+
+	for _, rule := range patch.accessRule{
+		if rule.action == "create"{
+			//create
+		}
+
+		if rule.action == "update"{
+			//update
+		}
+
+		if rule.action == "delete"{
+			//delete
+		}
+	}
+
+}
+
 // ApplyRequiredState applies required state to the cluster
 //TODO: It should be possible to get rid of api parameter
-func (f *Factory) ApplyRequiredState(ctx context.Context, requiredState RequiredObjects, api *gatewayv1alpha1.APIRule) error {
+func (f *Factory) ApplyRequiredState(ctx context.Context, requiredState State, api *gatewayv1alpha1.APIRule) error {
+	i := 0
 
-	for i, rule := range requiredState.accessRules {
+	for _, rule := range requiredState.accessRules {
 		err := f.processAR(ctx, rule, api, i)
+		i++
 		if err != nil {
 			return err
 		}
 	}
 
-	for _, vs := range requiredState.virtualServices {
-		err := f.processVS(ctx, vs, api)
-		if err != nil {
-			return err
-		}
+	//for _, vs := range requiredState.virtualServices {
+	err := f.processVS(ctx, requiredState.virtualService, api)
+	if err != nil {
+		return err
 	}
+	//}
 	return nil
 }
 
@@ -176,7 +287,8 @@ func (f *Factory) generateVirtualService(api *gatewayv1alpha1.APIRule) *networki
 	vsBuilder := builders.VirtualService().
 		Name(virtualServiceName).
 		Namespace(api.ObjectMeta.Namespace).
-		Owner(builders.OwnerReference().From(&ownerRef))
+		Owner(builders.OwnerReference().From(&ownerRef)).
+		Label("owner", fmt.Sprintf("%s.%s", api.ObjectMeta.Name, api.ObjectMeta.Namespace))
 
 	vsBuilder.Spec(vsSpecBuilder)
 

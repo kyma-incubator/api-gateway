@@ -23,6 +23,7 @@ func generateAccessRule(api *gatewayv1alpha1.APIRule, rule gatewayv1alpha1.Rule,
 		Namespace(namespace).
 		Owner(builders.OwnerReference().From(&ownerRef)).
 		Spec(builders.AccessRuleSpec().From(generateAccessRuleSpec(api, rule, accessStrategies))).
+		Label("owner", fmt.Sprintf("%s.%s", api.ObjectMeta.Name, api.ObjectMeta.Namespace)).
 		Get()
 }
 

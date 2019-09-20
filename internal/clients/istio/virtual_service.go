@@ -32,6 +32,20 @@ func (c *VirtualService) GetForAPI(ctx context.Context, api *gatewayv1alpha1.API
 	return c.Get(ctx, virtualServiceName, api.GetNamespace())
 }
 
+func (c *VirtualService) GetForLabels(ctx context.Context, labels map[string]string)([]*networkingv1alpha3.VirtualService, error){
+	var list networkingv1alpha3.VirtualServiceList
+
+	listOptionsFunc := crClient.MatchingLabels(labels)
+
+	err := c.crClient.List(ctx, &list, listOptionsFunc)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	return nil, nil
+}
+
 //Get method gets Istio VirtualService for given name and namespaces
 func (c *VirtualService) Get(ctx context.Context, vsName, vsNamespace string) (*networkingv1alpha3.VirtualService, error) {
 	namespacedName := crClient.ObjectKey{Namespace: vsNamespace, Name: vsName}

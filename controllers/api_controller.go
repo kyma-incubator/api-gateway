@@ -102,12 +102,21 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		factory := processing.NewFactory(r.ExtCRClients.ForVirtualService(), r.ExtCRClients.ForAccessRule(), r.Log, r.OathkeeperSvc, r.OathkeeperSvcPort, r.JWKSURI)
 		requiredObjects := factory.CalculateRequiredState(api)
 
+		//3.1
+		err, actualObjects := factory.GetActualState(ctx, api)
+
+		//3.2 well i produce patch
+		patch := factory.CalculateDiff(requiredObjects, actualObjects)
+
+		//3.3
+		err := factory.ApplyDiff(ctx, patch)
+
 		//3) Compare required objects to cluster state and update cluster state to reflect requirements
 		//TODO-IN-FUTURE: Re-implement according to the following logic:
 		//3.1) Fetch all existing objects related to _this_ apiRule from the cluster (VS, Rules)
 		//3.2) Based on required objects, compute four sets of objects: vsToUpdate, arToCreate, arToUpdate, arToDelete
 		//3.3) Apply changes to the cluster
-		err := factory.ApplyRequiredState(ctx, requiredObjects, api)
+		//err := factory.ApplyRequiredState(ctx, requiredObjects, api)
 
 		//4) Update status of CR
 		if err != nil {
