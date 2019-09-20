@@ -418,6 +418,142 @@ var _ = Describe("APIRule Controller", func() {
 				})
 			})
 		})
+
+		Context("on specified paths", func() {
+			Context("with multiple endpoints secured with different authentication methods", func() {
+				Context("in the happy path scenario", func() {
+					It("should create a VS with corresponding matchers and access rules for each secured path", func() {
+
+						configJWT := fmt.Sprintf(`
+							{
+								"trusted_issuers": ["%s"],
+								"jwks": [],
+								"required_scope": [%s]
+						}`, testIssuer, toCSVList(testScopes))
+
+						configOAuth := fmt.Sprintf(`{
+							"required_scope": [%s]
+						}`, toCSVList(testScopes))
+
+						jwtHandler := &rulev1alpha1.Handler{
+							Name: "jwt",
+							Config: &runtime.RawExtension{
+								Raw: []byte(configJWT),
+							},
+						}
+
+						oauthHandler := &rulev1alpha1.Handler{
+							Name: "oauth2_introspection",
+							Config: &runtime.RawExtension{
+								Raw: []byte(configOAuth),
+							},
+						}
+
+						noopHandler := &rulev1alpha1.Handler{
+							Name: "noop",
+						}
+
+						allowHandler := &rulev1alpha1.Handler{
+							Name: "allow",
+						}
+
+						rule1 := testRule("/img", []string{"GET"}, testMutators, jwtHandler)
+						rule2 := testRule("/headers", []string{"GET"}, testMutators, oauthHandler)
+						rule3 := testRule("/favicon", []string{"GET"}, testMutators, allowHandler)
+						rule4 := testRule("/status", []string{"GET"}, testMutators, noopHandler)
+
+						testName := generateTestName(testNameBase, testIDLength)
+						instance := testInstance(testName, testNamespace, testServiceName, testServiceHost, testServicePort, []gatewayv1alpha1.Rule{rule1, rule2, rule3, rule4})
+
+						err := c.Create(context.TODO(), instance)
+						if apierrors.IsInvalid(err) {
+							Fail(fmt.Sprintf("failed to create object, got an invalid object error: %v", err))
+							return
+						}
+						Expect(err).NotTo(HaveOccurred())
+						defer c.Delete(context.TODO(), instance)
+
+						expectedRequest := reconcile.Request{NamespacedName: types.NamespacedName{Name: testName, Namespace: testNamespace}}
+
+						Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
+						//Verify VirtualService
+						expectedVSName := testName + "-" + testServiceName
+						expectedVSNamespace := testNamespace
+						vs := networkingv1alpha3.VirtualService{}
+						err = c.Get(context.TODO(), client.ObjectKey{Name: expectedVSName, Namespace: expectedVSNamespace}, &vs)
+						Expect(err).NotTo(HaveOccurred())
+
+						//Meta
+						verifyOwnerReference(vs.ObjectMeta, testName, gatewayv1alpha1.GroupVersion.String(), kind)
+						//Spec.Hosts
+						Expect(vs.Spec.Hosts).To(HaveLen(1))
+						Expect(vs.Spec.Hosts[0]).To(Equal(testServiceHost))
+						//Spec.Gateways
+						Expect(vs.Spec.Gateways).To(HaveLen(1))
+						Expect(vs.Spec.Gateways[0]).To(Equal(testGatewayURL))
+						//Spec.HTTP
+						Expect(vs.Spec.HTTP).To(HaveLen(4))
+						////// HTTP.Match[]
+						Expect(vs.Spec.HTTP[0].Match).To(HaveLen(1))
+
+						Expect(vs.Spec.HTTP[0].Match[0].URI.Regex).To(Equal("/img"))
+						Expect(vs.Spec.HTTP[1].Match[0].URI.Regex).To(Equal("/headers"))
+						Expect(vs.Spec.HTTP[2].Match[0].URI.Regex).To(Equal("/favicon"))
+						Expect(vs.Spec.HTTP[3].Match[0].URI.Regex).To(Equal("/status"))
+
+						for _, h := range vs.Spec.HTTP {
+
+							/////////// Match[].URI
+							Expect(h.Match[0].URI).NotTo(BeNil())
+							Expect(h.Match[0].URI.Exact).To(BeEmpty())
+							Expect(h.Match[0].URI.Prefix).To(BeEmpty())
+							Expect(h.Match[0].URI.Suffix).To(BeEmpty())
+							Expect(h.Match[0].Scheme).To(BeNil())
+							Expect(h.Match[0].Method).To(BeNil())
+							Expect(h.Match[0].Authority).To(BeNil())
+							Expect(h.Match[0].Headers).To(BeNil())
+							Expect(h.Match[0].Port).To(BeZero())
+							Expect(h.Match[0].SourceLabels).To(BeNil())
+							Expect(h.Match[0].Gateways).To(BeNil())
+
+							////// HTTP.Route[]
+							Expect(h.Route).To(HaveLen(1))
+							Expect(h.Route[0].Destination.Host).To(Equal(testOathkeeperSvcURL))
+							Expect(h.Route[0].Destination.Subset).To(Equal(""))
+							Expect(h.Route[0].Destination.Port.Name).To(Equal(""))
+							Expect(h.Route[0].Destination.Port.Number).To(Equal(testOathkeeperPort))
+							Expect(h.Route[0].Weight).To(BeZero())
+							Expect(h.Route[0].Headers).To(BeNil())
+
+							//others
+							Expect(h.Rewrite).To(BeNil())
+							Expect(h.WebsocketUpgrade).To(BeFalse())
+							Expect(h.Timeout).To(BeEmpty())
+							Expect(h.Retries).To(BeNil())
+							Expect(h.Fault).To(BeNil())
+							Expect(h.Mirror).To(BeNil())
+							Expect(h.DeprecatedAppendHeaders).To(BeNil())
+							Expect(h.Headers).To(BeNil())
+							Expect(h.RemoveResponseHeaders).To(BeNil())
+							Expect(h.CorsPolicy).To(BeNil())
+						}
+
+						//Spec.TCP
+						Expect(vs.Spec.TCP).To(BeNil())
+						//Spec.TLS
+						Expect(vs.Spec.TLS).To(BeNil())
+
+						//Verify Rules
+						var rules rulev1alpha1.RuleList
+						err = c.List(context.TODO(), &rules, client.InNamespace(testNamespace))
+						Expect(err).NotTo(HaveOccurred())
+
+						Expect(rules.Items).To(HaveLen(3))
+
+					})
+				})
+			})
+		})
 	})
 })
 
