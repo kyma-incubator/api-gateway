@@ -38,6 +38,9 @@ spec:
             {{- with .Values.config.serviceBlackList }}
             - --service-blacklist={{ . | join ", " | quote }}
             {{- end }}
+            {{- with .Values.config.domainWhiteList }}
+            - --domain-whitelist={{ . | join ", " | quote }}
+            {{- end }}
           resources:
             {{- toYaml .Values.deployment.resources | nindent 12 }}
           terminationMessagePath: /dev/termination-log

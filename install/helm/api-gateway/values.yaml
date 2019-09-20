@@ -33,8 +33,7 @@ config:
     - kubernetes
     - kube-dns
   domainWhiteList:
-    - foo
-    - bar
+    - kyma.local
 
   # Node labels for pod assignment.
   nodeSelector: {}
