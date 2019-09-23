@@ -3,9 +3,9 @@ package processing
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/runtime"
-
 	"github.com/kyma-incubator/api-gateway/internal/builders"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/go-logr/logr"
 	gatewayv1alpha1 "github.com/kyma-incubator/api-gateway/api/v1alpha1"
@@ -20,6 +20,7 @@ import (
 type Factory struct {
 	vsClient          *istioClient.VirtualService
 	arClient          *oryClient.AccessRule
+	client            client.Client
 	Log               logr.Logger
 	oathkeeperSvc     string
 	oathkeeperSvcPort uint32
@@ -27,10 +28,11 @@ type Factory struct {
 }
 
 //NewFactory .
-func NewFactory(vsClient *istioClient.VirtualService, arClient *oryClient.AccessRule, logger logr.Logger, oathkeeperSvc string, oathkeeperSvcPort uint32, jwksURI string) *Factory {
+func NewFactory(vsClient *istioClient.VirtualService, arClient *oryClient.AccessRule, client client.Client, logger logr.Logger, oathkeeperSvc string, oathkeeperSvcPort uint32, jwksURI string) *Factory {
 	return &Factory{
 		vsClient:          vsClient,
 		arClient:          arClient,
+		client:            client,
 		Log:               logger,
 		oathkeeperSvc:     oathkeeperSvc,
 		oathkeeperSvcPort: oathkeeperSvcPort,
@@ -38,14 +40,8 @@ func NewFactory(vsClient *istioClient.VirtualService, arClient *oryClient.Access
 	}
 }
 
-//// RequiredObjects carries required state of the cluster after reconciliation
-//type RequiredObjects struct {
-//	virtualServices []*networkingv1alpha3.VirtualService
-//	accessRules     []*rulev1alpha1.Rule
-//}
-
 // CalculateRequiredState returns required state of all objects related to given api
-func (f *Factory) CalculateRequiredState(api *gatewayv1alpha1.APIRule) State {
+func (f *Factory) CalculateRequiredState(api *gatewayv1alpha1.APIRule) *State {
 	var res State
 
 	res.accessRules = make(map[string]*rulev1alpha1.Rule)
@@ -53,7 +49,7 @@ func (f *Factory) CalculateRequiredState(api *gatewayv1alpha1.APIRule) State {
 	for i, rule := range api.Spec.Rules {
 		if isSecured(rule) {
 			ar := generateAccessRule(api, api.Spec.Rules[i], i, rule.AccessStrategies)
-			res.accessRules[rule.Path] = ar
+			res.accessRules[ar.Spec.Match.URL] = ar
 		}
 	}
 
@@ -61,7 +57,7 @@ func (f *Factory) CalculateRequiredState(api *gatewayv1alpha1.APIRule) State {
 	vs := f.generateVirtualService(api)
 	res.virtualService = vs
 
-	return res
+	return &res
 }
 
 type State struct {
@@ -69,105 +65,123 @@ type State struct {
 	accessRules    map[string]*rulev1alpha1.Rule
 }
 
-func (f *Factory) GetActualState(ctx context.Context, api *gatewayv1alpha1.APIRule) (error, State) {
+func (f *Factory) GetActualState(ctx context.Context, api *gatewayv1alpha1.APIRule) (error, *State) {
 	labels := make(map[string]string)
 	labels["owner"] = fmt.Sprintf("%s.%s", api.ObjectMeta.Name, api.ObjectMeta.Namespace)
-	var obj State
+	var state State
 
 	vsList, err := f.vsClient.GetForLabels(ctx, labels)
 	if err != nil {
-		return err, obj
+		return err, nil
 	}
 
 	//what to do if len(vsList) > 1?
 
-	obj.virtualService = vsList[0]
+	if len(vsList) == 1 {
+		state.virtualService = &vsList[0]
+	} else {
+		state.virtualService = nil
+	}
 
 	arList, err := f.arClient.GetForLabels(ctx, labels)
 	if err != nil {
-		return err, obj
+		return err, nil
 	}
 
-	obj.accessRules = make(map[string]*rulev1alpha1.Rule)
-
+	state.accessRules = make(map[string]*rulev1alpha1.Rule)
 	for _, ar := range arList {
-		obj.accessRules[ar.Spec.Match.URL] = ar
+		state.accessRules[ar.Spec.Match.URL] = &ar
 	}
 
-	return nil, obj
+	return nil, &state
 }
 
 type Patch struct {
-	virtualService *idk
-	accessRule     map[string]*idk
+	virtualService *objToPatch
+	accessRule     map[string]*objToPatch
 }
 
-type idk struct {
+type objToPatch struct {
 	action string
 	obj    runtime.Object
 }
 
-func (f *Factory) CalculateDiff(requiredState State, actualState State) *Patch {
-	arPatch := make(map[string]*idk)
+func (f *Factory) CalculateDiff(requiredState *State, actualState *State) *Patch {
+	arPatch := make(map[string]*objToPatch)
 
 	for path, rule := range requiredState.accessRules {
+		rulePatch := &objToPatch{}
+
 		if actualState.accessRules[path] != nil {
-			arPatch[path].action = "update"
+			rulePatch.action = "update"
 			modifyAccessRule(actualState.accessRules[path], rule)
+			rulePatch.obj = actualState.accessRules[path]
 		} else {
-			arPatch[path].action = "create"
+			rulePatch.action = "create"
+			rulePatch.obj = rule
 		}
-		arPatch[path].obj = rule
+
+		arPatch[path] = rulePatch
 	}
 
 	for path, rule := range actualState.accessRules {
-		if arPatch[path] == nil {
-			arPatch[path].action = "delete"
-			arPatch[path].obj = rule
+		if requiredState.accessRules[path] == nil {
+			objToDelete := &objToPatch{action: "delete", obj: rule}
+			arPatch[path] = objToDelete
 		}
 	}
 
-	vsPatch := &idk{}
-
+	vsPatch := &objToPatch{}
 	if actualState.virtualService != nil {
 		vsPatch.action = "update"
 		f.modifyVirtualService(actualState.virtualService, requiredState.virtualService)
+		vsPatch.obj = actualState.virtualService
 	} else {
 		vsPatch.action = "create"
+		vsPatch.obj = requiredState.virtualService
 	}
 
-	vsPatch.obj = requiredState.virtualService
-
-	objPatch := &Patch{}
-	objPatch.accessRule = arPatch
-	objPatch.virtualService = vsPatch
-
-	return objPatch
+	return &Patch{virtualService: vsPatch, accessRule: arPatch}
 }
 
-func (f *Factory) ApplyDiff(ctx context.Context, patch *Patch) error{
+func (f *Factory) ApplyDiff(ctx context.Context, patch *Patch) error {
 	if patch.virtualService.action == "create" {
-		f.vsClient.Create(ctx, networkingv1alpha3.VirtualService(patch.virtualService.obj))
+		err := f.client.Create(ctx, patch.virtualService.obj)
+		if err != nil {
+			return err
+		}
 	}
 
 	if patch.virtualService.action == "update" {
-		f.vsClient.Update(ctx, patch.virtualService.obj)
-	}
-
-	for _, rule := range patch.accessRule{
-		if rule.action == "create"{
-			//create
-		}
-
-		if rule.action == "update"{
-			//update
-		}
-
-		if rule.action == "delete"{
-			//delete
+		err := f.client.Update(ctx, patch.virtualService.obj)
+		if err != nil {
+			return err
 		}
 	}
 
+	for _, rule := range patch.accessRule {
+		if rule.action == "create" {
+			err := f.client.Create(ctx, rule.obj)
+			if err != nil {
+				return err
+			}
+		}
+
+		if rule.action == "update" {
+			err := f.client.Update(ctx, rule.obj)
+			if err != nil {
+				return err
+			}
+		}
+
+		if rule.action == "delete" {
+			err := f.client.Delete(ctx, rule.obj)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // ApplyRequiredState applies required state to the cluster
@@ -183,12 +197,10 @@ func (f *Factory) ApplyRequiredState(ctx context.Context, requiredState State, a
 		}
 	}
 
-	//for _, vs := range requiredState.virtualServices {
 	err := f.processVS(ctx, requiredState.virtualService, api)
 	if err != nil {
 		return err
 	}
-	//}
 	return nil
 }
 
