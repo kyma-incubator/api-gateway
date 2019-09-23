@@ -12,7 +12,6 @@ import (
 	istioClient "github.com/kyma-incubator/api-gateway/internal/clients/istio"
 	oryClient "github.com/kyma-incubator/api-gateway/internal/clients/ory"
 	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 )
 
@@ -46,9 +45,9 @@ func (f *Factory) CalculateRequiredState(api *gatewayv1alpha1.APIRule) *State {
 
 	res.accessRules = make(map[string]*rulev1alpha1.Rule)
 
-	for i, rule := range api.Spec.Rules {
+	for _, rule := range api.Spec.Rules {
 		if isSecured(rule) {
-			ar := generateAccessRule(api, api.Spec.Rules[i], i, rule.AccessStrategies)
+			ar := generateAccessRule(api, rule, rule.AccessStrategies)
 			res.accessRules[ar.Spec.Match.URL] = ar
 		}
 	}
@@ -184,38 +183,6 @@ func (f *Factory) ApplyDiff(ctx context.Context, patch *Patch) error {
 	return nil
 }
 
-// ApplyRequiredState applies required state to the cluster
-//TODO: It should be possible to get rid of api parameter
-func (f *Factory) ApplyRequiredState(ctx context.Context, requiredState State, api *gatewayv1alpha1.APIRule) error {
-	i := 0
-
-	for _, rule := range requiredState.accessRules {
-		err := f.processAR(ctx, rule, api, i)
-		i++
-		if err != nil {
-			return err
-		}
-	}
-
-	err := f.processVS(ctx, requiredState.virtualService, api)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (f *Factory) getVirtualService(ctx context.Context, api *gatewayv1alpha1.APIRule) (*networkingv1alpha3.VirtualService, error) {
-	vs, err := f.vsClient.GetForAPI(ctx, api)
-	if err != nil {
-		if apierrs.IsNotFound(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return vs, nil
-}
-
 func (f *Factory) createVirtualService(ctx context.Context, vs *networkingv1alpha3.VirtualService) error {
 	return f.vsClient.Create(ctx, vs)
 }
@@ -232,50 +199,13 @@ func (f *Factory) updateAccessRule(ctx context.Context, ar *rulev1alpha1.Rule) e
 	return f.arClient.Update(ctx, ar)
 }
 
-func (f *Factory) getAccessRule(ctx context.Context, api *gatewayv1alpha1.APIRule, ruleInd int) (*rulev1alpha1.Rule, error) {
-	ar, err := f.arClient.GetForAPI(ctx, api, ruleInd)
-	if err != nil {
-		if apierrs.IsNotFound(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return ar, nil
-}
-
-func (f *Factory) processVS(ctx context.Context, required *networkingv1alpha3.VirtualService, api *gatewayv1alpha1.APIRule) error {
-	existingVS, err := f.getVirtualService(ctx, api)
-	if err != nil {
-		return err
-	}
-	if existingVS != nil {
-		f.modifyVirtualService(existingVS, required)
-		return f.updateVirtualService(ctx, existingVS)
-	}
-	return f.createVirtualService(ctx, required)
-}
-
-func (f *Factory) processAR(ctx context.Context, required *rulev1alpha1.Rule, api *gatewayv1alpha1.APIRule, ruleInd int) error {
-	existingAR, err := f.getAccessRule(ctx, api, ruleInd)
-	if err != nil {
-		return err
-	}
-
-	if existingAR != nil {
-		modifyAccessRule(existingAR, required)
-		return f.updateAccessRule(ctx, existingAR)
-	}
-	return f.createAccessRule(ctx, required)
-}
-
 //TODO: Find better name (updateVirtualService is already taken)
 func (f *Factory) modifyVirtualService(existing, required *networkingv1alpha3.VirtualService) {
 	existing.Spec = required.Spec
 }
 
 func (f *Factory) generateVirtualService(api *gatewayv1alpha1.APIRule) *networkingv1alpha3.VirtualService {
-	virtualServiceName := fmt.Sprintf("%s-%s", api.ObjectMeta.Name, *api.Spec.Service.Name)
+	virtualServiceName := fmt.Sprintf("%s", api.ObjectMeta.Name)
 	ownerRef := generateOwnerRef(api)
 
 	vsSpecBuilder := builders.VirtualServiceSpec()
