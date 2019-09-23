@@ -475,14 +475,11 @@ var _ = Describe("APIRule Controller", func() {
 						defer c.Delete(context.TODO(), instance)
 
 						expectedRequest := reconcile.Request{NamespacedName: types.NamespacedName{Name: testName, Namespace: testNamespace}}
-
 						Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
 
 						//Verify VirtualService
-						expectedVSName := testName + "-" + testServiceName
-						expectedVSNamespace := testNamespace
 						vs := networkingv1alpha3.VirtualService{}
-						err = c.Get(context.TODO(), client.ObjectKey{Name: expectedVSName, Namespace: expectedVSNamespace}, &vs)
+						err = c.Get(context.TODO(), client.ObjectKey{Name: fmt.Sprintf("%s-%s", testName, testServiceName), Namespace: testNamespace}, &vs)
 						Expect(err).NotTo(HaveOccurred())
 
 						//Meta
@@ -522,7 +519,7 @@ var _ = Describe("APIRule Controller", func() {
 							Expect(h.Route).To(HaveLen(1))
 
 							url, port := testOathkeeperSvcURL, testOathkeeperPort
-							if h.Match[0].URI.Regex == "/favicon" { // allow, no rule
+							if h.Match[0].URI.Regex == "/favicon" { // allow, no oathkeeper rule
 								url, port = "httpbin.padu-system.svc.cluster.local", 443
 							}
 							Expect(h.Route[0].Destination.Host).To(Equal(url))
