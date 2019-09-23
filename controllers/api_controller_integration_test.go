@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
-	"strconv"
 	"time"
 
 	"encoding/json"
@@ -495,10 +494,10 @@ var _ = Describe("APIRule Controller", func() {
 						//HTTP.Match[]
 						Expect(vs.Spec.HTTP[0].Match).To(HaveLen(1))
 
-						Expect(vs.Spec.HTTP[0].Match[0].URI.Regex).To(Equal("/img"))
-						Expect(vs.Spec.HTTP[1].Match[0].URI.Regex).To(Equal("/headers"))
-						Expect(vs.Spec.HTTP[2].Match[0].URI.Regex).To(Equal("/status"))
-						Expect(vs.Spec.HTTP[3].Match[0].URI.Regex).To(Equal("/favicon"))
+						Expect(vs.Spec.HTTP[0].Match[0].URI.Regex).To(Equal(rule1.Path))
+						Expect(vs.Spec.HTTP[1].Match[0].URI.Regex).To(Equal(rule2.Path))
+						Expect(vs.Spec.HTTP[2].Match[0].URI.Regex).To(Equal(rule3.Path))
+						Expect(vs.Spec.HTTP[3].Match[0].URI.Regex).To(Equal(rule4.Path))
 
 						for _, h := range vs.Spec.HTTP {
 
@@ -557,7 +556,7 @@ var _ = Describe("APIRule Controller", func() {
 							{path: "headers", handler: "oauth2_introspection", config: []byte(configOAuth)},
 							{path: "status", handler: "noop", config: nil},
 						} {
-							expectedRuleName := testName + "-" + testServiceName + "-" + strconv.Itoa(i)
+							expectedRuleName := fmt.Sprintf("%s-%s-%d", testName, testServiceName, i)
 							rl := rulev1alpha1.Rule{}
 							err = c.Get(context.TODO(), client.ObjectKey{Name: expectedRuleName, Namespace: testNamespace}, &rl)
 							Expect(err).NotTo(HaveOccurred())
@@ -599,6 +598,10 @@ var _ = Describe("APIRule Controller", func() {
 							Expect(rl.Spec.Mutators[0].Handler.Name).To(Equal(testMutators[0].Name))
 							Expect(rl.Spec.Mutators[1].Handler.Name).To(Equal(testMutators[1].Name))
 						}
+
+						//make sure no rule for "/favicon" path has been created
+						name := fmt.Sprintf("%s-%s-3", testName, testServiceName)
+						Expect(c.Get(context.TODO(), client.ObjectKey{Name: name, Namespace: testNamespace}, &rulev1alpha1.Rule{})).To(HaveOccurred())
 					})
 				})
 			})
