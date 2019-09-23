@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"time"
 
 	"encoding/json"
@@ -459,8 +460,8 @@ var _ = Describe("APIRule Controller", func() {
 
 						rule1 := testRule("/img", []string{"GET"}, testMutators, jwtHandler)
 						rule2 := testRule("/headers", []string{"GET"}, testMutators, oauthHandler)
-						rule3 := testRule("/favicon", []string{"GET"}, testMutators, allowHandler)
-						rule4 := testRule("/status", []string{"GET"}, testMutators, noopHandler)
+						rule3 := testRule("/status", []string{"GET"}, testMutators, noopHandler)
+						rule4 := testRule("/favicon", []string{"GET"}, nil, allowHandler)
 
 						testName := generateTestName(testNameBase, testIDLength)
 						instance := testInstance(testName, testNamespace, testServiceName, testServiceHost, testServicePort, []gatewayv1alpha1.Rule{rule1, rule2, rule3, rule4})
@@ -476,6 +477,7 @@ var _ = Describe("APIRule Controller", func() {
 						expectedRequest := reconcile.Request{NamespacedName: types.NamespacedName{Name: testName, Namespace: testNamespace}}
 
 						Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
+
 						//Verify VirtualService
 						expectedVSName := testName + "-" + testServiceName
 						expectedVSNamespace := testNamespace
@@ -493,17 +495,17 @@ var _ = Describe("APIRule Controller", func() {
 						Expect(vs.Spec.Gateways[0]).To(Equal(testGatewayURL))
 						//Spec.HTTP
 						Expect(vs.Spec.HTTP).To(HaveLen(4))
-						////// HTTP.Match[]
+						//HTTP.Match[]
 						Expect(vs.Spec.HTTP[0].Match).To(HaveLen(1))
 
 						Expect(vs.Spec.HTTP[0].Match[0].URI.Regex).To(Equal("/img"))
 						Expect(vs.Spec.HTTP[1].Match[0].URI.Regex).To(Equal("/headers"))
-						Expect(vs.Spec.HTTP[2].Match[0].URI.Regex).To(Equal("/favicon"))
-						Expect(vs.Spec.HTTP[3].Match[0].URI.Regex).To(Equal("/status"))
+						Expect(vs.Spec.HTTP[2].Match[0].URI.Regex).To(Equal("/status"))
+						Expect(vs.Spec.HTTP[3].Match[0].URI.Regex).To(Equal("/favicon"))
 
 						for _, h := range vs.Spec.HTTP {
 
-							/////////// Match[].URI
+							//Match[].URI
 							Expect(h.Match[0].URI).NotTo(BeNil())
 							Expect(h.Match[0].URI.Exact).To(BeEmpty())
 							Expect(h.Match[0].URI.Prefix).To(BeEmpty())
@@ -516,16 +518,21 @@ var _ = Describe("APIRule Controller", func() {
 							Expect(h.Match[0].SourceLabels).To(BeNil())
 							Expect(h.Match[0].Gateways).To(BeNil())
 
-							////// HTTP.Route[]
+							//HTTP.Route[]
 							Expect(h.Route).To(HaveLen(1))
-							Expect(h.Route[0].Destination.Host).To(Equal(testOathkeeperSvcURL))
+
+							url, port := testOathkeeperSvcURL, testOathkeeperPort
+							if h.Match[0].URI.Regex == "/favicon" { // allow, no rule
+								url, port = "httpbin.padu-system.svc.cluster.local", 443
+							}
+							Expect(h.Route[0].Destination.Host).To(Equal(url))
 							Expect(h.Route[0].Destination.Subset).To(Equal(""))
 							Expect(h.Route[0].Destination.Port.Name).To(Equal(""))
-							Expect(h.Route[0].Destination.Port.Number).To(Equal(testOathkeeperPort))
+							Expect(h.Route[0].Destination.Port.Number).To(Equal(port))
 							Expect(h.Route[0].Weight).To(BeZero())
 							Expect(h.Route[0].Headers).To(BeNil())
 
-							//others
+							//Others
 							Expect(h.Rewrite).To(BeNil())
 							Expect(h.WebsocketUpgrade).To(BeFalse())
 							Expect(h.Timeout).To(BeEmpty())
@@ -544,12 +551,57 @@ var _ = Describe("APIRule Controller", func() {
 						Expect(vs.Spec.TLS).To(BeNil())
 
 						//Verify Rules
-						var rules rulev1alpha1.RuleList
-						err = c.List(context.TODO(), &rules, client.InNamespace(testNamespace))
-						Expect(err).NotTo(HaveOccurred())
+						for i, tc := range []struct {
+							path    string
+							handler string
+							config  []byte
+						}{
+							{path: "img", handler: "jwt", config: []byte(configJWT)},
+							{path: "headers", handler: "oauth2_introspection", config: []byte(configOAuth)},
+							{path: "status", handler: "noop", config: nil},
+						} {
+							expectedRuleName := testName + "-" + testServiceName + "-" + strconv.Itoa(i)
+							rl := rulev1alpha1.Rule{}
+							err = c.Get(context.TODO(), client.ObjectKey{Name: expectedRuleName, Namespace: testNamespace}, &rl)
+							Expect(err).NotTo(HaveOccurred())
 
-						Expect(rules.Items).To(HaveLen(3))
+							//Meta
+							verifyOwnerReference(rl.ObjectMeta, testName, gatewayv1alpha1.GroupVersion.String(), kind)
 
+							//Spec.Upstream
+							Expect(rl.Spec.Upstream).NotTo(BeNil())
+							Expect(rl.Spec.Upstream.URL).To(Equal(fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", testServiceName, testNamespace, testServicePort)))
+							Expect(rl.Spec.Upstream.StripPath).To(BeNil())
+							Expect(rl.Spec.Upstream.PreserveHost).To(BeNil())
+
+							//Spec.Match
+							Expect(rl.Spec.Match).NotTo(BeNil())
+							Expect(rl.Spec.Match.Methods).To(Equal([]string{"GET"}))
+							Expect(rl.Spec.Match.URL).To(Equal(fmt.Sprintf("<http|https>://%s</%s>", testServiceHost, tc.path)))
+
+							//Spec.Authenticators
+							Expect(rl.Spec.Authenticators).To(HaveLen(1))
+							Expect(rl.Spec.Authenticators[0].Handler).NotTo(BeNil())
+							Expect(rl.Spec.Authenticators[0].Handler.Name).To(Equal(tc.handler))
+
+							if tc.config != nil {
+								//Authenticators[0].Handler.Config validation
+								Expect(rl.Spec.Authenticators[0].Handler.Config).NotTo(BeNil())
+								Expect(rl.Spec.Authenticators[0].Handler.Config.Raw).To(MatchJSON(tc.config))
+							}
+
+							//Spec.Authorizer
+							Expect(rl.Spec.Authorizer).NotTo(BeNil())
+							Expect(rl.Spec.Authorizer.Handler).NotTo(BeNil())
+							Expect(rl.Spec.Authorizer.Handler.Name).To(Equal("allow"))
+							Expect(rl.Spec.Authorizer.Handler.Config).To(BeNil())
+
+							//Spec.Mutators
+							Expect(rl.Spec.Mutators).NotTo(BeNil())
+							Expect(len(rl.Spec.Mutators)).To(Equal(len(testMutators)))
+							Expect(rl.Spec.Mutators[0].Handler.Name).To(Equal(testMutators[0].Name))
+							Expect(rl.Spec.Mutators[1].Handler.Name).To(Equal(testMutators[1].Name))
+						}
 					})
 				})
 			})
