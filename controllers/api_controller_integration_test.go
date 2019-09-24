@@ -152,6 +152,9 @@ var _ = Describe("APIRule Controller", func() {
 						vs := vsList.Items[0]
 
 						//Meta
+						Expect(vs.Name).To(HavePrefix(apiRuleName + "-"))
+						Expect(len(vs.Name) > len(apiRuleName)).To(BeTrue())
+
 						verifyOwnerReference(vs.ObjectMeta, apiRuleName, gatewayv1alpha1.GroupVersion.String(), kind)
 						//Spec.Hosts
 						Expect(vs.Spec.Hosts).To(HaveLen(1))
@@ -219,6 +222,9 @@ var _ = Describe("APIRule Controller", func() {
 						rl := rules[expectedRuleMatchURL]
 
 						//Meta
+						Expect(rl.Name).To(HavePrefix(apiRuleName + "-"))
+						Expect(len(rl.Name) > len(apiRuleName)).To(BeTrue())
+
 						verifyOwnerReference(rl.ObjectMeta, apiRuleName, gatewayv1alpha1.GroupVersion.String(), kind)
 
 						//Spec.Upstream
