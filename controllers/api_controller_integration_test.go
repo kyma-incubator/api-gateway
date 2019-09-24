@@ -142,7 +142,7 @@ var _ = Describe("APIRule Controller", func() {
 						Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
 
 						//Verify VirtualService
-						expectedVSName := testName + "-" + testServiceName
+						expectedVSName := testName
 						expectedVSNamespace := testNamespace
 						vs := networkingv1alpha3.VirtualService{}
 						err = c.Get(context.TODO(), client.ObjectKey{Name: expectedVSName, Namespace: expectedVSNamespace}, &vs)
@@ -198,18 +198,34 @@ var _ = Describe("APIRule Controller", func() {
 						Expect(vs.Spec.TLS).To(BeNil())
 
 						//Verify Rule
-						expectedRuleName := testName + "-" + testServiceName + "-0"
+						expectedRuleMatchURL := fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", testServiceName, testNamespace, testServicePort)
 						expectedRuleNamespace := testNamespace
-						rl := rulev1alpha1.Rule{}
-						err = c.Get(context.TODO(), client.ObjectKey{Name: expectedRuleName, Namespace: expectedRuleNamespace}, &rl)
+
+						labels := make(map[string]string)
+						labels["owner"] = fmt.Sprintf("%s.%s", testName, expectedRuleNamespace)
+						matchingLabelsFunc := client.MatchingLabels(labels)
+
+						rlList := rulev1alpha1.RuleList{}
+
+						err = c.List(context.TODO(), &rlList, matchingLabelsFunc)
 						Expect(err).NotTo(HaveOccurred())
+
+						Expect(len(rlList.Items)).To(Equal(1))
+
+						rules := make(map[string]rulev1alpha1.Rule)
+
+						for _, rule := range rlList.Items {
+							rules[rule.Spec.Match.URL] = rule
+						}
+
+						rl := rules[expectedRuleMatchURL]
 
 						//Meta
 						verifyOwnerReference(rl.ObjectMeta, testName, gatewayv1alpha1.GroupVersion.String(), kind)
 
 						//Spec.Upstream
 						Expect(rl.Spec.Upstream).NotTo(BeNil())
-						Expect(rl.Spec.Upstream.URL).To(Equal(fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", testServiceName, testNamespace, testServicePort)))
+						Expect(rl.Spec.Upstream.URL).To(Equal(expectedRuleMatchURL))
 						Expect(rl.Spec.Upstream.StripPath).To(BeNil())
 						Expect(rl.Spec.Upstream.PreserveHost).To(BeNil())
 						//Spec.Match
@@ -273,7 +289,7 @@ var _ = Describe("APIRule Controller", func() {
 
 						Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
 						//Verify VirtualService
-						expectedVSName := testName + "-" + testServiceName
+						expectedVSName := testName
 						expectedVSNamespace := testNamespace
 						vs := networkingv1alpha3.VirtualService{}
 						err = c.Get(context.TODO(), client.ObjectKey{Name: expectedVSName, Namespace: expectedVSNamespace}, &vs)
@@ -329,18 +345,34 @@ var _ = Describe("APIRule Controller", func() {
 						Expect(vs.Spec.TLS).To(BeNil())
 
 						//Verify Rule1
-						expectedRuleName := testName + "-" + testServiceName + "-0"
+						expectedRuleMatchURL := fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", testServiceName, testNamespace, testServicePort)
 						expectedRuleNamespace := testNamespace
-						rl := rulev1alpha1.Rule{}
-						err = c.Get(context.TODO(), client.ObjectKey{Name: expectedRuleName, Namespace: expectedRuleNamespace}, &rl)
+
+						labels := make(map[string]string)
+						labels["owner"] = fmt.Sprintf("%s.%s", testName, expectedRuleNamespace)
+						matchingLabelsFunc := client.MatchingLabels(labels)
+
+						rlList := rulev1alpha1.RuleList{}
+
+						err = c.List(context.TODO(), &rlList, matchingLabelsFunc)
 						Expect(err).NotTo(HaveOccurred())
+
+						Expect(len(rlList.Items)).To(Equal(2))
+
+						rules := make(map[string]rulev1alpha1.Rule)
+
+						for _, rule := range rlList.Items {
+							rules[rule.Spec.Match.URL] = rule
+						}
+
+						rl := rules[expectedRuleMatchURL]
 
 						//Meta
 						verifyOwnerReference(rl.ObjectMeta, testName, gatewayv1alpha1.GroupVersion.String(), kind)
 
 						//Spec.Upstream
 						Expect(rl.Spec.Upstream).NotTo(BeNil())
-						Expect(rl.Spec.Upstream.URL).To(Equal(fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", testServiceName, testNamespace, testServicePort)))
+						Expect(rl.Spec.Upstream.URL).To(Equal(expectedRuleMatchURL))
 						Expect(rl.Spec.Upstream.StripPath).To(BeNil())
 						Expect(rl.Spec.Upstream.PreserveHost).To(BeNil())
 						//Spec.Match
@@ -373,17 +405,15 @@ var _ = Describe("APIRule Controller", func() {
 						Expect(rl.Spec.Mutators[1].Handler.Name).To(Equal(testMutators[1].Name))
 
 						//Verify Rule2
-						expectedRuleName2 := testName + "-" + testServiceName + "-1"
-						rl2 := rulev1alpha1.Rule{}
-						err = c.Get(context.TODO(), client.ObjectKey{Name: expectedRuleName2, Namespace: expectedRuleNamespace}, &rl2)
-						Expect(err).NotTo(HaveOccurred())
+						expectedRule2MatchURL := fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", testServiceName, testNamespace, testServicePort)
+						rl2 := rules[expectedRule2MatchURL]
 
 						//Meta
 						verifyOwnerReference(rl2.ObjectMeta, testName, gatewayv1alpha1.GroupVersion.String(), "APIRule")
 
 						//Spec.Upstream
 						Expect(rl2.Spec.Upstream).NotTo(BeNil())
-						Expect(rl2.Spec.Upstream.URL).To(Equal(fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", testServiceName, testNamespace, testServicePort)))
+						Expect(rl2.Spec.Upstream.URL).To(Equal(expectedRule2MatchURL))
 						Expect(rl2.Spec.Upstream.StripPath).To(BeNil())
 						Expect(rl2.Spec.Upstream.PreserveHost).To(BeNil())
 						//Spec.Match
