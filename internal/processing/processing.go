@@ -149,37 +149,35 @@ func (f *Factory) CalculateDiff(requiredState *State, actualState *State) *Patch
 
 //ApplyDiff method applies computed diff
 func (f *Factory) ApplyDiff(ctx context.Context, patch *Patch) error {
-	switch patch.virtualService.action {
-	case "create":
-		err := f.client.Create(ctx, patch.virtualService.obj)
-		if err != nil {
-			return err
-		}
-	case "update":
-		err := f.client.Update(ctx, patch.virtualService.obj)
+	err := f.applyObjDiff(ctx, patch.virtualService)
+	if err != nil {
+		return err
+	}
+
+	for _, rule := range patch.accessRule {
+		err := f.applyObjDiff(ctx, rule)
 		if err != nil {
 			return err
 		}
 	}
 
-	for _, rule := range patch.accessRule {
-		switch rule.action {
-		case "create":
-			err := f.client.Create(ctx, rule.obj)
-			if err != nil {
-				return err
-			}
-		case "update":
-			err := f.client.Update(ctx, rule.obj)
-			if err != nil {
-				return err
-			}
-		case "delete":
-			err := f.client.Delete(ctx, rule.obj)
-			if err != nil {
-				return err
-			}
-		}
+	return nil
+}
+
+func (f *Factory) applyObjDiff(ctx context.Context, objToPatch *objToPatch) error {
+	var err error
+
+	switch objToPatch.action {
+	case "create":
+		err = f.client.Create(ctx, objToPatch.obj)
+	case "update":
+		err = f.client.Update(ctx, objToPatch.obj)
+	case "delete":
+		err = f.client.Delete(ctx, objToPatch.obj)
+	}
+
+	if err != nil {
+		return err
 	}
 
 	return nil
