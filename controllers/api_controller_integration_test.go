@@ -12,7 +12,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,7 +32,7 @@ const (
 	testGatewayURL              = "kyma-gateway.kyma-system.svc.cluster.local"
 	testOathkeeperSvcURL        = "oathkeeper.kyma-system.svc.cluster.local"
 	testOathkeeperPort   uint32 = 1234
-	testNamespace               = "padu-system"
+	testNamespace               = "atgo-system"
 	testNameBase                = "test"
 	testIDLength                = 5
 )
@@ -62,6 +61,7 @@ var _ = Describe("APIRule Controller", func() {
 	Context("when creating an APIRule for exposing service", func() {
 
 		It("Should report validation errors in CR status", func() {
+
 			configJSON := fmt.Sprintf(`{
 							"required_scope": [%s]
 						}`, toCSVList(testScopes))
@@ -73,9 +73,9 @@ var _ = Describe("APIRule Controller", func() {
 				},
 			}
 
-			testName := generateTestName(testNameBase, testIDLength)
+			apiRuleName := generateTestName(testNameBase, testIDLength)
 			rule := testRule(testPath, testMethods, testMutators, nonEmptyConfig)
-			instance := testInstance(testName, testNamespace, testServiceName, testServiceHost, testServicePort, []gatewayv1alpha1.Rule{rule})
+			instance := testInstance(apiRuleName, testNamespace, testServiceName, testServiceHost, testServicePort, []gatewayv1alpha1.Rule{rule})
 			instance.Spec.Rules = append(instance.Spec.Rules, instance.Spec.Rules[0]) //Duplicate entry
 			instance.Spec.Rules = append(instance.Spec.Rules, instance.Spec.Rules[0]) //Duplicate entry
 
@@ -87,13 +87,13 @@ var _ = Describe("APIRule Controller", func() {
 			Expect(err).NotTo(HaveOccurred())
 			defer c.Delete(context.TODO(), instance)
 
-			expectedRequest := reconcile.Request{NamespacedName: types.NamespacedName{Name: testName, Namespace: testNamespace}}
+			expectedRequest := reconcile.Request{NamespacedName: types.NamespacedName{Name: apiRuleName, Namespace: testNamespace}}
 
 			Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
 
 			//Verify APIRule
 			created := gatewayv1alpha1.APIRule{}
-			err = c.Get(context.TODO(), client.ObjectKey{Name: testName, Namespace: testNamespace}, &created)
+			err = c.Get(context.TODO(), client.ObjectKey{Name: apiRuleName, Namespace: testNamespace}, &created)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(created.Status.APIRuleStatus.Code).To(Equal(gatewayv1alpha1.StatusError))
 			Expect(created.Status.APIRuleStatus.Description).To(ContainSubstring("Multiple validation errors:"))
@@ -103,11 +103,10 @@ var _ = Describe("APIRule Controller", func() {
 			Expect(created.Status.APIRuleStatus.Description).To(ContainSubstring("1 more error(s)..."))
 
 			//Verify VirtualService is not created
-			expectedVSName := testName + "-" + testServiceName
-			expectedVSNamespace := testNamespace
-			vs := networkingv1alpha3.VirtualService{}
-			err = c.Get(context.TODO(), client.ObjectKey{Name: expectedVSName, Namespace: expectedVSNamespace}, &vs)
-			Expect(errors.IsNotFound(err)).To(BeTrue())
+			vsList := networkingv1alpha3.VirtualServiceList{}
+			err = c.List(context.TODO(), &vsList)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(vsList.Items).To(HaveLen(0))
 		})
 
 		Context("on all the paths,", func() {
@@ -125,9 +124,9 @@ var _ = Describe("APIRule Controller", func() {
 							},
 						}
 
-						testName := generateTestName(testNameBase, testIDLength)
+						apiRuleName := generateTestName(testNameBase, testIDLength)
 						rule := testRule(testPath, testMethods, testMutators, oauthConfig)
-						instance := testInstance(testName, testNamespace, testServiceName, testServiceHost, testServicePort, []gatewayv1alpha1.Rule{rule})
+						instance := testInstance(apiRuleName, testNamespace, testServiceName, testServiceHost, testServicePort, []gatewayv1alpha1.Rule{rule})
 
 						err := c.Create(context.TODO(), instance)
 						if apierrors.IsInvalid(err) {
@@ -137,12 +136,12 @@ var _ = Describe("APIRule Controller", func() {
 						Expect(err).NotTo(HaveOccurred())
 						defer c.Delete(context.TODO(), instance)
 
-						expectedRequest := reconcile.Request{NamespacedName: types.NamespacedName{Name: testName, Namespace: testNamespace}}
+						expectedRequest := reconcile.Request{NamespacedName: types.NamespacedName{Name: apiRuleName, Namespace: testNamespace}}
 
 						Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
 
 						labels := make(map[string]string)
-						labels["owner"] = fmt.Sprintf("%s.%s", testName, testNamespace)
+						labels["owner"] = fmt.Sprintf("%s.%s", apiRuleName, testNamespace)
 						matchingLabelsFunc := client.MatchingLabels(labels)
 
 						//Verify VirtualService
@@ -153,7 +152,7 @@ var _ = Describe("APIRule Controller", func() {
 						vs := vsList.Items[0]
 
 						//Meta
-						verifyOwnerReference(vs.ObjectMeta, testName, gatewayv1alpha1.GroupVersion.String(), kind)
+						verifyOwnerReference(vs.ObjectMeta, apiRuleName, gatewayv1alpha1.GroupVersion.String(), kind)
 						//Spec.Hosts
 						Expect(vs.Spec.Hosts).To(HaveLen(1))
 						Expect(vs.Spec.Hosts[0]).To(Equal(testServiceHost))
@@ -220,7 +219,7 @@ var _ = Describe("APIRule Controller", func() {
 						rl := rules[expectedRuleMatchURL]
 
 						//Meta
-						verifyOwnerReference(rl.ObjectMeta, testName, gatewayv1alpha1.GroupVersion.String(), kind)
+						verifyOwnerReference(rl.ObjectMeta, apiRuleName, gatewayv1alpha1.GroupVersion.String(), kind)
 
 						//Spec.Upstream
 						Expect(rl.Spec.Upstream).NotTo(BeNil())
@@ -271,10 +270,11 @@ var _ = Describe("APIRule Controller", func() {
 								Raw: []byte(configJSON),
 							},
 						}
-						testName := generateTestName(testNameBase, testIDLength)
+
+						apiRuleName := generateTestName(testNameBase, testIDLength)
 						rule1 := testRule("/img", []string{"GET"}, testMutators, jwtConfig)
 						rule2 := testRule("/headers", []string{"GET"}, testMutators, jwtConfig)
-						instance := testInstance(testName, testNamespace, testServiceName, testServiceHost, testServicePort, []gatewayv1alpha1.Rule{rule1, rule2})
+						instance := testInstance(apiRuleName, testNamespace, testServiceName, testServiceHost, testServicePort, []gatewayv1alpha1.Rule{rule1, rule2})
 
 						err := c.Create(context.TODO(), instance)
 						if apierrors.IsInvalid(err) {
@@ -284,12 +284,12 @@ var _ = Describe("APIRule Controller", func() {
 						Expect(err).NotTo(HaveOccurred())
 						defer c.Delete(context.TODO(), instance)
 
-						expectedRequest := reconcile.Request{NamespacedName: types.NamespacedName{Name: testName, Namespace: testNamespace}}
+						expectedRequest := reconcile.Request{NamespacedName: types.NamespacedName{Name: apiRuleName, Namespace: testNamespace}}
 
 						Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
 
 						labels := make(map[string]string)
-						labels["owner"] = fmt.Sprintf("%s.%s", testName, testNamespace)
+						labels["owner"] = fmt.Sprintf("%s.%s", apiRuleName, testNamespace)
 						matchingLabelsFunc := client.MatchingLabels(labels)
 
 						//Verify VirtualService
@@ -300,7 +300,7 @@ var _ = Describe("APIRule Controller", func() {
 						vs := vsList.Items[0]
 
 						//Meta
-						verifyOwnerReference(vs.ObjectMeta, testName, gatewayv1alpha1.GroupVersion.String(), kind)
+						verifyOwnerReference(vs.ObjectMeta, apiRuleName, gatewayv1alpha1.GroupVersion.String(), kind)
 						//Spec.Hosts
 						Expect(vs.Spec.Hosts).To(HaveLen(1))
 						Expect(vs.Spec.Hosts[0]).To(Equal(testServiceHost))
@@ -367,7 +367,7 @@ var _ = Describe("APIRule Controller", func() {
 						rl := rules[expectedRuleMatchURL]
 
 						//Meta
-						verifyOwnerReference(rl.ObjectMeta, testName, gatewayv1alpha1.GroupVersion.String(), kind)
+						verifyOwnerReference(rl.ObjectMeta, apiRuleName, gatewayv1alpha1.GroupVersion.String(), kind)
 
 						//Spec.Upstream
 						Expect(rl.Spec.Upstream).NotTo(BeNil())
@@ -408,7 +408,7 @@ var _ = Describe("APIRule Controller", func() {
 						rl2 := rules[expectedRule2MatchURL]
 
 						//Meta
-						verifyOwnerReference(rl2.ObjectMeta, testName, gatewayv1alpha1.GroupVersion.String(), "APIRule")
+						verifyOwnerReference(rl2.ObjectMeta, apiRuleName, gatewayv1alpha1.GroupVersion.String(), "APIRule")
 
 						//Spec.Upstream
 						Expect(rl2.Spec.Upstream).NotTo(BeNil())
@@ -491,8 +491,8 @@ var _ = Describe("APIRule Controller", func() {
 						rule3 := testRule("/status", []string{"GET"}, testMutators, noopHandler)
 						rule4 := testRule("/favicon", []string{"GET"}, nil, allowHandler)
 
-						testName := generateTestName(testNameBase, testIDLength)
-						instance := testInstance(testName, testNamespace, testServiceName, testServiceHost, testServicePort, []gatewayv1alpha1.Rule{rule1, rule2, rule3, rule4})
+						apiRuleName := generateTestName(testNameBase, testIDLength)
+						instance := testInstance(apiRuleName, testNamespace, testServiceName, testServiceHost, testServicePort, []gatewayv1alpha1.Rule{rule1, rule2, rule3, rule4})
 
 						err := c.Create(context.TODO(), instance)
 						if apierrors.IsInvalid(err) {
@@ -502,11 +502,11 @@ var _ = Describe("APIRule Controller", func() {
 						Expect(err).NotTo(HaveOccurred())
 						defer c.Delete(context.TODO(), instance)
 
-						expectedRequest := reconcile.Request{NamespacedName: types.NamespacedName{Name: testName, Namespace: testNamespace}}
+						expectedRequest := reconcile.Request{NamespacedName: types.NamespacedName{Name: apiRuleName, Namespace: testNamespace}}
 						Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
 
 						labels := make(map[string]string)
-						labels["owner"] = fmt.Sprintf("%s.%s", testName, testNamespace)
+						labels["owner"] = fmt.Sprintf("%s.%s", apiRuleName, testNamespace)
 						matchingLabelsFunc := client.MatchingLabels(labels)
 
 						//Verify VirtualService
@@ -517,7 +517,7 @@ var _ = Describe("APIRule Controller", func() {
 						vs := vsList.Items[0]
 
 						//Meta
-						verifyOwnerReference(vs.ObjectMeta, testName, gatewayv1alpha1.GroupVersion.String(), kind)
+						verifyOwnerReference(vs.ObjectMeta, apiRuleName, gatewayv1alpha1.GroupVersion.String(), kind)
 						//Spec.Hosts
 						Expect(vs.Spec.Hosts).To(HaveLen(1))
 						Expect(vs.Spec.Hosts[0]).To(Equal(testServiceHost))
@@ -554,7 +554,7 @@ var _ = Describe("APIRule Controller", func() {
 
 							url, port := testOathkeeperSvcURL, testOathkeeperPort
 							if h.Match[0].URI.Regex == "/favicon" { // allow, no oathkeeper rule
-								url, port = "httpbin.padu-system.svc.cluster.local", 443
+								url, port = "httpbin.atgo-system.svc.cluster.local", 443
 							}
 							Expect(h.Route[0].Destination.Host).To(Equal(url))
 							Expect(h.Route[0].Destination.Subset).To(Equal(""))
@@ -609,7 +609,7 @@ var _ = Describe("APIRule Controller", func() {
 							rl := rules[expectedRuleMatchURL]
 
 							//Meta
-							verifyOwnerReference(rl.ObjectMeta, testName, gatewayv1alpha1.GroupVersion.String(), kind)
+							verifyOwnerReference(rl.ObjectMeta, apiRuleName, gatewayv1alpha1.GroupVersion.String(), kind)
 
 							//Spec.Upstream
 							Expect(rl.Spec.Upstream).NotTo(BeNil())
@@ -647,7 +647,7 @@ var _ = Describe("APIRule Controller", func() {
 						}
 
 						//make sure no rule for "/favicon" path has been created
-						name := fmt.Sprintf("%s-%s-3", testName, testServiceName)
+						name := fmt.Sprintf("%s-%s-3", apiRuleName, testServiceName)
 						Expect(c.Get(context.TODO(), client.ObjectKey{Name: name, Namespace: testNamespace}, &rulev1alpha1.Rule{})).To(HaveOccurred())
 					})
 				})
