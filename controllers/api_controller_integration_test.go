@@ -141,12 +141,16 @@ var _ = Describe("APIRule Controller", func() {
 
 						Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
 
+						labels := make(map[string]string)
+						labels["owner"] = fmt.Sprintf("%s.%s", testName, testNamespace)
+						matchingLabelsFunc := client.MatchingLabels(labels)
+
 						//Verify VirtualService
-						expectedVSName := testName
-						expectedVSNamespace := testNamespace
-						vs := networkingv1alpha3.VirtualService{}
-						err = c.Get(context.TODO(), client.ObjectKey{Name: expectedVSName, Namespace: expectedVSNamespace}, &vs)
+						vsList := networkingv1alpha3.VirtualServiceList{}
+						err = c.List(context.TODO(), &vsList, matchingLabelsFunc)
 						Expect(err).NotTo(HaveOccurred())
+						Expect(vsList.Items).To(HaveLen(1))
+						vs := vsList.Items[0]
 
 						//Meta
 						verifyOwnerReference(vs.ObjectMeta, testName, gatewayv1alpha1.GroupVersion.String(), kind)
@@ -199,18 +203,13 @@ var _ = Describe("APIRule Controller", func() {
 
 						//Verify Rule
 						expectedRuleMatchURL := fmt.Sprintf("<http|https>://%s<%s>", testServiceHost, testPath)
-						expectedRuleNamespace := testNamespace
-
-						labels := make(map[string]string)
-						labels["owner"] = fmt.Sprintf("%s.%s", testName, expectedRuleNamespace)
-						matchingLabelsFunc := client.MatchingLabels(labels)
 
 						rlList := rulev1alpha1.RuleList{}
 
 						err = c.List(context.TODO(), &rlList, matchingLabelsFunc)
 						Expect(err).NotTo(HaveOccurred())
 
-						Expect(len(rlList.Items)).To(Equal(1))
+						Expect(rlList.Items).To(HaveLen(1))
 
 						rules := make(map[string]rulev1alpha1.Rule)
 
@@ -288,12 +287,17 @@ var _ = Describe("APIRule Controller", func() {
 						expectedRequest := reconcile.Request{NamespacedName: types.NamespacedName{Name: testName, Namespace: testNamespace}}
 
 						Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
+
+						labels := make(map[string]string)
+						labels["owner"] = fmt.Sprintf("%s.%s", testName, testNamespace)
+						matchingLabelsFunc := client.MatchingLabels(labels)
+
 						//Verify VirtualService
-						expectedVSName := testName
-						expectedVSNamespace := testNamespace
-						vs := networkingv1alpha3.VirtualService{}
-						err = c.Get(context.TODO(), client.ObjectKey{Name: expectedVSName, Namespace: expectedVSNamespace}, &vs)
+						vsList := networkingv1alpha3.VirtualServiceList{}
+						err = c.List(context.TODO(), &vsList, matchingLabelsFunc)
 						Expect(err).NotTo(HaveOccurred())
+						Expect(vsList.Items).To(HaveLen(1))
+						vs := vsList.Items[0]
 
 						//Meta
 						verifyOwnerReference(vs.ObjectMeta, testName, gatewayv1alpha1.GroupVersion.String(), kind)
@@ -346,11 +350,6 @@ var _ = Describe("APIRule Controller", func() {
 
 						//Verify Rule1
 						expectedRuleMatchURL := fmt.Sprintf("<http|https>://%s<%s>", testServiceHost, "/img")
-						expectedRuleNamespace := testNamespace
-
-						labels := make(map[string]string)
-						labels["owner"] = fmt.Sprintf("%s.%s", testName, expectedRuleNamespace)
-						matchingLabelsFunc := client.MatchingLabels(labels)
 
 						rlList := rulev1alpha1.RuleList{}
 
@@ -506,10 +505,16 @@ var _ = Describe("APIRule Controller", func() {
 						expectedRequest := reconcile.Request{NamespacedName: types.NamespacedName{Name: testName, Namespace: testNamespace}}
 						Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
 
+						labels := make(map[string]string)
+						labels["owner"] = fmt.Sprintf("%s.%s", testName, testNamespace)
+						matchingLabelsFunc := client.MatchingLabels(labels)
+
 						//Verify VirtualService
-						vs := networkingv1alpha3.VirtualService{}
-						err = c.Get(context.TODO(), client.ObjectKey{Name: fmt.Sprintf("%s", testName), Namespace: testNamespace}, &vs)
+						vsList := networkingv1alpha3.VirtualServiceList{}
+						err = c.List(context.TODO(), &vsList, matchingLabelsFunc)
 						Expect(err).NotTo(HaveOccurred())
+						Expect(vsList.Items).To(HaveLen(1))
+						vs := vsList.Items[0]
 
 						//Meta
 						verifyOwnerReference(vs.ObjectMeta, testName, gatewayv1alpha1.GroupVersion.String(), kind)
@@ -587,10 +592,6 @@ var _ = Describe("APIRule Controller", func() {
 							{path: "status", handler: "noop", config: nil},
 						} {
 							expectedRuleMatchURL := fmt.Sprintf("<http|https>://%s</%s>", testServiceHost, tc.path)
-
-							labels := make(map[string]string)
-							labels["owner"] = fmt.Sprintf("%s.%s", testName, testNamespace)
-							matchingLabelsFunc := client.MatchingLabels(labels)
 
 							rlList := rulev1alpha1.RuleList{}
 
