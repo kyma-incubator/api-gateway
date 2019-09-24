@@ -102,16 +102,16 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		factory := processing.NewFactory(r.ExtCRClients.ForVirtualService(), r.ExtCRClients.ForAccessRule(), r.Client, r.Log, r.OathkeeperSvc, r.OathkeeperSvcPort, r.JWKSURI)
 		requiredObjects := factory.CalculateRequiredState(api)
 
-		//3.1
-		err, actualObjects := factory.GetActualState(ctx, api)
+		//3.1 Fetch all existing objects related to _this_ apiRule from the cluster (VS, Rules)
+		actualObjects, err := factory.GetActualState(ctx, api)
 		if err != nil {
 			return retryReconcile(err)
 		}
 
-		//3.2 well i produce patch
+		//3.2 Compute patch object
 		patch := factory.CalculateDiff(requiredObjects, actualObjects)
 
-		//3.3
+		//3.3 Apply changes to the cluster
 		err = factory.ApplyDiff(ctx, patch)
 		if err != nil {
 			return retryReconcile(err)

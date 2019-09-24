@@ -59,19 +59,21 @@ func (f *Factory) CalculateRequiredState(api *gatewayv1alpha1.APIRule) *State {
 	return &res
 }
 
+//State represents desired or actual state of Istio Virtual Services and Oathkeeper Rules
 type State struct {
 	virtualService *networkingv1alpha3.VirtualService
 	accessRules    map[string]*rulev1alpha1.Rule
 }
 
-func (f *Factory) GetActualState(ctx context.Context, api *gatewayv1alpha1.APIRule) (error, *State) {
+//GetActualState methods gets actual state of Istio Virtual Services and Oathkeeper Rules
+func (f *Factory) GetActualState(ctx context.Context, api *gatewayv1alpha1.APIRule) (*State, error) {
 	labels := make(map[string]string)
 	labels["owner"] = fmt.Sprintf("%s.%s", api.ObjectMeta.Name, api.ObjectMeta.Namespace)
 	var state State
 
 	vsList, err := f.vsClient.GetForLabels(ctx, labels)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	//what to do if len(vsList) > 1?
@@ -84,7 +86,7 @@ func (f *Factory) GetActualState(ctx context.Context, api *gatewayv1alpha1.APIRu
 
 	arList, err := f.arClient.GetForLabels(ctx, labels)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	state.accessRules = make(map[string]*rulev1alpha1.Rule)
@@ -92,9 +94,10 @@ func (f *Factory) GetActualState(ctx context.Context, api *gatewayv1alpha1.APIRu
 		state.accessRules[ar.Spec.Match.URL] = &ar
 	}
 
-	return nil, &state
+	return &state, nil
 }
 
+//Patch represents diff between desired and actual state
 type Patch struct {
 	virtualService *objToPatch
 	accessRule     map[string]*objToPatch
@@ -105,6 +108,7 @@ type objToPatch struct {
 	obj    runtime.Object
 }
 
+//CalculateDiff methods compute diff between desired & actual state
 func (f *Factory) CalculateDiff(requiredState *State, actualState *State) *Patch {
 	arPatch := make(map[string]*objToPatch)
 
@@ -143,15 +147,15 @@ func (f *Factory) CalculateDiff(requiredState *State, actualState *State) *Patch
 	return &Patch{virtualService: vsPatch, accessRule: arPatch}
 }
 
+//ApplyDiff method applies computed diff
 func (f *Factory) ApplyDiff(ctx context.Context, patch *Patch) error {
-	if patch.virtualService.action == "create" {
+	switch patch.virtualService.action {
+	case "create":
 		err := f.client.Create(ctx, patch.virtualService.obj)
 		if err != nil {
 			return err
 		}
-	}
-
-	if patch.virtualService.action == "update" {
+	case "update":
 		err := f.client.Update(ctx, patch.virtualService.obj)
 		if err != nil {
 			return err
@@ -159,27 +163,25 @@ func (f *Factory) ApplyDiff(ctx context.Context, patch *Patch) error {
 	}
 
 	for _, rule := range patch.accessRule {
-		if rule.action == "create" {
+		switch rule.action {
+		case "create":
 			err := f.client.Create(ctx, rule.obj)
 			if err != nil {
 				return err
 			}
-		}
-
-		if rule.action == "update" {
+		case "update":
 			err := f.client.Update(ctx, rule.obj)
 			if err != nil {
 				return err
 			}
-		}
-
-		if rule.action == "delete" {
+		case "delete":
 			err := f.client.Delete(ctx, rule.obj)
 			if err != nil {
 				return err
 			}
 		}
 	}
+
 	return nil
 }
 

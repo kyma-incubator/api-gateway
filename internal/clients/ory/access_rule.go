@@ -32,7 +32,8 @@ func (c *AccessRule) GetForAPI(ctx context.Context, api *gatewayv1alpha1.APIRule
 	return c.Get(ctx, accessRuleName, api.GetNamespace())
 }
 
-func (c *AccessRule) GetForLabels(ctx context.Context, labels map[string]string)([]rulev1alpha1.Rule, error){
+//GetForLabels method gets list of Oathkeeper Rules for given labels
+func (c *AccessRule) GetForLabels(ctx context.Context, labels map[string]string) ([]rulev1alpha1.Rule, error) {
 	var list rulev1alpha1.RuleList
 	listOptionsFunc := crClient.MatchingLabels(labels)
 

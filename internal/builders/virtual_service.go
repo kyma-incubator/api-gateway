@@ -41,7 +41,7 @@ func (vs *virtualService) Owner(val *ownerReference) *virtualService {
 }
 
 func (vs *virtualService) Label(key, val string) *virtualService {
-	if(vs.value.Labels == nil){
+	if vs.value.Labels == nil {
 		vs.value.Labels = make(map[string]string)
 	}
 	vs.value.Labels[key] = val

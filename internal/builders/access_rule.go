@@ -37,7 +37,7 @@ func (ar *accessRule) Owner(val *ownerReference) *accessRule {
 }
 
 func (ar *accessRule) Label(key, val string) *accessRule {
-	if(ar.value.Labels == nil){
+	if ar.value.Labels == nil {
 		ar.value.Labels = make(map[string]string)
 	}
 	ar.value.Labels[key] = val

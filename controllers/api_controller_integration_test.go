@@ -198,7 +198,7 @@ var _ = Describe("APIRule Controller", func() {
 						Expect(vs.Spec.TLS).To(BeNil())
 
 						//Verify Rule
-						expectedRuleMatchURL := fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", testServiceName, testNamespace, testServicePort)
+						expectedRuleMatchURL := fmt.Sprintf("<http|https>://%s<%s>", testServiceHost, testPath)
 						expectedRuleNamespace := testNamespace
 
 						labels := make(map[string]string)
@@ -225,7 +225,7 @@ var _ = Describe("APIRule Controller", func() {
 
 						//Spec.Upstream
 						Expect(rl.Spec.Upstream).NotTo(BeNil())
-						Expect(rl.Spec.Upstream.URL).To(Equal(expectedRuleMatchURL))
+						Expect(rl.Spec.Upstream.URL).To(Equal(fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", testServiceName, testNamespace, testServicePort)))
 						Expect(rl.Spec.Upstream.StripPath).To(BeNil())
 						Expect(rl.Spec.Upstream.PreserveHost).To(BeNil())
 						//Spec.Match
@@ -345,7 +345,7 @@ var _ = Describe("APIRule Controller", func() {
 						Expect(vs.Spec.TLS).To(BeNil())
 
 						//Verify Rule1
-						expectedRuleMatchURL := fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", testServiceName, testNamespace, testServicePort)
+						expectedRuleMatchURL := fmt.Sprintf("<http|https>://%s<%s>", testServiceHost, "/img")
 						expectedRuleNamespace := testNamespace
 
 						labels := make(map[string]string)
@@ -372,12 +372,12 @@ var _ = Describe("APIRule Controller", func() {
 
 						//Spec.Upstream
 						Expect(rl.Spec.Upstream).NotTo(BeNil())
-						Expect(rl.Spec.Upstream.URL).To(Equal(expectedRuleMatchURL))
+						Expect(rl.Spec.Upstream.URL).To(Equal(fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", testServiceName, testNamespace, testServicePort)))
 						Expect(rl.Spec.Upstream.StripPath).To(BeNil())
 						Expect(rl.Spec.Upstream.PreserveHost).To(BeNil())
 						//Spec.Match
 						Expect(rl.Spec.Match).NotTo(BeNil())
-						Expect(rl.Spec.Match.URL).To(Equal(fmt.Sprintf("<http|https>://%s<%s>", testServiceHost, "/img")))
+						Expect(rl.Spec.Match.URL).To(Equal(expectedRuleMatchURL))
 						Expect(rl.Spec.Match.Methods).To(Equal([]string{"GET"}))
 						//Spec.Authenticators
 						Expect(rl.Spec.Authenticators).To(HaveLen(1))
@@ -405,7 +405,7 @@ var _ = Describe("APIRule Controller", func() {
 						Expect(rl.Spec.Mutators[1].Handler.Name).To(Equal(testMutators[1].Name))
 
 						//Verify Rule2
-						expectedRule2MatchURL := fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", testServiceName, testNamespace, testServicePort)
+						expectedRule2MatchURL := fmt.Sprintf("<http|https>://%s<%s>", testServiceHost, "/headers")
 						rl2 := rules[expectedRule2MatchURL]
 
 						//Meta
@@ -413,12 +413,12 @@ var _ = Describe("APIRule Controller", func() {
 
 						//Spec.Upstream
 						Expect(rl2.Spec.Upstream).NotTo(BeNil())
-						Expect(rl2.Spec.Upstream.URL).To(Equal(expectedRule2MatchURL))
+						Expect(rl2.Spec.Upstream.URL).To(Equal(fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", testServiceName, testNamespace, testServicePort)))
 						Expect(rl2.Spec.Upstream.StripPath).To(BeNil())
 						Expect(rl2.Spec.Upstream.PreserveHost).To(BeNil())
 						//Spec.Match
 						Expect(rl2.Spec.Match).NotTo(BeNil())
-						Expect(rl2.Spec.Match.URL).To(Equal(fmt.Sprintf("<http|https>://%s<%s>", testServiceHost, "/headers")))
+						Expect(rl2.Spec.Match.URL).To(Equal(expectedRule2MatchURL))
 						Expect(rl2.Spec.Match.Methods).To(Equal([]string{"GET"}))
 						//Spec.Authenticators
 						Expect(rl2.Spec.Authenticators).To(HaveLen(1))
