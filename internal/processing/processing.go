@@ -137,7 +137,7 @@ func (f *Factory) CalculateDiff(requiredState *State, actualState *State) *Patch
 	vsPatch := &objToPatch{}
 	if actualState.virtualService != nil {
 		vsPatch.action = "update"
-		f.modifyVirtualService(actualState.virtualService, requiredState.virtualService)
+		f.updateVirtualService(actualState.virtualService, requiredState.virtualService)
 		vsPatch.obj = actualState.virtualService
 	} else {
 		vsPatch.action = "create"
@@ -183,24 +183,7 @@ func (f *Factory) applyObjDiff(ctx context.Context, objToPatch *objToPatch) erro
 	return nil
 }
 
-func (f *Factory) createVirtualService(ctx context.Context, vs *networkingv1alpha3.VirtualService) error {
-	return f.vsClient.Create(ctx, vs)
-}
-
-func (f *Factory) updateVirtualService(ctx context.Context, vs *networkingv1alpha3.VirtualService) error {
-	return f.vsClient.Update(ctx, vs)
-}
-
-func (f *Factory) createAccessRule(ctx context.Context, ar *rulev1alpha1.Rule) error {
-	return f.arClient.Create(ctx, ar)
-}
-
-func (f *Factory) updateAccessRule(ctx context.Context, ar *rulev1alpha1.Rule) error {
-	return f.arClient.Update(ctx, ar)
-}
-
-//TODO: Find better name (updateVirtualService is already taken)
-func (f *Factory) modifyVirtualService(existing, required *networkingv1alpha3.VirtualService) {
+func (f *Factory) updateVirtualService(existing, required *networkingv1alpha3.VirtualService) {
 	existing.Spec = required.Spec
 }
 
