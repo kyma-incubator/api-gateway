@@ -3,6 +3,8 @@ package validation
 import (
 	"encoding/json"
 
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"knative.dev/pkg/apis/istio/v1alpha3"
 
 	"testing"
@@ -102,13 +104,18 @@ var _ = Describe("Validate function", func() {
 		Expect(problems[0].Message).To(Equal("Host is not whitelisted"))
 	})
 
-	It("Should fail for occupied host", func() {
+	It("Should fail for a host that is occupied by a VS exposed by another resource", func() {
 		//given
 		testWhiteList := []string{"foo.bar"}
+
 		existingVS := v1alpha3.VirtualService{}
+		existingVS.OwnerReferences = []v1.OwnerReference{{UID: "12345"}}
 		existingVS.Spec.Hosts = []string{"occupied-host.foo.bar"}
 
 		input := &gatewayv1alpha1.APIRule{
+			ObjectMeta: v1.ObjectMeta{
+				UID: "67890",
+			},
 			Spec: gatewayv1alpha1.APIRuleSpec{
 				Service: getService("some-service", uint32(8080), "occupied-host.foo.bar"),
 				Rules: []gatewayv1alpha1.Rule{
@@ -130,7 +137,41 @@ var _ = Describe("Validate function", func() {
 
 		Expect(problems).To(HaveLen(1))
 		Expect(problems[0].AttributePath).To(Equal(".spec.service.host"))
-		Expect(problems[0].Message).To(Equal("This host is occupied by another Virtual Service"))
+		Expect(problems[0].Message).To(Equal("This host is occupied by a Virtual Service exposed by another resource"))
+	})
+
+	It("Should NOT fail for a host that is occupied by a VS exposed by this resource", func() {
+		//given
+		testWhiteList := []string{"foo.bar"}
+
+		existingVS := v1alpha3.VirtualService{}
+		existingVS.OwnerReferences = []v1.OwnerReference{{UID: "12345"}}
+		existingVS.Spec.Hosts = []string{"occupied-host.foo.bar"}
+
+		input := &gatewayv1alpha1.APIRule{
+			ObjectMeta: v1.ObjectMeta{
+				UID: "12345",
+			},
+			Spec: gatewayv1alpha1.APIRuleSpec{
+				Service: getService("some-service", uint32(8080), "occupied-host.foo.bar"),
+				Rules: []gatewayv1alpha1.Rule{
+					{
+						Path: "/abc",
+						AccessStrategies: []*rulev1alpha1.Authenticator{
+							toAuthenticator("jwt", simpleJWTConfig()),
+							toAuthenticator("noop", emptyConfig()),
+						},
+					},
+				},
+			},
+		}
+
+		//when
+		problems := (&APIRule{
+			DomainWhiteList: testWhiteList,
+		}).Validate(input, v1alpha3.VirtualServiceList{Items: []v1alpha3.VirtualService{existingVS}})
+
+		Expect(problems).To(HaveLen(0))
 	})
 
 	It("Should detect several problems", func() {
@@ -195,10 +236,15 @@ var _ = Describe("Validate function", func() {
 	It("Should succeed for valid input", func() {
 		//given
 		testWhiteList := []string{"foo.bar", "bar.foo", "kyma.local"}
+
 		existingVS := v1alpha3.VirtualService{}
+		existingVS.OwnerReferences = []v1.OwnerReference{{UID: "12345"}}
 		existingVS.Spec.Hosts = []string{"occupied-host.foo.bar"}
 
 		input := &gatewayv1alpha1.APIRule{
+			ObjectMeta: v1.ObjectMeta{
+				UID: "67890",
+			},
 			Spec: gatewayv1alpha1.APIRuleSpec{
 				Service: getService("foo-service", uint32(8080), "non-occupied-host.foo.bar"),
 				Rules: []gatewayv1alpha1.Rule{

@@ -47,7 +47,7 @@ func (v *APIRule) Validate(api *gatewayv1alpha1.APIRule, vsList v1alpha3.Virtual
 
 	res := []Failure{}
 	//Validate service
-	res = append(res, v.validateService(".spec.service", vsList, api.Spec.Service)...)
+	res = append(res, v.validateService(".spec.service", vsList, api)...)
 	//Validate Gateway
 	res = append(res, v.validateGateway(".spec.gateway", api.Spec.Gateway)...)
 	//Validate Rules
@@ -62,26 +62,21 @@ type Failure struct {
 	Message       string
 }
 
-func (v *APIRule) validateService(attributePath string, vsList v1alpha3.VirtualServiceList, service *gatewayv1alpha1.Service) []Failure {
+func (v *APIRule) validateService(attributePath string, vsList v1alpha3.VirtualServiceList, api *gatewayv1alpha1.APIRule) []Failure {
 	var problems []Failure
 
-	var occupiedHosts []string
 	for _, vs := range vsList.Items {
-		occupiedHosts = append(occupiedHosts, vs.Spec.Hosts...)
-	}
-
-	for _, host := range occupiedHosts {
-		if host == *service.Host {
+		if hasHost(vs, *api.Spec.Service.Host) && vs.OwnerReferences[0].UID != api.UID {
 			problems = append(problems, Failure{
 				AttributePath: attributePath + ".host",
-				Message:       "This host is occupied by another Virtual Service",
+				Message:       "This host is occupied by a Virtual Service exposed by another resource",
 			})
 		}
 	}
 
 	domainFound := false
 	for _, svc := range v.ServiceBlackList {
-		if svc == *service.Name {
+		if svc == *api.Spec.Service.Name {
 			problems = append(problems, Failure{
 				AttributePath: attributePath + ".name",
 				Message:       "This service has been blacklisted",
@@ -89,7 +84,7 @@ func (v *APIRule) validateService(attributePath string, vsList v1alpha3.VirtualS
 		}
 	}
 	for _, domain := range v.DomainWhiteList {
-		if strings.HasSuffix(*service.Host, domain) {
+		if strings.HasSuffix(*api.Spec.Service.Host, domain) {
 			domainFound = true
 		}
 	}
@@ -100,6 +95,15 @@ func (v *APIRule) validateService(attributePath string, vsList v1alpha3.VirtualS
 		})
 	}
 	return problems
+}
+
+func hasHost(vs v1alpha3.VirtualService, host string) bool {
+	for _, h := range vs.Spec.Hosts {
+		if h == host {
+			return true
+		}
+	}
+	return false
 }
 
 func (v *APIRule) validateGateway(attributePath string, gateway *string) []Failure {

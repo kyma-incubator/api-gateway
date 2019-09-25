@@ -3,9 +3,10 @@ package controllers_test
 import (
 	"context"
 	"fmt"
-	"github.com/kyma-incubator/api-gateway/internal/processing"
 	"math/rand"
 	"time"
+
+	"github.com/kyma-incubator/api-gateway/internal/processing"
 
 	"encoding/json"
 
