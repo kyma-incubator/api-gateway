@@ -3,6 +3,7 @@ package controllers_test
 import (
 	"context"
 	"fmt"
+	"github.com/kyma-incubator/api-gateway/internal/processing"
 	"math/rand"
 	"time"
 
@@ -142,7 +143,7 @@ var _ = Describe("APIRule Controller", func() {
 						Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
 
 						labels := make(map[string]string)
-						labels["owner"] = fmt.Sprintf("%s.%s", apiRuleName, testNamespace)
+						labels[processing.OwnerLabel] = fmt.Sprintf("%s.%s", apiRuleName, testNamespace)
 						matchingLabelsFunc := client.MatchingLabels(labels)
 
 						//Verify VirtualService
@@ -297,7 +298,7 @@ var _ = Describe("APIRule Controller", func() {
 						Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
 
 						labels := make(map[string]string)
-						labels["owner"] = fmt.Sprintf("%s.%s", apiRuleName, testNamespace)
+						labels[processing.OwnerLabel] = fmt.Sprintf("%s.%s", apiRuleName, testNamespace)
 						matchingLabelsFunc := client.MatchingLabels(labels)
 
 						//Verify VirtualService
@@ -515,7 +516,7 @@ var _ = Describe("APIRule Controller", func() {
 						Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
 
 						labels := make(map[string]string)
-						labels["owner"] = fmt.Sprintf("%s.%s", apiRuleName, testNamespace)
+						labels[processing.OwnerLabel] = fmt.Sprintf("%s.%s", apiRuleName, testNamespace)
 						matchingLabelsFunc := client.MatchingLabels(labels)
 
 						//Verify VirtualService
