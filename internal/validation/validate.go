@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"knative.dev/pkg/apis/istio/v1alpha3"
+
 	gatewayv1alpha1 "github.com/kyma-incubator/api-gateway/api/v1alpha1"
 	"github.com/ory/oathkeeper-maester/api/v1alpha1"
 	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
@@ -41,11 +43,11 @@ type APIRule struct {
 }
 
 //Validate performs APIRule validation
-func (v *APIRule) Validate(api *gatewayv1alpha1.APIRule) []Failure {
+func (v *APIRule) Validate(api *gatewayv1alpha1.APIRule, vsList v1alpha3.VirtualServiceList) []Failure {
 
 	res := []Failure{}
 	//Validate service
-	res = append(res, v.validateService(".spec.service", api.Spec.Service)...)
+	res = append(res, v.validateService(".spec.service", vsList, api.Spec.Service)...)
 	//Validate Gateway
 	res = append(res, v.validateGateway(".spec.gateway", api.Spec.Gateway)...)
 	//Validate Rules
@@ -60,8 +62,23 @@ type Failure struct {
 	Message       string
 }
 
-func (v *APIRule) validateService(attributePath string, service *gatewayv1alpha1.Service) []Failure {
+func (v *APIRule) validateService(attributePath string, vsList v1alpha3.VirtualServiceList, service *gatewayv1alpha1.Service) []Failure {
 	var problems []Failure
+
+	var occupiedHosts []string
+	for _, vs := range vsList.Items {
+		occupiedHosts = append(occupiedHosts, vs.Spec.Hosts...)
+	}
+
+	for _, host := range occupiedHosts {
+		if host == *service.Host {
+			problems = append(problems, Failure{
+				AttributePath: attributePath + ".host",
+				Message:       "This host is occupied by another Virtual Service",
+			})
+		}
+	}
+
 	domainFound := false
 	for _, svc := range v.ServiceBlackList {
 		if svc == *service.Name {
