@@ -66,7 +66,7 @@ func (v *APIRule) validateService(attributePath string, vsList v1alpha3.VirtualS
 	var problems []Failure
 
 	for _, vs := range vsList.Items {
-		if hasHost(vs, *api.Spec.Service.Host) && vs.OwnerReferences[0].UID != api.UID {
+		if hasHost(vs, *api.Spec.Service.Host) && !isOwnedBy(vs, api) {
 			problems = append(problems, Failure{
 				AttributePath: attributePath + ".host",
 				Message:       "This host is occupied by a Virtual Service exposed by another resource",
@@ -95,15 +95,6 @@ func (v *APIRule) validateService(attributePath string, vsList v1alpha3.VirtualS
 		})
 	}
 	return problems
-}
-
-func hasHost(vs v1alpha3.VirtualService, host string) bool {
-	for _, h := range vs.Spec.Hosts {
-		if h == host {
-			return true
-		}
-	}
-	return false
 }
 
 func (v *APIRule) validateGateway(attributePath string, gateway *string) []Failure {
@@ -179,4 +170,22 @@ func (v *APIRule) validateAccessStrategy(attributePath string, accessStrategy *r
 	}
 
 	return vld.Validate(attributePath, accessStrategy.Handler)
+}
+
+func hasHost(vs v1alpha3.VirtualService, host string) bool {
+	for _, h := range vs.Spec.Hosts {
+		if h == host {
+			return true
+		}
+	}
+	return false
+}
+
+func isOwnedBy(vs v1alpha3.VirtualService, api *gatewayv1alpha1.APIRule) bool {
+	for _, or := range vs.OwnerReferences {
+		if or.UID == api.UID {
+			return true
+		}
+	}
+	return false
 }
