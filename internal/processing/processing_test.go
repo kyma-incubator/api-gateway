@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
 	"testing"
 
 	gatewayv1alpha1 "github.com/kyma-incubator/api-gateway/api/v1alpha1"
@@ -27,15 +28,15 @@ const (
 	oauthApiPath                = "/img"
 	serviceName                 = "example-service"
 	serviceHost                 = "myService.myDomain.com"
-	servicePort       uint32    = 8080
 	jwtIssuer                   = "https://oauth2.example.com/"
 	oathkeeperSvc               = "fake.oathkeeper"
 	oathkeeperSvcPort uint32    = 1234
 )
 
 var (
-	apiMethods = []string{"GET"}
-	apiScopes  = []string{"write", "read"}
+	apiMethods         = []string{"GET"}
+	apiScopes          = []string{"write", "read"}
+	servicePort uint32 = 8080
 )
 
 func TestProcessing(t *testing.T) {
@@ -504,10 +505,10 @@ func getAPIRuleFor(rules []gatewayv1alpha1.Rule) *gatewayv1alpha1.APIRule {
 			Kind:       apiKind,
 		},
 		Spec: gatewayv1alpha1.APIRuleSpec{
-			Gateway: &apiGateway,
+			Gateway: pointer.StringPtr(apiGateway),
 			Service: &gatewayv1alpha1.Service{
-				Name: &serviceName,
-				Host: &serviceHost,
+				Name: pointer.StringPtr(serviceName),
+				Host: pointer.StringPtr(serviceHost),
 				Port: &servicePort,
 			},
 			Rules: rules,
