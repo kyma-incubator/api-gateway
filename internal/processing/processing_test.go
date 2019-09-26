@@ -15,7 +15,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-var (
+const (
 	apiName                     = "test-apirule"
 	apiUID            types.UID = "eab0f1c8-c417-11e9-bf11-4ac644044351"
 	apiNamespace                = "some-namespace"
@@ -25,14 +25,17 @@ var (
 	apiPath                     = "/.*"
 	headersApiPath              = "/headers"
 	oauthApiPath                = "/img"
-	apiMethods                  = []string{"GET"}
 	serviceName                 = "example-service"
 	serviceHost                 = "myService.myDomain.com"
 	servicePort       uint32    = 8080
-	apiScopes                   = []string{"write", "read"}
 	jwtIssuer                   = "https://oauth2.example.com/"
 	oathkeeperSvc               = "fake.oathkeeper"
 	oathkeeperSvcPort uint32    = 1234
+)
+
+var (
+	apiMethods = []string{"GET"}
+	apiScopes  = []string{"write", "read"}
 )
 
 func TestProcessing(t *testing.T) {
@@ -456,11 +459,15 @@ var _ = Describe("Factory", func() {
 				Expect(patch.virtualService.action).To(Equal("update"))
 				Expect(vsPatch.ObjectMeta.Labels).To(Equal(actualState.virtualService.ObjectMeta.Labels))
 
+				//TODO verify vs spec
+
 				Expect(len(patch.accessRule)).To(Equal(3))
 
 				noopPatchRule := patch.accessRule[expectedNoopRuleMatchURL]
 				Expect(noopPatchRule).NotTo(BeNil())
 				Expect(noopPatchRule.action).To(Equal("update"))
+
+				//TODO verify ar spec
 
 				notDesiredPatchRule := patch.accessRule[notDesiredRuleMatchURL]
 				Expect(notDesiredPatchRule).NotTo(BeNil())
@@ -469,6 +476,8 @@ var _ = Describe("Factory", func() {
 				oauthPatchRule := patch.accessRule[oauthNoopRuleMatchURL]
 				Expect(oauthPatchRule).NotTo(BeNil())
 				Expect(oauthPatchRule.action).To(Equal("create"))
+
+				//TODO verify ar spec
 			})
 		})
 	})
