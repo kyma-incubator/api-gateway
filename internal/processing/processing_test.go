@@ -2,7 +2,6 @@ package processing
 
 import (
 	"fmt"
-	//"github.com/kyma-incubator/api-gateway/internal/processing"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -11,8 +10,8 @@ import (
 
 	gatewayv1alpha1 "github.com/kyma-incubator/api-gateway/api/v1alpha1"
 	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
-	//"github.com/kyma-incubator/api-gateway/internal/processing"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -24,7 +23,8 @@ var (
 	apiKind                     = "ApiRule"
 	apiGateway                  = "some-gateway"
 	apiPath                     = "/.*"
-	jwtApiPath                  = "/headers"
+	headersApiPath              = "/headers"
+	oauthApiPath                = "/img"
 	apiMethods                  = []string{"GET"}
 	serviceName                 = "example-service"
 	serviceHost                 = "myService.myDomain.com"
@@ -52,13 +52,7 @@ var _ = Describe("Factory", func() {
 					},
 				}
 
-				allowRule := gatewayv1alpha1.Rule{
-					Path:             apiPath,
-					Methods:          apiMethods,
-					Mutators:         []*rulev1alpha1.Mutator{},
-					AccessStrategies: strategies,
-				}
-
+				allowRule := getRuleFor(apiPath, apiMethods, []*rulev1alpha1.Mutator{}, strategies)
 				rules := []gatewayv1alpha1.Rule{allowRule}
 
 				apiRule := getAPIRuleFor(rules)
@@ -105,13 +99,6 @@ var _ = Describe("Factory", func() {
 					},
 				}
 
-				noopRule := gatewayv1alpha1.Rule{
-					Path:             apiPath,
-					Methods:          apiMethods,
-					Mutators:         []*rulev1alpha1.Mutator{},
-					AccessStrategies: noop,
-				}
-
 				jwtConfigJSON := fmt.Sprintf(`
 					{
 						"trusted_issuers": ["%s"],
@@ -143,17 +130,12 @@ var _ = Describe("Factory", func() {
 					},
 				}
 
-				jwtRule := gatewayv1alpha1.Rule{
-					Path:             jwtApiPath,
-					Methods:          apiMethods,
-					Mutators:         testMutators,
-					AccessStrategies: jwt,
-				}
-
+				noopRule := getRuleFor(apiPath, apiMethods, []*rulev1alpha1.Mutator{}, noop)
+				jwtRule := getRuleFor(headersApiPath, apiMethods, testMutators, jwt)
 				rules := []gatewayv1alpha1.Rule{noopRule, jwtRule}
 
 				expectedNoopRuleMatchURL := fmt.Sprintf("<http|https>://%s<%s>", serviceHost, apiPath)
-				expectedJwtRuleMatchURL := fmt.Sprintf("<http|https>://%s<%s>", serviceHost, jwtApiPath)
+				expectedJwtRuleMatchURL := fmt.Sprintf("<http|https>://%s<%s>", serviceHost, headersApiPath)
 				expectedRuleUpstreamURL := fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", serviceName, apiNamespace, servicePort)
 
 				apiRule := getAPIRuleFor(rules)
@@ -282,13 +264,7 @@ var _ = Describe("Factory", func() {
 
 				strategies := []*rulev1alpha1.Authenticator{jwt, oauth}
 
-				allowRule := gatewayv1alpha1.Rule{
-					Path:             apiPath,
-					Methods:          apiMethods,
-					Mutators:         []*rulev1alpha1.Mutator{},
-					AccessStrategies: strategies,
-				}
-
+				allowRule := getRuleFor(apiPath, apiMethods, []*rulev1alpha1.Mutator{}, strategies)
 				rules := []gatewayv1alpha1.Rule{allowRule}
 
 				expectedRuleMatchURL := fmt.Sprintf("<http|https>://%s<%s>", serviceHost, apiPath)
@@ -296,7 +272,7 @@ var _ = Describe("Factory", func() {
 
 				apiRule := getAPIRuleFor(rules)
 
-				f := NewFactory(  nil, ctrl.Log.WithName("test"), oathkeeperSvc, oathkeeperSvcPort, "https://example.com/.well-known/jwks.json")
+				f := NewFactory(nil, ctrl.Log.WithName("test"), oathkeeperSvc, oathkeeperSvcPort, "https://example.com/.well-known/jwks.json")
 
 				desiredState := f.CalculateRequiredState(apiRule)
 				vs := desiredState.virtualService
@@ -360,7 +336,152 @@ var _ = Describe("Factory", func() {
 			})
 		})
 	})
+
+	Describe("CalculateDiff", func() {
+		Context("between desired state & actual state", func() {
+			It("should produce patch containing VS to create & AR to create", func() {
+				noop := []*rulev1alpha1.Authenticator{
+					{
+						Handler: &rulev1alpha1.Handler{
+							Name: "noop",
+						},
+					},
+				}
+
+				noopRule := getRuleFor(apiPath, apiMethods, []*rulev1alpha1.Mutator{}, noop)
+				rules := []gatewayv1alpha1.Rule{noopRule}
+
+				apiRule := getAPIRuleFor(rules)
+				expectedNoopRuleMatchURL := fmt.Sprintf("<http|https>://%s<%s>", serviceHost, apiPath)
+
+				f := NewFactory(nil, ctrl.Log.WithName("test"), oathkeeperSvc, oathkeeperSvcPort, "https://example.com/.well-known/jwks.json")
+
+				desiredState := f.CalculateRequiredState(apiRule)
+				actualState := &State{}
+
+				patch := f.CalculateDiff(desiredState, actualState)
+
+				//Verify patch
+				Expect(patch.virtualService).NotTo(BeNil())
+				Expect(patch.virtualService.action).To(Equal("create"))
+				Expect(patch.virtualService.obj).To(Equal(desiredState.virtualService))
+
+				Expect(patch.accessRule).NotTo(BeNil())
+				Expect(len(patch.accessRule)).To(Equal(len(desiredState.accessRules)))
+				Expect(patch.accessRule[expectedNoopRuleMatchURL].action).To(Equal("create"))
+				Expect(patch.accessRule[expectedNoopRuleMatchURL].obj).To(Equal(desiredState.accessRules[expectedNoopRuleMatchURL]))
+
+			})
+
+			It("should produce patch containing VS to update, AR to create, AR to update & AR to delete", func() {
+				oauthConfigJSON := fmt.Sprintf(`{"required_scope": [%s]}`, toCSVList(apiScopes))
+				oauth := &rulev1alpha1.Authenticator{
+					Handler: &rulev1alpha1.Handler{
+						Name: "oauth2_introspection",
+						Config: &runtime.RawExtension{
+							Raw: []byte(oauthConfigJSON),
+						},
+					},
+				}
+
+				strategies := []*rulev1alpha1.Authenticator{oauth}
+
+				noop := []*rulev1alpha1.Authenticator{
+					{
+						Handler: &rulev1alpha1.Handler{
+							Name: "noop",
+						},
+					},
+				}
+
+				noopRule := getRuleFor(headersApiPath, apiMethods, []*rulev1alpha1.Mutator{}, noop)
+				allowRule := getRuleFor(oauthApiPath, apiMethods, []*rulev1alpha1.Mutator{}, strategies)
+
+				rules := []gatewayv1alpha1.Rule{noopRule, allowRule}
+
+				apiRule := getAPIRuleFor(rules)
+
+				f := NewFactory(nil, ctrl.Log.WithName("test"), oathkeeperSvc, oathkeeperSvcPort, "https://example.com/.well-known/jwks.json")
+
+				desiredState := f.CalculateRequiredState(apiRule)
+				oauthNoopRuleMatchURL := fmt.Sprintf("<http|https>://%s<%s>", serviceHost, oauthApiPath)
+				expectedNoopRuleMatchURL := fmt.Sprintf("<http|https>://%s<%s>", serviceHost, headersApiPath)
+				notDesiredRuleMatchURL := fmt.Sprintf("<http|https>://%s<%s>", serviceHost, "/delete")
+
+				labels := make(map[string]string)
+				labels["myLabel"] = "should not override"
+
+				vs := &networkingv1alpha3.VirtualService{
+					ObjectMeta: metav1.ObjectMeta{
+						GenerateName: apiName + "-",
+						Labels:       labels,
+					},
+				}
+
+				noopExistingRule := &rulev1alpha1.Rule{
+					ObjectMeta: metav1.ObjectMeta{
+						GenerateName: apiName + "-",
+						Labels:       labels,
+					},
+					Spec: rulev1alpha1.RuleSpec{
+						Match: &rulev1alpha1.Match{
+							URL: expectedNoopRuleMatchURL,
+						},
+					},
+				}
+
+				deleteExistingRule := &rulev1alpha1.Rule{
+					ObjectMeta: metav1.ObjectMeta{
+						GenerateName: apiName + "-",
+						Labels:       labels,
+					},
+					Spec: rulev1alpha1.RuleSpec{
+						Match: &rulev1alpha1.Match{
+							URL: notDesiredRuleMatchURL,
+						},
+					},
+				}
+
+				accessRules := make(map[string]*rulev1alpha1.Rule)
+				accessRules[expectedNoopRuleMatchURL] = noopExistingRule
+				accessRules[notDesiredRuleMatchURL] = deleteExistingRule
+
+				actualState := &State{virtualService: vs, accessRules: accessRules}
+
+				patch := f.CalculateDiff(desiredState, actualState)
+				vsPatch := patch.virtualService.obj.(*networkingv1alpha3.VirtualService)
+
+				//Verify patch
+				Expect(patch.virtualService).NotTo(BeNil())
+				Expect(patch.virtualService.action).To(Equal("update"))
+				Expect(vsPatch.ObjectMeta.Labels).To(Equal(actualState.virtualService.ObjectMeta.Labels))
+
+				Expect(len(patch.accessRule)).To(Equal(3))
+
+				noopPatchRule := patch.accessRule[expectedNoopRuleMatchURL]
+				Expect(noopPatchRule).NotTo(BeNil())
+				Expect(noopPatchRule.action).To(Equal("update"))
+
+				notDesiredPatchRule := patch.accessRule[notDesiredRuleMatchURL]
+				Expect(notDesiredPatchRule).NotTo(BeNil())
+				Expect(notDesiredPatchRule.action).To(Equal("delete"))
+
+				oauthPatchRule := patch.accessRule[oauthNoopRuleMatchURL]
+				Expect(oauthPatchRule).NotTo(BeNil())
+				Expect(oauthPatchRule.action).To(Equal("create"))
+			})
+		})
+	})
 })
+
+func getRuleFor(path string, methods []string, mutators []*rulev1alpha1.Mutator, accessStrategies []*rulev1alpha1.Authenticator) gatewayv1alpha1.Rule {
+	return gatewayv1alpha1.Rule{
+		Path:             path,
+		Methods:          methods,
+		Mutators:         mutators,
+		AccessStrategies: accessStrategies,
+	}
+}
 
 func getAPIRuleFor(rules []gatewayv1alpha1.Rule) *gatewayv1alpha1.APIRule {
 	return &gatewayv1alpha1.APIRule{
