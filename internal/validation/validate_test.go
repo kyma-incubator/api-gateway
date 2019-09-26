@@ -137,7 +137,7 @@ var _ = Describe("Validate function", func() {
 
 		Expect(problems).To(HaveLen(1))
 		Expect(problems[0].AttributePath).To(Equal(".spec.service.host"))
-		Expect(problems[0].Message).To(Equal("This host is occupied by a Virtual Service exposed by another resource"))
+		Expect(problems[0].Message).To(Equal("This host is occupied by another Virtual Service"))
 	})
 
 	It("Should NOT fail for a host that is occupied by a VS exposed by this resource", func() {

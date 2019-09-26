@@ -69,7 +69,7 @@ func (v *APIRule) validateService(attributePath string, vsList v1alpha3.VirtualS
 		if occupiesHost(vs, *api.Spec.Service.Host) && !ownedBy(vs, api) {
 			problems = append(problems, Failure{
 				AttributePath: attributePath + ".host",
-				Message:       "This host is occupied by a Virtual Service exposed by another resource",
+				Message:       "This host is occupied by another Virtual Service",
 			})
 		}
 	}
