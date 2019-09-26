@@ -24,6 +24,7 @@ func TestValidators(t *testing.T) {
 var _ = Describe("Validate function", func() {
 
 	It("Should fail for empty rules", func() {
+
 		//given
 		testWhiteList := []string{"foo.bar", "bar.foo", "kyma.local"}
 		input := &gatewayv1alpha1.APIRule{

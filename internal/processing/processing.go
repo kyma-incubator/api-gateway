@@ -14,7 +14,7 @@ import (
 	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 )
 
-const OwnerLabel = "apirules.gateway.kyma-project.io"
+var OwnerLabel = fmt.Sprintf("%s.%s", "apirule", gatewayv1alpha1.GroupVersion.String())
 
 //Factory .
 type Factory struct {
