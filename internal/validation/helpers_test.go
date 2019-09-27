@@ -14,7 +14,7 @@ func TestHelpers(t *testing.T) {
 
 var _ = Describe("ValidateDomainName function", func() {
 
-	It("Should return true for valid simple domain", func() {
+	It("Should return true for kyma.local domain", func() {
 		//given
 		testDomain := "kyma.local"
 
@@ -36,9 +36,20 @@ var _ = Describe("ValidateDomainName function", func() {
 		Expect(valid).To(BeTrue())
 	})
 
-	It("Should return false for invalid domain", func() {
+	It("Should return true for foo domain", func() {
 		//given
-		testDomain := "notdomain"
+		testDomain := "foo"
+
+		//when
+		valid := ValidateDomainName(testDomain)
+
+		//then
+		Expect(valid).To(BeTrue())
+	})
+
+	It("Should return false for subdomain starting with -", func() {
+		//given
+		testDomain := "subdomain.-example.com"
 
 		//when
 		valid := ValidateDomainName(testDomain)
@@ -46,4 +57,17 @@ var _ = Describe("ValidateDomainName function", func() {
 		//then
 		Expect(valid).To(BeFalse())
 	})
+
+	It("Should return false for domain containing with /", func() {
+		//given
+		testDomain := "example.com/parameter"
+
+		//when
+		valid := ValidateDomainName(testDomain)
+
+		//then
+		Expect(valid).To(BeFalse())
+	})
+
+
 })
