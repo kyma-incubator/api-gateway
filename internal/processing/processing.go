@@ -89,6 +89,7 @@ func (f *Factory) GetActualState(ctx context.Context, api *gatewayv1alpha1.APIRu
 
 	state.accessRules = make(map[string]*rulev1alpha1.Rule)
 	for i, ar := range arList.Items {
+		//Needs to be like that cause address to ar is always the same
 		obj := arList.Items[i]
 		state.accessRules[ar.Spec.Match.URL] = &obj
 	}
