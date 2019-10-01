@@ -17,15 +17,14 @@ spec:
     spec:
       containers:
       - args:
-        - --oathkeeper-svc-address="change-me"
-        - --oathkeeper-svc-port="change-me"
-        - --jwks-uri="change-me"
-        - --service-blacklist="kubernetes"
-        - --domain-whitelist=""kyma.local""
+        - --oathkeeper-svc-address=https://okpr.kyma.local
+        - --oathkeeper-svc-port=1234
+        - --jwks-uri=https://some.uri
+        - --service-blacklist=kubernetes
+        - --domain-whitelist=kyma.local
         command:
         - /manager
-        image: eu.gcr.io/kyma-project/incubator/develop/api-gateway-controller:1669a1f9
-        imagePullPolicy: IfNotPresent
+        image: api-gateway-controller:latest
         name: manager
         resources:
           limits:

@@ -27,7 +27,7 @@ spec:
         - /manager
         args:
         - --enable-leader-election
-        image: controller:latest
+        image: api-gateway-controller:latest
         name: manager
         resources:
           limits:

@@ -68,23 +68,25 @@ install: manifests
 	@if ! kubectl get crd virtualservices.networking.istio.io > /dev/null 2>&1 ; then kubectl apply -f hack/networking.istio.io_virtualservice.yaml; fi;
 	@if ! kubectl get crd rules.oathkeeper.ory.sh > /dev/null 2>&1 ; then kubectl apply -f hack/oathkeeper.ory.sh_rules.yaml; fi;
 
-# Generate static installation files
-static: manifests
+# Augment kustomize patch files with env-specific variables
+patch-gen:
 	@cat config/default/manager_args_patch.yaml.tmpl |\
-		sed -e 's|OATHKEEPER_SVC_ADDRESS|"${OATHKEEPER_SVC_ADDRESS}"|g' |\
-		sed -e 's|OATHKEEPER_SVC_PORT|"${OATHKEEPER_SVC_PORT}"|g' |\
-		sed -e 's|DOMAIN_WHITELIST|"${DOMAIN_WHITELIST}"|g' |\
-		sed -e 's|JWKS_URI|"${JWKS_URI}"|g' > config/default/manager_args_patch.yaml
+		sed -e 's|OATHKEEPER_SVC_ADDRESS|${OATHKEEPER_SVC_ADDRESS}|g' |\
+		sed -e 's|OATHKEEPER_SVC_PORT|${OATHKEEPER_SVC_PORT}|g' |\
+		sed -e 's|DOMAIN_WHITELIST|${DOMAIN_WHITELIST}|g' |\
+		sed -e 's|JWKS_URI|${JWKS_URI}|g' > config/default/manager_args_patch.yaml
+
+# Generate static installation files
+static: manifests patch-gen
 	kustomize build config/default -o install/k8s
 
-# Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-deploy: manifests
-	@cat config/default/manager_args_patch.yaml.tmpl |\
-		sed -e 's|OATHKEEPER_SVC_ADDRESS|"${OATHKEEPER_SVC_ADDRESS}"|g' |\
-		sed -e 's|OATHKEEPER_SVC_PORT|${OATHKEEPER_SVC_PORT}|g' |\
-		sed -e 's|DOMAIN_WHITELIST|"${DOMAIN_WHITELIST}"|g' |\
-		sed -e 's|JWKS_URI|"${JWKS_URI}"|g' > config/default/manager_args_patch.yaml
+# Deploy the controller using "api-gateway-controller:latest" Docker image to the Kubernetes cluster configured in ~/.kube/config
+deploy: manifests patch-gen
 	kustomize build config/default | kubectl apply -f -
+
+# Deploy controller using a released Docker image to the Kubernetes cluster configured in ~/.kube/config
+deploy-released: manifests patch-gen
+	kustomize build config/released | kubectl apply -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen

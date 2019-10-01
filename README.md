@@ -19,7 +19,7 @@ This procedure is mostly useful for development purposes
 
 - start Minikube
 - `make install` to install necessary Custom Resource Definitions
-- `go run main.go --jwks-uri=https://some.uri
+- `go run main.go --jwks-uri="https://go.at" --oathkeeper-svc-address="otkpr.kyma.local" --oathkeeper-svc-port=1234 --domain-whitelist=kyma.local`
 
 ### Run the controller in Minikube
 
