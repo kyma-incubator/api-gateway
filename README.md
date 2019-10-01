@@ -14,21 +14,32 @@ The API Gateway Controller manages Istio VirtualServices and Oathkeeper Rule. Th
 
 ## Details
 
-### Run the controller locally
-This procedure is mostly useful for development purposes
+### Deploy to a cluster
+Deploys the oficially released Controller version to the cluster
 
-- start Minikube
+- ensure the access to a Kubernetes cluster is configured in `~/.kube/config`
 - `make install` to install necessary Custom Resource Definitions
-- `go run main.go --jwks-uri="https://go.at" --oathkeeper-svc-address="otkpr.kyma.local" --oathkeeper-svc-port=1234 --domain-whitelist=kyma.local`
+- export `OATHKEEPER_SVC_ADDRESS`, `OATHKEEPER_SVC_PORT` and `JWKS_URI` variables
+- `make deploy` to deploy controller
 
-### Run the controller in Minikube
+### Run the controller locally
+This procedure is the fastest way to run the Controller, useful for development purposes
+
+- start Minikube or ensure the access to a Kubernetes cluster is configured in `~/.kube/config`
+- `make install` to install necessary Custom Resource Definitions
+- export `OATHKEEPER_SVC_ADDRESS`, `OATHKEEPER_SVC_PORT` and `JWKS_URI` variables
+- `go run main.go --jwks-uri="$JWKS_URI" --oathkeeper-svc-address="$OATHKEEPER_SVC_ADDRESS" --oathkeeper-svc-port=$OATHKEEPER_SVC_PORT --domain-whitelist=kyma.local`
+
+### Deploy a custom Controller build to the local Minikube cluster
+This procedure is useful to test your own Controller build end-to-end in a local Minikube cluster.
 
 - start Minikube
 - `make build` to build the binary and run tests
 - `eval $(minikube docker-env)`
-- `make build-image` to build a docker image
+- `make build-image` to put the docker image inside running Minikube
+- `make install` to install necessary Custom Resource Definitions
 - export `OATHKEEPER_SVC_ADDRESS`, `OATHKEEPER_SVC_PORT` and `JWKS_URI` variables
-- `make deploy` to deploy controller
+- `make deploy-dev` to deploy controller
 
 ### Use command-line flags
 

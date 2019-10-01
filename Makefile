@@ -42,7 +42,7 @@ endif
 
 .PHONY: build-image
 build-image: pull-licenses
-	docker build -t $(APP_NAME):latest .
+	docker build -t $(APP_NAME):development .
 
 .PHONY: push-image
 push-image:
@@ -81,14 +81,14 @@ static: manifests patch-gen
 	kustomize build config/released -o install/k8s
 
 # Deploy the controller using "api-gateway-controller:latest" Docker image to the Kubernetes cluster configured in ~/.kube/config
-deploy: manifests patch-gen
-#	kustomize build config/default | kubectl apply -f -
-	kustomize build config/default
+deploy-dev: manifests patch-gen
+	kustomize build config/development | kubectl apply -f -
+#	kustomize build config/development
 
 # Deploy controller using a released Docker image to the Kubernetes cluster configured in ~/.kube/config
-deploy-released: manifests patch-gen
-#	kustomize build config/released | kubectl apply -f -
-	kustomize build config/released
+deploy: manifests patch-gen
+	kustomize build config/default | kubectl apply -f -
+#	kustomize build config/default
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
