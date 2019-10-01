@@ -78,15 +78,17 @@ patch-gen:
 
 # Generate static installation files
 static: manifests patch-gen
-	kustomize build config/default -o install/k8s
+	kustomize build config/released -o install/k8s
 
 # Deploy the controller using "api-gateway-controller:latest" Docker image to the Kubernetes cluster configured in ~/.kube/config
 deploy: manifests patch-gen
-	kustomize build config/default | kubectl apply -f -
+#	kustomize build config/default | kubectl apply -f -
+	kustomize build config/default
 
 # Deploy controller using a released Docker image to the Kubernetes cluster configured in ~/.kube/config
 deploy-released: manifests patch-gen
-	kustomize build config/released | kubectl apply -f -
+#	kustomize build config/released | kubectl apply -f -
+	kustomize build config/released
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
