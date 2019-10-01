@@ -85,7 +85,7 @@ func main() {
 	} else {
 		for _, domain := range getList(whiteListedDomains) {
 			if !validation.ValidateDomainName(domain) {
-				setupLog.Error(fmt.Errorf("invalid domain in domain whitelist: %s", domain), "unable to create controller", "controller", "Api")
+				setupLog.Error(fmt.Errorf("invalid domain in domain whitelist"), "unable to create controller", "controller", "Api")
 				os.Exit(1)
 			}
 		}
