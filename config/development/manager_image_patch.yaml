@@ -7,5 +7,5 @@ spec:
   template:
     spec:
       containers:
-      - image: api-gateway-controller:development
+      - image: api-gateway-controller:latest
         name: manager
