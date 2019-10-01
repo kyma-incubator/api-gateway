@@ -21,7 +21,7 @@ endif
 
 # kyma.local foo.bar bar
 ifndef DOMAIN_WHITELIST
-override DOMAIN_WHITELIST = "kyma.local"
+override DOMAIN_WHITELIST = kyma.local
 endif
 
 .EXPORT_ALL_VARIABLES:
@@ -81,7 +81,7 @@ static: manifests
 deploy: manifests
 	@cat config/default/manager_args_patch.yaml.tmpl |\
 		sed -e 's|OATHKEEPER_SVC_ADDRESS|"${OATHKEEPER_SVC_ADDRESS}"|g' |\
-		sed -e 's|OATHKEEPER_SVC_PORT|"${OATHKEEPER_SVC_PORT}"|g' |\
+		sed -e 's|OATHKEEPER_SVC_PORT|${OATHKEEPER_SVC_PORT}|g' |\
 		sed -e 's|DOMAIN_WHITELIST|"${DOMAIN_WHITELIST}"|g' |\
 		sed -e 's|JWKS_URI|"${JWKS_URI}"|g' > config/default/manager_args_patch.yaml
 	kustomize build config/default | kubectl apply -f -

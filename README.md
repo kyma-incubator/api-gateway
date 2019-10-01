@@ -15,8 +15,15 @@ The API Gateway Controller manages Istio VirtualServices and Oathkeeper Rule. Th
 ## Details
 
 ### Run the controller locally
+This procedure is mostly useful for development purposes
 
-- `start minikube`
+- start Minikube
+- `make install` to install necessary Custom Resource Definitions
+- `go run main.go --jwks-uri=https://some.uri
+
+### Run the controller in Minikube
+
+- start Minikube
 - `make build` to build the binary and run tests
 - `eval $(minikube docker-env)`
 - `make build-image` to build a docker image
@@ -30,8 +37,8 @@ The API Gateway Controller manages Istio VirtualServices and Oathkeeper Rule. Th
 | **oathkeeper-svc-address** | yes | ory oathkeeper-proxy service address. | `ory-oathkeeper-proxy.kyma-system.svc.cluster.local` |
 | **oathkeeper-svc-port** | yes | ory oathkeeper-proxy service port. | `4455` |
 | **jwks-uri** | yes | default jwksUri in the Policy. | any string |
-| **service-blacklist** | no | list of services to be blacklisted | `kubernetes` <br> `kube-dns` | 
-| **domain-whitelist** | yes | list of domains that can be exposed | `kyma.local` <br> `foo.bar` | 
+| **service-blacklist** | no | list of services to be blacklisted | `kubernetes` <br> `kube-dns` |
+| **domain-whitelist** | yes | list of domains that can be exposed | `kyma.local` <br> `foo.bar` |
 
 ## Custom Resource
 
