@@ -35,7 +35,7 @@ spec:
             - --oathkeeper-svc-address={{ .Values.config.oathkeeper.service }}
             - --oathkeeper-svc-port={{ .Values.config.oathkeeper.port }}
             - --jwks-uri={{ .Values.config.jwksURI }}
-            - --service-blacklist={{ .Values.config.serviceBlackList | toString | trimPrefix "map["  | trimSuffix "]" | replace "] " "]," }}
+            - --service-blacklist={{ toJson .Values.config.serviceBlackList }}
             {{- with .Values.config.domainWhiteList }}
             - --domain-whitelist={{ . | join ", " }}
             {{- end }}

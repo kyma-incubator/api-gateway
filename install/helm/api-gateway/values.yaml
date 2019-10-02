@@ -30,7 +30,7 @@ config:
       - kubernetes
       - kube-dns
     my-namespace:
-      - service1
+      - service1image
   domainWhiteList:
     - kyma.local
   cors: # values listed below will be used to set corsPolicy in created VirtualServices (https://istio.io/docs/reference/config/networking/v1alpha3/virtual-service/#CorsPolicy)

@@ -16,6 +16,7 @@ limitations under the License.
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/kyma-incubator/api-gateway/internal/processing"
@@ -107,11 +108,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	for _, str := range getList(blackListedServices) {
-		fmt.Printf("nmspc:svc: %s", str)
-		setupLog.Info("Services in namespace", "name", str)
-	}
-
 	if err = (&controllers.APIReconciler{
 		Client:            mgr.GetClient(),
 		Log:               ctrl.Log.WithName("controllers").WithName("Api"),
@@ -119,7 +115,7 @@ func main() {
 		OathkeeperSvcPort: uint32(oathkeeperSvcPort),
 		JWKSURI:           jwksURI,
 		Validator: &validation.APIRule{
-			ServiceBlackList: getList(blackListedServices),
+			ServiceBlackList: getNamespaceServiceMap(blackListedServices),
 			DomainWhiteList:  getList(whiteListedDomains),
 		},
 		CorsConfig: &processing.CorsConfig{
@@ -150,22 +146,12 @@ func getList(raw string) []string {
 	}
 	return result
 }
-func getServiceNamespaceMap(raw string) map[string][]string {
+func getNamespaceServiceMap(raw string) map[string][]string {
 	result := make(map[string][]string)
-	namespacesWithServices := getList(raw)
-	for _, n := range namespacesWithServices {
-		fmt.Println(n)
+	err := json.Unmarshal([]byte(raw), &result)
+	if err != nil {
+		panic(err)
 	}
-	for _, n := range namespacesWithServices {
-		split := strings.Split(n, ":")
-		namespace := split[0]
-		fmt.Println("Namespace: " + namespace)
-		services := strings.Split(split[1], " ")
-		for i, _ := range services {
-			services[i] = strings.Trim(services[i], "[")
-			services[i] = strings.Trim(services[i], "]")
-		}
-		result[namespace] = services
-	}
+	fmt.Println(result)
 	return result
 }
