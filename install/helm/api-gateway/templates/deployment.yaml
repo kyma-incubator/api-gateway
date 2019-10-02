@@ -41,6 +41,9 @@ spec:
             {{- with .Values.config.domainWhiteList }}
             - --domain-whitelist={{ . | join ", " }}
             {{- end }}
+            - --cors-allow-origin={{ .Values.config.cors.allowOrigin }}
+            - --cors-allow-methods={{ .Values.config.cors.allowMethods }}
+            - --cors-allow-headers={{ .Values.config.cors.allowHeaders }}
           resources:
             {{- toYaml .Values.deployment.resources | nindent 12 }}
           terminationMessagePath: /dev/termination-log

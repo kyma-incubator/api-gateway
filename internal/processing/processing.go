@@ -3,7 +3,6 @@ package processing
 import (
 	"context"
 	"fmt"
-
 	"github.com/kyma-incubator/api-gateway/internal/builders"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -24,16 +23,18 @@ type Factory struct {
 	oathkeeperSvc     string
 	oathkeeperSvcPort uint32
 	JWKSURI           string
+	corsPolicy        *networkingv1alpha3.CorsPolicy
 }
 
 //NewFactory .
-func NewFactory(client client.Client, logger logr.Logger, oathkeeperSvc string, oathkeeperSvcPort uint32, jwksURI string) *Factory {
+func NewFactory(client client.Client, logger logr.Logger, oathkeeperSvc string, oathkeeperSvcPort uint32, jwksURI string, corsPolicy *networkingv1alpha3.CorsPolicy) *Factory {
 	return &Factory{
 		client:            client,
 		Log:               logger,
 		oathkeeperSvc:     oathkeeperSvc,
 		oathkeeperSvcPort: oathkeeperSvcPort,
 		JWKSURI:           jwksURI,
+		corsPolicy:        corsPolicy,
 	}
 }
 
@@ -196,16 +197,18 @@ func (f *Factory) generateVirtualService(api *gatewayv1alpha1.APIRule) *networki
 	vsSpecBuilder.Gateway(*api.Spec.Gateway)
 
 	for _, rule := range api.Spec.Rules {
-		httpRouteBuilder := builders.HTTPRoute()
 
-		if isSecured(rule) {
-			httpRouteBuilder.Route(builders.RouteDestination().Host(f.oathkeeperSvc).Port(f.oathkeeperSvcPort))
-		} else {
-			destinationHost := fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace)
-			httpRouteBuilder.Route(builders.RouteDestination().Host(destinationHost).Port(*api.Spec.Service.Port))
+		httpRouteBuilder := builders.HTTPRoute()
+		host, port := f.oathkeeperSvc, f.oathkeeperSvcPort
+
+		if !isSecured(rule) {
+			host = fmt.Sprintf("%s.%s.svc.cluster.local", *api.Spec.Service.Name, api.ObjectMeta.Namespace)
+			port = *api.Spec.Service.Port
 		}
 
+		httpRouteBuilder.Route(builders.RouteDestination().Host(host).Port(port))
 		httpRouteBuilder.Match(builders.MatchRequest().URI().Regex(rule.Path))
+		httpRouteBuilder.CorsPolicy(f.corsPolicy)
 		vsSpecBuilder.HTTP(httpRouteBuilder)
 	}
 
