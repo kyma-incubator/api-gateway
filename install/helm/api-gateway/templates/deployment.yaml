@@ -26,7 +26,7 @@ spec:
     spec:
       containers:
         - name: {{ .Chart.Name }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image:  "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
             - /manager
@@ -35,9 +35,7 @@ spec:
             - --oathkeeper-svc-address={{ .Values.config.oathkeeper.service }}
             - --oathkeeper-svc-port={{ .Values.config.oathkeeper.port }}
             - --jwks-uri={{ .Values.config.jwksURI }}
-            {{- with .Values.config.serviceBlackList }}
-            - --service-blacklist={{ . | join ", " }}
-            {{- end }}
+            - --service-blacklist={{ .Values.config.serviceBlackList | toString | trimPrefix "map["  | trimSuffix "]" | replace "] " "]," }}
             {{- with .Values.config.domainWhiteList }}
             - --domain-whitelist={{ . | join ", " }}
             {{- end }}

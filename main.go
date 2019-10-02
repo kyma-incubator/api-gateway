@@ -107,6 +107,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	for _, str := range getList(blackListedServices) {
+		fmt.Printf("nmspc:svc: %s", str)
+		setupLog.Info("Services in namespace", "name", str)
+	}
+
 	if err = (&controllers.APIReconciler{
 		Client:            mgr.GetClient(),
 		Log:               ctrl.Log.WithName("controllers").WithName("Api"),
@@ -142,6 +147,25 @@ func getList(raw string) []string {
 		if trim != "" {
 			result = append(result, trim)
 		}
+	}
+	return result
+}
+func getServiceNamespaceMap(raw string) map[string][]string {
+	result := make(map[string][]string)
+	namespacesWithServices := getList(raw)
+	for _, n := range namespacesWithServices {
+		fmt.Println(n)
+	}
+	for _, n := range namespacesWithServices {
+		split := strings.Split(n, ":")
+		namespace := split[0]
+		fmt.Println("Namespace: " + namespace)
+		services := strings.Split(split[1], " ")
+		for i, _ := range services {
+			services[i] = strings.Trim(services[i], "[")
+			services[i] = strings.Trim(services[i], "]")
+		}
+		result[namespace] = services
 	}
 	return result
 }
