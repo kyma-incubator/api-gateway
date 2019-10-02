@@ -21,7 +21,7 @@ endif
 
 # kyma.local foo.bar bar
 ifndef DOMAIN_WHITELIST
-override DOMAIN_WHITELIST = kyma.local
+override DOMAIN_WHITELIST = change-me
 endif
 
 .EXPORT_ALL_VARIABLES:
