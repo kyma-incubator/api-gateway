@@ -87,7 +87,10 @@ patch-gen:
 		sed -e 's|OATHKEEPER_SVC_ADDRESS|${OATHKEEPER_SVC_ADDRESS}|g' |\
 		sed -e 's|OATHKEEPER_SVC_PORT|${OATHKEEPER_SVC_PORT}|g' |\
 		sed -e 's|DOMAIN_WHITELIST|${DOMAIN_WHITELIST}|g' |\
-		sed -e 's|JWKS_URI|${JWKS_URI}|g' > config/default/manager_args_patch.yaml
+		sed -e 's|JWKS_URI|${JWKS_URI}|g' |\
+		sed -e 's|CORS_ALLOW_ORIGIN|${CORS_ALLOW_ORIGIN}|g' |\
+		sed -e 's|CORS_ALLOW_METHODS|${CORS_ALLOW_METHODS}|g' |\
+		sed -e 's|CORS_ALLOW_HEADERS|${CORS_ALLOW_HEADERS}|g' > config/default/manager_args_patch.yaml
 
 # Generate static installation files
 static: manifests patch-gen
