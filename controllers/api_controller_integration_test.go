@@ -56,6 +56,11 @@ var _ = Describe("APIRule Controller", func() {
 		},
 	}
 
+	var corsPolicyBuilder = builders.CorsPolicy().
+		AllowHeader("header1", "header2").
+		AllowMethod("GET", "POST", "PUT", "DELETE").
+		AllowOrigin("*")
+
 	Context("when updating the APIRule with multiple paths", func() {
 
 		It("should create, update and delete rules depending on patch match", func() {
@@ -213,10 +218,7 @@ var _ = Describe("APIRule Controller", func() {
 							HTTP(builders.HTTPRoute().
 								Match(builders.MatchRequest().URI().Regex(testPath)).
 								Route(builders.RouteDestination().Host(testOathkeeperSvcURL).Port(testOathkeeperPort)).
-								CorsPolicy(builders.CorsPolicy().
-									AllowHeader("header1", "header2").
-									AllowMethod("GET", "POST", "PUT", "DELETE").
-									AllowOrigin("*")))
+								CorsPolicy(corsPolicyBuilder))
 
 						Expect(vs.Spec).To(Equal(*expectedSpec.Get()))
 
@@ -307,11 +309,6 @@ var _ = Describe("APIRule Controller", func() {
 
 						//Meta
 						verifyOwnerReference(vs.ObjectMeta, apiRuleName, gatewayv1alpha1.GroupVersion.String(), kind)
-
-						corsPolicyBuilder := builders.CorsPolicy().
-							AllowHeader("header1", "header2").
-							AllowMethod("GET", "POST", "PUT", "DELETE").
-							AllowOrigin("*")
 
 						expectedSpec := builders.VirtualServiceSpec().
 							Host(testServiceHost).
@@ -462,11 +459,6 @@ var _ = Describe("APIRule Controller", func() {
 
 						//Meta
 						verifyOwnerReference(vs.ObjectMeta, apiRuleName, gatewayv1alpha1.GroupVersion.String(), kind)
-
-						corsPolicyBuilder := builders.CorsPolicy().
-							AllowHeader("header1", "header2").
-							AllowMethod("GET", "POST", "PUT", "DELETE").
-							AllowOrigin("*")
 
 						expectedSpec := builders.VirtualServiceSpec().
 							Host(testServiceHost).
