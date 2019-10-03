@@ -66,9 +66,18 @@ var _ = Describe("APIRule Controller", func() {
 			apiRuleName := generateTestName(testNameBase, testIDLength)
 			testServiceHost := "httpbin5.kyma.local"
 
-			instance := testInstance(apiRuleName, testNamespace, testServiceName, testServiceHost, testServicePort, []gatewayv1alpha1.Rule{rule1, rule2, rule3})
+			labels := make(map[string]string)
+			labels[processing.OwnerLabel] = fmt.Sprintf("%s.%s", apiRuleName, testNamespace)
+			matchingLabelsFunc := client.MatchingLabels(labels)
 
+			pathToURLFunc := func(path string) string {
+				return fmt.Sprintf("<http|https>://%s<%s>", testServiceHost, path)
+			}
+
+			By("Create APIRule")
+			instance := testInstance(apiRuleName, testNamespace, testServiceName, testServiceHost, testServicePort, []gatewayv1alpha1.Rule{rule1, rule2, rule3})
 			err := c.Create(context.TODO(), instance)
+
 			if apierrors.IsInvalid(err) {
 				Fail(fmt.Sprintf("failed to create object, got an invalid object error: %v", err))
 				return
@@ -77,34 +86,12 @@ var _ = Describe("APIRule Controller", func() {
 			defer c.Delete(context.TODO(), instance)
 
 			expectedRequest := reconcile.Request{NamespacedName: types.NamespacedName{Name: apiRuleName, Namespace: testNamespace}}
-
 			Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
 
-			labels := make(map[string]string)
-			labels[processing.OwnerLabel] = fmt.Sprintf("%s.%s", apiRuleName, testNamespace)
-			matchingLabelsFunc := client.MatchingLabels(labels)
-			//TODO: Extract to a function
-			{
-				rlList := rulev1alpha1.RuleList{}
+			By("Verify before update")
+			verifyRuleList(matchingLabelsFunc, pathToURLFunc, rule1, rule2, rule3)
 
-				err = c.List(context.TODO(), &rlList, matchingLabelsFunc)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(rlList.Items).To(HaveLen(3))
-
-				rules := make(map[string]rulev1alpha1.Rule)
-
-				for _, rule := range rlList.Items {
-					rules[rule.Spec.Match.URL] = rule
-				}
-
-				//Verify rules before update
-				Expect(rules["<http|https>://httpbin5.kyma.local</rule1>"].Spec.Match.Methods[0]).To(Equal("GET"))
-				Expect(rules["<http|https>://httpbin5.kyma.local</rule2>"].Spec.Match.Methods[0]).To(Equal("PUT"))
-				Expect(rules["<http|https>://httpbin5.kyma.local</rule3>"].Spec.Match.Methods[0]).To(Equal("DELETE"))
-			}
-
-			//Update APIRule
+			By("Update APIRule")
 			created := gatewayv1alpha1.APIRule{}
 			err = c.Get(context.TODO(), client.ObjectKey{Name: apiRuleName, Namespace: testNamespace}, &created)
 			Expect(err).NotTo(HaveOccurred())
@@ -117,31 +104,9 @@ var _ = Describe("APIRule Controller", func() {
 			expectedRequest = reconcile.Request{NamespacedName: types.NamespacedName{Name: apiRuleName, Namespace: testNamespace}}
 			Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
 
-			updated := gatewayv1alpha1.APIRule{}
-			err = c.Get(context.TODO(), client.ObjectKey{Name: apiRuleName, Namespace: testNamespace}, &updated)
-			Expect(err).NotTo(HaveOccurred())
-
-			//Otherwise client in test fetches old Rules.
-			time.Sleep(1 * time.Second)
-
-			{
-				rlList2 := rulev1alpha1.RuleList{}
-
-				err = c.List(context.TODO(), &rlList2, matchingLabelsFunc)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(rlList2.Items).To(HaveLen(2))
-
-				rules2 := make(map[string]rulev1alpha1.Rule)
-
-				for _, rule := range rlList2.Items {
-					rules2[rule.Spec.Match.URL] = rule
-				}
-
-				//Verify rules before update
-				Expect(rules2["<http|https>://httpbin5.kyma.local</rule1>"].Spec.Match.Methods[0]).To(Equal("GET"))
-				Expect(rules2["<http|https>://httpbin5.kyma.local</rule4>"].Spec.Match.Methods[0]).To(Equal("POST"))
-			}
+			By("Verify after update")
+			time.Sleep(1 * time.Second) //Otherwise client in test fetches old Rules.
+			verifyRuleList(matchingLabelsFunc, pathToURLFunc, rule1, rule4)
 		})
 	})
 
@@ -846,4 +811,25 @@ func generateTestName(name string, length int) string {
 		b[i] = letterRunes[rand.Intn(len(letterRunes))]
 	}
 	return name + "-" + string(b)
+}
+
+func verifyRuleList(matchingLabelsFunc client.ListOptionFunc, pathToURLFunc func(string) string, expected ...gatewayv1alpha1.Rule) {
+
+	rlList := rulev1alpha1.RuleList{}
+
+	err := c.List(context.TODO(), &rlList, matchingLabelsFunc)
+	Expect(err).NotTo(HaveOccurred())
+
+	Expect(rlList.Items).To(HaveLen(len(expected)))
+
+	actual := make(map[string]rulev1alpha1.Rule)
+
+	for _, rule := range rlList.Items {
+		actual[rule.Spec.Match.URL] = rule
+	}
+
+	for i := range expected {
+		ruleUrl := pathToURLFunc(expected[i].Path)
+		Expect(actual[ruleUrl].Spec.Match.Methods).To(Equal(expected[i].Methods))
+	}
 }
