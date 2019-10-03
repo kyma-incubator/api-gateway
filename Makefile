@@ -24,6 +24,19 @@ ifndef DOMAIN_WHITELIST
 override DOMAIN_WHITELIST = change-me
 endif
 
+# CORS
+ifndef CORS_ALLOW_ORIGIN
+override CORS_ALLOW_ORIGIN = "*"
+endif
+
+ifndef CORS_ALLOW_METHODS
+override CORS_ALLOW_METHODS = "GET,POST,PUT,DELETE"
+endif
+
+ifndef CORS_ALLOW_HEADERS
+override CORS_ALLOW_HEADERS = "Authorization,Content-Type,*"
+endif
+
 .EXPORT_ALL_VARIABLES:
 GO111MODULE = on
 
