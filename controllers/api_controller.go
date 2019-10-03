@@ -43,7 +43,7 @@ type APIReconciler struct {
 	OathkeeperSvcPort uint32
 	JWKSURI           string
 	Validator         APIRuleValidator
-	CorsPolicy        *v1alpha3.CorsPolicy
+	CorsConfig        *processing.CorsConfig
 }
 
 //APIRuleValidator allows to validate APIRule instances created by the user.
@@ -106,7 +106,7 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 
 		//2) Compute list of required objects (the set of objects required to satisfy our contract on apiRule.Spec, not yet applied)
-		factory := processing.NewFactory(r.Client, r.Log, r.OathkeeperSvc, r.OathkeeperSvcPort, r.JWKSURI, r.CorsPolicy)
+		factory := processing.NewFactory(r.Client, r.Log, r.OathkeeperSvc, r.OathkeeperSvcPort, r.JWKSURI, r.CorsConfig)
 		requiredObjects := factory.CalculateRequiredState(api)
 
 		//3.1 Fetch all existing objects related to _this_ apiRule from the cluster (VS, Rules)

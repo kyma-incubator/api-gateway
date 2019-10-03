@@ -23,19 +23,26 @@ type Factory struct {
 	oathkeeperSvc     string
 	oathkeeperSvcPort uint32
 	JWKSURI           string
-	corsPolicy        *networkingv1alpha3.CorsPolicy
+	corsConfig        *CorsConfig
 }
 
 //NewFactory .
-func NewFactory(client client.Client, logger logr.Logger, oathkeeperSvc string, oathkeeperSvcPort uint32, jwksURI string, corsPolicy *networkingv1alpha3.CorsPolicy) *Factory {
+func NewFactory(client client.Client, logger logr.Logger, oathkeeperSvc string, oathkeeperSvcPort uint32, jwksURI string, corsConfig *CorsConfig) *Factory {
 	return &Factory{
 		client:            client,
 		Log:               logger,
 		oathkeeperSvc:     oathkeeperSvc,
 		oathkeeperSvcPort: oathkeeperSvcPort,
 		JWKSURI:           jwksURI,
-		corsPolicy:        corsPolicy,
+		corsConfig:        corsConfig,
 	}
+}
+
+//CorsConfig is an internal representation of v1alpha3.CorsPolicy object
+type CorsConfig struct {
+	AllowOrigin  []string
+	AllowMethods []string
+	AllowHeaders []string
 }
 
 // CalculateRequiredState returns required state of all objects related to given api
@@ -208,7 +215,11 @@ func (f *Factory) generateVirtualService(api *gatewayv1alpha1.APIRule) *networki
 
 		httpRouteBuilder.Route(builders.RouteDestination().Host(host).Port(port))
 		httpRouteBuilder.Match(builders.MatchRequest().URI().Regex(rule.Path))
-		httpRouteBuilder.CorsPolicy(f.corsPolicy)
+		httpRouteBuilder.CorsPolicy(&networkingv1alpha3.CorsPolicy{
+			AllowOrigin:  f.corsConfig.AllowOrigin,
+			AllowMethods: f.corsConfig.AllowMethods,
+			AllowHeaders: f.corsConfig.AllowHeaders,
+		})
 		vsSpecBuilder.HTTP(httpRouteBuilder)
 	}
 

@@ -37,10 +37,20 @@ var (
 	apiGateway         = "some-gateway"
 	serviceName        = "example-service"
 	serviceHost        = "myService.myDomain.com"
-	testCors           = &networkingv1alpha3.CorsPolicy{
-		AllowHeaders: []string{"*"},
-		AllowMethods: []string{"GET,POST,PUT,DELETE"},
-		AllowOrigin:  []string{"*"},
+
+	testAllowOrigin  = []string{"*"}
+	testAllowMethods = []string{"GET", "POST", "PUT", "DELETE"}
+	testAllowHeaders = []string{"header1", "header2"}
+
+	testCors = &CorsConfig{
+		AllowOrigin:  testAllowOrigin,
+		AllowMethods: testAllowMethods,
+		AllowHeaders: testAllowHeaders,
+	}
+	expectedCorsPolicy = networkingv1alpha3.CorsPolicy{
+		AllowOrigin:  testAllowOrigin,
+		AllowMethods: testAllowMethods,
+		AllowHeaders: testAllowHeaders,
 	}
 )
 
@@ -86,7 +96,9 @@ var _ = Describe("Factory", func() {
 				Expect(len(vs.Spec.HTTP[0].Match)).To(Equal(1))
 				Expect(vs.Spec.HTTP[0].Match[0].URI.Regex).To(Equal(apiRule.Spec.Rules[0].Path))
 
-				Expect(vs.Spec.HTTP[0].CorsPolicy).To(Equal(testCors))
+				Expect(vs.Spec.HTTP[0].CorsPolicy.AllowOrigin).To(Equal(testCors.AllowOrigin))
+				Expect(vs.Spec.HTTP[0].CorsPolicy.AllowMethods).To(Equal(testCors.AllowMethods))
+				Expect(vs.Spec.HTTP[0].CorsPolicy.AllowHeaders).To(Equal(testCors.AllowHeaders))
 
 				Expect(vs.ObjectMeta.Name).To(BeEmpty())
 				Expect(vs.ObjectMeta.GenerateName).To(Equal(apiName + "-"))
@@ -169,14 +181,20 @@ var _ = Describe("Factory", func() {
 				Expect(vs.Spec.HTTP[0].Route[0].Destination.Port.Number).To(Equal(oathkeeperSvcPort))
 				Expect(len(vs.Spec.HTTP[0].Match)).To(Equal(1))
 				Expect(vs.Spec.HTTP[0].Match[0].URI.Regex).To(Equal(apiRule.Spec.Rules[0].Path))
-				Expect(vs.Spec.HTTP[0].CorsPolicy).To(Equal(testCors))
+
+				Expect(vs.Spec.HTTP[0].CorsPolicy.AllowOrigin).To(Equal(testCors.AllowOrigin))
+				Expect(vs.Spec.HTTP[0].CorsPolicy.AllowMethods).To(Equal(testCors.AllowMethods))
+				Expect(vs.Spec.HTTP[0].CorsPolicy.AllowHeaders).To(Equal(testCors.AllowHeaders))
 
 				Expect(len(vs.Spec.HTTP[1].Route)).To(Equal(1))
 				Expect(vs.Spec.HTTP[1].Route[0].Destination.Host).To(Equal(oathkeeperSvc))
 				Expect(vs.Spec.HTTP[1].Route[0].Destination.Port.Number).To(Equal(oathkeeperSvcPort))
 				Expect(len(vs.Spec.HTTP[1].Match)).To(Equal(1))
 				Expect(vs.Spec.HTTP[1].Match[0].URI.Regex).To(Equal(apiRule.Spec.Rules[1].Path))
-				Expect(vs.Spec.HTTP[1].CorsPolicy).To(Equal(testCors))
+
+				Expect(vs.Spec.HTTP[1].CorsPolicy.AllowOrigin).To(Equal(testCors.AllowOrigin))
+				Expect(vs.Spec.HTTP[1].CorsPolicy.AllowMethods).To(Equal(testCors.AllowMethods))
+				Expect(vs.Spec.HTTP[1].CorsPolicy.AllowHeaders).To(Equal(testCors.AllowHeaders))
 
 				Expect(vs.ObjectMeta.Name).To(BeEmpty())
 				Expect(vs.ObjectMeta.GenerateName).To(Equal(apiName + "-"))
@@ -305,7 +323,9 @@ var _ = Describe("Factory", func() {
 				Expect(len(vs.Spec.HTTP[0].Match)).To(Equal(1))
 				Expect(vs.Spec.HTTP[0].Match[0].URI.Regex).To(Equal(apiRule.Spec.Rules[0].Path))
 
-				Expect(vs.Spec.HTTP[0].CorsPolicy).To(Equal(testCors))
+				Expect(vs.Spec.HTTP[0].CorsPolicy.AllowOrigin).To(Equal(testCors.AllowOrigin))
+				Expect(vs.Spec.HTTP[0].CorsPolicy.AllowMethods).To(Equal(testCors.AllowMethods))
+				Expect(vs.Spec.HTTP[0].CorsPolicy.AllowHeaders).To(Equal(testCors.AllowHeaders))
 
 				Expect(vs.ObjectMeta.Name).To(BeEmpty())
 				Expect(vs.ObjectMeta.GenerateName).To(Equal(apiName + "-"))

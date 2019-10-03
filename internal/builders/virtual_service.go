@@ -119,8 +119,8 @@ func (hr *httpRoute) Route(rd *routeDestination) *httpRoute {
 	return hr
 }
 
-func (hr *httpRoute) CorsPolicy(cp *networkingv1alpha3.CorsPolicy) *httpRoute {
-	hr.value.CorsPolicy = cp
+func (hr *httpRoute) CorsPolicy(cc *networkingv1alpha3.CorsPolicy) *httpRoute {
+	hr.value.CorsPolicy = cc
 	return hr
 }
 

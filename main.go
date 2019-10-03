@@ -18,6 +18,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/kyma-incubator/api-gateway/internal/processing"
 	"os"
 	"strings"
 
@@ -116,7 +117,7 @@ func main() {
 			ServiceBlackList: getList(blackListedServices),
 			DomainWhiteList:  getList(whiteListedDomains),
 		},
-		CorsPolicy: &networkingv1alpha3.CorsPolicy{
+		CorsConfig: &processing.CorsConfig{
 			AllowHeaders: getList(corsAllowHeaders),
 			AllowMethods: getList(corsAllowMethods),
 			AllowOrigin:  getList(corsAllowOrigin),

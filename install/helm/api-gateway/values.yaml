@@ -30,13 +30,6 @@ config:
     - kube-dns
   domainWhiteList:
     - kyma.local
-  # If you want to specify CORS config yourself, uncomment the following lines and provide custom values
-#  cors:
-#  # values listed below will be used to set corsPolicy in created VirtualServices (https://istio.io/docs/reference/config/networking/v1alpha3/virtual-service/#CorsPolicy)
-#  # a value may be a single string (e.g. "*", "console.kyma.local") or a comma-separated list of strings (e.g. "https://console.kyma.local,https://lambdas-ui.kyma.local", "GET,POST,PUT,DELETE")
-#    allowOrigin: ""
-#    allowMethods: ""
-#    allowHeaders: ""
 
   # Node labels for pod assignment.
   nodeSelector: {}

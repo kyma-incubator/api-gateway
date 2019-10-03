@@ -50,9 +50,9 @@ This procedure is useful to test your own Controller build end-to-end in a local
 | **jwks-uri** | yes | default jwksUri in the Policy. | any string |
 | **service-blacklist** | no | list of services to be blacklisted | `kubernetes` <br> `kube-dns` |
 | **domain-whitelist** | yes | list of domains that can be exposed | `kyma.local` <br> `foo.bar` |
-| **cors-allow-origin**  | no | list of allowed origins | `*`, `https://developer.org` |
-| **cors-allow-methods** | no | list of allowed methods | `GET,POST,DELETE` |
-| **cors-allow-headers** | no | list of allowed headers | `Authorization,Content-Type` |
+| **cors-allow-origin**  | no | comma-separated list of allowed origins | `*`, `https://developer.org` |
+| **cors-allow-methods** | no | comma-separated list of allowed methods | `GET,POST,DELETE` |
+| **cors-allow-headers** | no | comma-separated list of allowed headers | `Authorization,Content-Type` |
 
 ## Custom Resource
 
