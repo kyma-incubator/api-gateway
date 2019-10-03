@@ -97,6 +97,7 @@ var _ = Describe("APIRule Controller", func() {
 			ruleList := getRuleList(matchingLabels)
 			verifyRuleList(ruleList, pathToURLFunc, rule1, rule2, rule3)
 			expectedUpstream := fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", testServiceName, testNamespace, testServicePort)
+			//Verify All Rules point to original Service
 			for i := range ruleList {
 				r := ruleList[i]
 				Expect(r.Spec.Upstream.URL).To(Equal(expectedUpstream))
@@ -123,6 +124,7 @@ var _ = Describe("APIRule Controller", func() {
 			time.Sleep(1 * time.Second) //Otherwise K8s client fetches old Rules.
 			ruleList = getRuleList(matchingLabels)
 			verifyRuleList(ruleList, pathToURLFunc, rule1, rule4)
+			//Verify All Rules point to new Service after update
 			expectedUpstream = fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", newServiceName, testNamespace, newServicePort)
 			for i := range ruleList {
 				r := ruleList[i]
