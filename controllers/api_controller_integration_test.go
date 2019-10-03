@@ -66,21 +66,19 @@ var _ = Describe("APIRule Controller", func() {
 			apiRuleName := generateTestName(testNameBase, testIDLength)
 			testServiceHost := "httpbin5.kyma.local"
 
-			labels := make(map[string]string)
-			labels[processing.OwnerLabel] = fmt.Sprintf("%s.%s", apiRuleName, testNamespace)
-			matchingLabelsFunc := client.MatchingLabels(labels)
+			matchingLabels := matchingLabelsFunc(apiRuleName, testNamespace)
 
 			pathToURLFunc := func(path string) string {
 				return fmt.Sprintf("<http|https>://%s<%s>", testServiceHost, path)
 			}
 
 			By("Create APIRule")
+
 			instance := testInstance(apiRuleName, testNamespace, testServiceName, testServiceHost, testServicePort, []gatewayv1alpha1.Rule{rule1, rule2, rule3})
 			err := c.Create(context.TODO(), instance)
 
 			if apierrors.IsInvalid(err) {
 				Fail(fmt.Sprintf("failed to create object, got an invalid object error: %v", err))
-				return
 			}
 			Expect(err).NotTo(HaveOccurred())
 			defer c.Delete(context.TODO(), instance)
@@ -89,24 +87,41 @@ var _ = Describe("APIRule Controller", func() {
 			Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
 
 			By("Verify before update")
-			verifyRuleList(matchingLabelsFunc, pathToURLFunc, rule1, rule2, rule3)
+
+			ruleList := getRuleList(matchingLabels)
+			verifyRuleList(ruleList, pathToURLFunc, rule1, rule2, rule3)
+			expectedUpstream := fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", testServiceName, testNamespace, testServicePort)
+			for i := range ruleList {
+				r := ruleList[i]
+				Expect(r.Spec.Upstream.URL).To(Equal(expectedUpstream))
+			}
 
 			By("Update APIRule")
-			created := gatewayv1alpha1.APIRule{}
-			err = c.Get(context.TODO(), client.ObjectKey{Name: apiRuleName, Namespace: testNamespace}, &created)
+			existingInstance := gatewayv1alpha1.APIRule{}
+			err = c.Get(context.TODO(), client.ObjectKey{Name: apiRuleName, Namespace: testNamespace}, &existingInstance)
 			Expect(err).NotTo(HaveOccurred())
 
 			rule4 := testRule("/rule4", []string{"POST"}, testMutators, noConfigHandler("cookie_session"))
-			created.Spec.Rules = []gatewayv1alpha1.Rule{rule1, rule4}
+			existingInstance.Spec.Rules = []gatewayv1alpha1.Rule{rule1, rule4}
+			newServiceName := testServiceName + "new"
+			newServicePort := testServicePort + 3
+			existingInstance.Spec.Service.Name = &newServiceName
+			existingInstance.Spec.Service.Port = &newServicePort
 
-			c.Update(context.TODO(), &created)
+			c.Update(context.TODO(), &existingInstance)
 
 			expectedRequest = reconcile.Request{NamespacedName: types.NamespacedName{Name: apiRuleName, Namespace: testNamespace}}
 			Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
 
 			By("Verify after update")
-			time.Sleep(1 * time.Second) //Otherwise client in test fetches old Rules.
-			verifyRuleList(matchingLabelsFunc, pathToURLFunc, rule1, rule4)
+			time.Sleep(1 * time.Second) //Otherwise K8s client fetches old Rules.
+			ruleList = getRuleList(matchingLabels)
+			verifyRuleList(ruleList, pathToURLFunc, rule1, rule4)
+			expectedUpstream = fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", newServiceName, testNamespace, newServicePort)
+			for i := range ruleList {
+				r := ruleList[i]
+				Expect(r.Spec.Upstream.URL).To(Equal(expectedUpstream))
+			}
 		})
 	})
 
@@ -147,13 +162,9 @@ var _ = Describe("APIRule Controller", func() {
 			Expect(created.Status.APIRuleStatus.Description).To(ContainSubstring("Attribute \".spec.rules[1].accessStrategies[0].config\": strategy: noop does not support configuration"))
 			Expect(created.Status.APIRuleStatus.Description).To(ContainSubstring("1 more error(s)..."))
 
-			labels := make(map[string]string)
-			labels[processing.OwnerLabel] = fmt.Sprintf("%s.%s", apiRuleName, testNamespace)
-			matchingLabelsFunc := client.MatchingLabels(labels)
-
 			//Verify VirtualService is not created
 			vsList := networkingv1alpha3.VirtualServiceList{}
-			err = c.List(context.TODO(), &vsList, matchingLabelsFunc)
+			err = c.List(context.TODO(), &vsList, matchingLabelsFunc(apiRuleName, testNamespace))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(vsList.Items).To(HaveLen(0))
 		})
@@ -180,13 +191,11 @@ var _ = Describe("APIRule Controller", func() {
 
 						Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
 
-						labels := make(map[string]string)
-						labels[processing.OwnerLabel] = fmt.Sprintf("%s.%s", apiRuleName, testNamespace)
-						matchingLabelsFunc := client.MatchingLabels(labels)
+						matchingLabels := matchingLabelsFunc(apiRuleName, testNamespace)
 
 						//Verify VirtualService
 						vsList := networkingv1alpha3.VirtualServiceList{}
-						err = c.List(context.TODO(), &vsList, matchingLabelsFunc)
+						err = c.List(context.TODO(), &vsList, matchingLabels)
 						Expect(err).NotTo(HaveOccurred())
 						Expect(vsList.Items).To(HaveLen(1))
 						vs := vsList.Items[0]
@@ -251,16 +260,12 @@ var _ = Describe("APIRule Controller", func() {
 						//Verify Rule
 						expectedRuleMatchURL := fmt.Sprintf("<http|https>://%s<%s>", testServiceHost, testPath)
 
-						rlList := rulev1alpha1.RuleList{}
-
-						err = c.List(context.TODO(), &rlList, matchingLabelsFunc)
-						Expect(err).NotTo(HaveOccurred())
-
-						Expect(rlList.Items).To(HaveLen(1))
+						rlList := getRuleList(matchingLabels)
+						Expect(rlList).To(HaveLen(1))
 
 						rules := make(map[string]rulev1alpha1.Rule)
 
-						for _, rule := range rlList.Items {
+						for _, rule := range rlList {
 							rules[rule.Spec.Match.URL] = rule
 						}
 
@@ -328,13 +333,11 @@ var _ = Describe("APIRule Controller", func() {
 
 						Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
 
-						labels := make(map[string]string)
-						labels[processing.OwnerLabel] = fmt.Sprintf("%s.%s", apiRuleName, testNamespace)
-						matchingLabelsFunc := client.MatchingLabels(labels)
+						matchingLabels := matchingLabelsFunc(apiRuleName, testNamespace)
 
 						//Verify VirtualService
 						vsList := networkingv1alpha3.VirtualServiceList{}
-						err = c.List(context.TODO(), &vsList, matchingLabelsFunc)
+						err = c.List(context.TODO(), &vsList, matchingLabels)
 						Expect(err).NotTo(HaveOccurred())
 						Expect(vsList.Items).To(HaveLen(1))
 						vs := vsList.Items[0]
@@ -395,16 +398,13 @@ var _ = Describe("APIRule Controller", func() {
 						//Verify Rule1
 						expectedRuleMatchURL := fmt.Sprintf("<http|https>://%s<%s>", testServiceHost, "/img")
 
-						rlList := rulev1alpha1.RuleList{}
+						rlList := getRuleList(matchingLabels)
 
-						err = c.List(context.TODO(), &rlList, matchingLabelsFunc)
-						Expect(err).NotTo(HaveOccurred())
-
-						Expect(len(rlList.Items)).To(Equal(2))
+						Expect(rlList).To(HaveLen(2))
 
 						rules := make(map[string]rulev1alpha1.Rule)
 
-						for _, rule := range rlList.Items {
+						for _, rule := range rlList {
 							rules[rule.Spec.Match.URL] = rule
 						}
 
@@ -519,13 +519,11 @@ var _ = Describe("APIRule Controller", func() {
 						expectedRequest := reconcile.Request{NamespacedName: types.NamespacedName{Name: apiRuleName, Namespace: testNamespace}}
 						Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
 
-						labels := make(map[string]string)
-						labels[processing.OwnerLabel] = fmt.Sprintf("%s.%s", apiRuleName, testNamespace)
-						matchingLabelsFunc := client.MatchingLabels(labels)
+						matchingLabels := matchingLabelsFunc(apiRuleName, testNamespace)
 
 						//Verify VirtualService
 						vsList := networkingv1alpha3.VirtualServiceList{}
-						err = c.List(context.TODO(), &vsList, matchingLabelsFunc)
+						err = c.List(context.TODO(), &vsList, matchingLabels)
 						Expect(err).NotTo(HaveOccurred())
 						Expect(vsList.Items).To(HaveLen(1))
 						vs := vsList.Items[0]
@@ -612,16 +610,12 @@ var _ = Describe("APIRule Controller", func() {
 						} {
 							expectedRuleMatchURL := fmt.Sprintf("<http|https>://%s</%s>", testServiceHost, tc.path)
 
-							rlList := rulev1alpha1.RuleList{}
-
-							err = c.List(context.TODO(), &rlList, matchingLabelsFunc)
-							Expect(err).NotTo(HaveOccurred())
-
-							Expect(len(rlList.Items)).To(Equal(3))
+							rlList := getRuleList(matchingLabels)
+							Expect(rlList).To(HaveLen(3))
 
 							rules := make(map[string]rulev1alpha1.Rule)
 
-							for _, rule := range rlList.Items {
+							for _, rule := range rlList {
 								rules[rule.Spec.Match.URL] = rule
 							}
 
@@ -813,23 +807,33 @@ func generateTestName(name string, length int) string {
 	return name + "-" + string(b)
 }
 
-func verifyRuleList(matchingLabelsFunc client.ListOptionFunc, pathToURLFunc func(string) string, expected ...gatewayv1alpha1.Rule) {
-
-	rlList := rulev1alpha1.RuleList{}
-
-	err := c.List(context.TODO(), &rlList, matchingLabelsFunc)
+func getRuleList(matchingLabels client.ListOptionFunc) []rulev1alpha1.Rule {
+	res := rulev1alpha1.RuleList{}
+	err := c.List(context.TODO(), &res, matchingLabels)
 	Expect(err).NotTo(HaveOccurred())
+	return res.Items
+}
 
-	Expect(rlList.Items).To(HaveLen(len(expected)))
+func verifyRuleList(ruleList []rulev1alpha1.Rule, pathToURLFunc func(string) string, expected ...gatewayv1alpha1.Rule) {
+
+	Expect(ruleList).To(HaveLen(len(expected)))
 
 	actual := make(map[string]rulev1alpha1.Rule)
 
-	for _, rule := range rlList.Items {
+	for _, rule := range ruleList {
 		actual[rule.Spec.Match.URL] = rule
 	}
 
 	for i := range expected {
 		ruleUrl := pathToURLFunc(expected[i].Path)
 		Expect(actual[ruleUrl].Spec.Match.Methods).To(Equal(expected[i].Methods))
+		Expect(actual[ruleUrl].Spec.Authenticators).To(Equal(expected[i].AccessStrategies))
+		Expect(actual[ruleUrl].Spec.Mutators).To(Equal(expected[i].Mutators))
 	}
+}
+
+func matchingLabelsFunc(apiRuleName, namespace string) client.ListOptionFunc {
+	labels := make(map[string]string)
+	labels[processing.OwnerLabel] = fmt.Sprintf("%s.%s", apiRuleName, namespace)
+	return client.MatchingLabels(labels)
 }
