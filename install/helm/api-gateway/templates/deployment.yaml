@@ -46,9 +46,9 @@ spec:
             {{- end }}
             {{- with .Values.config.cors.allowMethods }}
             - --cors-allow-methods={{ . | join ", " }}
-            {{- end }--cors-allow-headers={{ . | join ", " }}}
+            {{- end }}
             {{- with .Values.config.cors.allowHeaders }}
-            -
+            - --cors-allow-headers={{ . | join ", " }}
             {{- end }}
           resources:
             {{- toYaml .Values.deployment.resources | nindent 12 }}
