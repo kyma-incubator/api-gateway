@@ -9,9 +9,9 @@ spec:
       containers:
       - name: manager
         args:
-          - --oathkeeper-svc-address=ory-oathkeeper-proxy.kyma-system.svc.cluster.local
-          - --oathkeeper-svc-port=4455
-          - --jwks-uri=uri.com
+          - --oathkeeper-svc-address=change-me
+          - --oathkeeper-svc-port=change-me
+          - --jwks-uri=change-me
           - --service-blacklist={"default":["kubernetes"]}
           - --domain-whitelist=kyma.local
           - --cors-allow-origin=*

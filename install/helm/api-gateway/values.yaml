@@ -1,4 +1,4 @@
-sreplicaCount: 1
+replicaCount: 1
 
 rbacJob:
   image:
