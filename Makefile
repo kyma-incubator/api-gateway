@@ -5,24 +5,19 @@ CRD_OPTIONS ?= "crd:trivialVersions=true"
 SHELL = /bin/bash
 
 # Example ory-oathkeeper
-ifndef OATHKEEPER_SVC_ADDRESS
-override OATHKEEPER_SVC_ADDRESS = change-me
-endif
+OATHKEEPER_SVC_ADDRESS ?= change-me
+
 
 # Example 4455
-ifndef OATHKEEPER_SVC_PORT
-override OATHKEEPER_SVC_PORT = change-me
-endif
+OATHKEEPER_SVC_PORT ?= change-me
+
 
 # https://example.com/.well-known/jwks.json
-ifndef JWKS_URI
-override JWKS_URI = change-me
-endif
+JWKS_URI ?= change-me
+
 
 # kyma.local foo.bar bar
-ifndef DOMAIN_WHITELIST
-override DOMAIN_WHITELIST = change-me
-endif
+DOMAIN_WHITELIST ?= change-me
 
 .EXPORT_ALL_VARIABLES:
 GO111MODULE = on
