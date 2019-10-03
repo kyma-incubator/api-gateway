@@ -3,6 +3,7 @@ package processing
 import (
 	"context"
 	"fmt"
+
 	"github.com/kyma-incubator/api-gateway/internal/builders"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -215,11 +216,10 @@ func (f *Factory) generateVirtualService(api *gatewayv1alpha1.APIRule) *networki
 
 		httpRouteBuilder.Route(builders.RouteDestination().Host(host).Port(port))
 		httpRouteBuilder.Match(builders.MatchRequest().URI().Regex(rule.Path))
-		httpRouteBuilder.CorsPolicy(&networkingv1alpha3.CorsPolicy{
-			AllowOrigin:  f.corsConfig.AllowOrigin,
-			AllowMethods: f.corsConfig.AllowMethods,
-			AllowHeaders: f.corsConfig.AllowHeaders,
-		})
+		httpRouteBuilder.CorsPolicy(builders.CorsPolicy().
+			AllowOrigin(f.corsConfig.AllowOrigin...).
+			AllowMethod(f.corsConfig.AllowMethods...).
+			AllowHeader(f.corsConfig.AllowHeaders...))
 		vsSpecBuilder.HTTP(httpRouteBuilder)
 	}
 

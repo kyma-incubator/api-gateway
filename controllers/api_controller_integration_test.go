@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/kyma-incubator/api-gateway/internal/builders"
 	"github.com/kyma-incubator/api-gateway/internal/processing"
 
 	"encoding/json"
@@ -205,57 +206,19 @@ var _ = Describe("APIRule Controller", func() {
 						Expect(len(vs.Name) > len(apiRuleName)).To(BeTrue())
 
 						verifyOwnerReference(vs.ObjectMeta, apiRuleName, gatewayv1alpha1.GroupVersion.String(), kind)
-						//Spec.Hosts
-						Expect(vs.Spec.Hosts).To(HaveLen(1))
-						Expect(vs.Spec.Hosts[0]).To(Equal(testServiceHost))
-						//Spec.Gateways
-						Expect(vs.Spec.Gateways).To(HaveLen(1))
-						Expect(vs.Spec.Gateways[0]).To(Equal(testGatewayURL))
-						//Spec.HTTP
-						Expect(vs.Spec.HTTP).To(HaveLen(1))
-						////// HTTP.Match[]
-						Expect(vs.Spec.HTTP[0].Match).To(HaveLen(1))
-						/////////// Match[].URI
-						Expect(vs.Spec.HTTP[0].Match[0].URI).NotTo(BeNil())
-						Expect(vs.Spec.HTTP[0].Match[0].URI.Exact).To(BeEmpty())
-						Expect(vs.Spec.HTTP[0].Match[0].URI.Prefix).To(BeEmpty())
-						Expect(vs.Spec.HTTP[0].Match[0].URI.Suffix).To(BeEmpty())
-						Expect(vs.Spec.HTTP[0].Match[0].URI.Regex).To(Equal(testPath))
-						Expect(vs.Spec.HTTP[0].Match[0].Scheme).To(BeNil())
-						Expect(vs.Spec.HTTP[0].Match[0].Method).To(BeNil())
-						Expect(vs.Spec.HTTP[0].Match[0].Authority).To(BeNil())
-						Expect(vs.Spec.HTTP[0].Match[0].Headers).To(BeNil())
-						Expect(vs.Spec.HTTP[0].Match[0].Port).To(BeZero())
-						Expect(vs.Spec.HTTP[0].Match[0].SourceLabels).To(BeNil())
-						Expect(vs.Spec.HTTP[0].Match[0].Gateways).To(BeNil())
-						////// HTTP.Route[]
-						Expect(vs.Spec.HTTP[0].Route).To(HaveLen(1))
-						Expect(vs.Spec.HTTP[0].Route[0].Destination.Host).To(Equal(testOathkeeperSvcURL))
-						Expect(vs.Spec.HTTP[0].Route[0].Destination.Subset).To(Equal(""))
-						Expect(vs.Spec.HTTP[0].Route[0].Destination.Port.Name).To(Equal(""))
-						Expect(vs.Spec.HTTP[0].Route[0].Destination.Port.Number).To(Equal(testOathkeeperPort))
-						Expect(vs.Spec.HTTP[0].Route[0].Weight).To(BeZero())
-						Expect(vs.Spec.HTTP[0].Route[0].Headers).To(BeNil())
-						//CORS
-						Expect(vs.Spec.HTTP[0].CorsPolicy).NotTo(BeNil())
-						Expect(vs.Spec.HTTP[0].CorsPolicy.AllowOrigin).To(Equal(TestAllowOrigin))
-						Expect(vs.Spec.HTTP[0].CorsPolicy.AllowMethods).To(Equal(TestAllowMethods))
-						Expect(vs.Spec.HTTP[0].CorsPolicy.AllowHeaders).To(Equal(TestAllowHeaders))
-						//Others
-						Expect(vs.Spec.HTTP[0].Rewrite).To(BeNil())
-						Expect(vs.Spec.HTTP[0].WebsocketUpgrade).To(BeFalse())
-						Expect(vs.Spec.HTTP[0].Timeout).To(BeEmpty())
-						Expect(vs.Spec.HTTP[0].Retries).To(BeNil())
-						Expect(vs.Spec.HTTP[0].Fault).To(BeNil())
-						Expect(vs.Spec.HTTP[0].Mirror).To(BeNil())
-						Expect(vs.Spec.HTTP[0].DeprecatedAppendHeaders).To(BeNil())
-						Expect(vs.Spec.HTTP[0].Headers).To(BeNil())
-						Expect(vs.Spec.HTTP[0].RemoveResponseHeaders).To(BeNil())
 
-						//Spec.TCP
-						Expect(vs.Spec.TCP).To(BeNil())
-						//Spec.TLS
-						Expect(vs.Spec.TLS).To(BeNil())
+						expectedSpec := builders.VirtualServiceSpec().
+							Host(testServiceHost).
+							Gateway(testGatewayURL).
+							HTTP(builders.HTTPRoute().
+								Match(builders.MatchRequest().URI().Regex(testPath)).
+								Route(builders.RouteDestination().Host(testOathkeeperSvcURL).Port(testOathkeeperPort)).
+								CorsPolicy(builders.CorsPolicy().
+									AllowHeader("header1", "header2").
+									AllowMethod("GET", "POST", "PUT", "DELETE").
+									AllowOrigin("*")))
+
+						Expect(vs.Spec).To(Equal(*expectedSpec.Get()))
 
 						//Verify Rule
 						expectedRuleMatchURL := fmt.Sprintf("<http|https>://%s<%s>", testServiceHost, testPath)
@@ -344,56 +307,25 @@ var _ = Describe("APIRule Controller", func() {
 
 						//Meta
 						verifyOwnerReference(vs.ObjectMeta, apiRuleName, gatewayv1alpha1.GroupVersion.String(), kind)
-						//Spec.Hosts
-						Expect(vs.Spec.Hosts).To(HaveLen(1))
-						Expect(vs.Spec.Hosts[0]).To(Equal(testServiceHost))
-						//Spec.Gateways
-						Expect(vs.Spec.Gateways).To(HaveLen(1))
-						Expect(vs.Spec.Gateways[0]).To(Equal(testGatewayURL))
-						//Spec.HTTP
-						Expect(vs.Spec.HTTP).To(HaveLen(2))
-						////// HTTP.Match[]
-						Expect(vs.Spec.HTTP[0].Match).To(HaveLen(1))
-						/////////// Match[].URI
-						Expect(vs.Spec.HTTP[0].Match[0].URI).NotTo(BeNil())
-						Expect(vs.Spec.HTTP[0].Match[0].URI.Exact).To(BeEmpty())
-						Expect(vs.Spec.HTTP[0].Match[0].URI.Prefix).To(BeEmpty())
-						Expect(vs.Spec.HTTP[0].Match[0].URI.Suffix).To(BeEmpty())
-						Expect(vs.Spec.HTTP[0].Match[0].URI.Regex).To(Equal("/img"))
-						Expect(vs.Spec.HTTP[0].Match[0].Scheme).To(BeNil())
-						Expect(vs.Spec.HTTP[0].Match[0].Method).To(BeNil())
-						Expect(vs.Spec.HTTP[0].Match[0].Authority).To(BeNil())
-						Expect(vs.Spec.HTTP[0].Match[0].Headers).To(BeNil())
-						Expect(vs.Spec.HTTP[0].Match[0].Port).To(BeZero())
-						Expect(vs.Spec.HTTP[0].Match[0].SourceLabels).To(BeNil())
-						Expect(vs.Spec.HTTP[0].Match[0].Gateways).To(BeNil())
-						////// HTTP.Route[]
-						Expect(vs.Spec.HTTP[0].Route).To(HaveLen(1))
-						Expect(vs.Spec.HTTP[0].Route[0].Destination.Host).To(Equal(testOathkeeperSvcURL))
-						Expect(vs.Spec.HTTP[0].Route[0].Destination.Subset).To(Equal(""))
-						Expect(vs.Spec.HTTP[0].Route[0].Destination.Port.Name).To(Equal(""))
-						Expect(vs.Spec.HTTP[0].Route[0].Destination.Port.Number).To(Equal(testOathkeeperPort))
-						Expect(vs.Spec.HTTP[0].Route[0].Weight).To(BeZero())
-						Expect(vs.Spec.HTTP[0].Route[0].Headers).To(BeNil())
-						//CORS
-						Expect(vs.Spec.HTTP[0].CorsPolicy).NotTo(BeNil())
-						Expect(vs.Spec.HTTP[0].CorsPolicy.AllowOrigin).To(Equal(TestAllowOrigin))
-						Expect(vs.Spec.HTTP[0].CorsPolicy.AllowMethods).To(Equal(TestAllowMethods))
-						Expect(vs.Spec.HTTP[0].CorsPolicy.AllowHeaders).To(Equal(TestAllowHeaders))
-						//Others
-						Expect(vs.Spec.HTTP[0].Rewrite).To(BeNil())
-						Expect(vs.Spec.HTTP[0].WebsocketUpgrade).To(BeFalse())
-						Expect(vs.Spec.HTTP[0].Timeout).To(BeEmpty())
-						Expect(vs.Spec.HTTP[0].Retries).To(BeNil())
-						Expect(vs.Spec.HTTP[0].Fault).To(BeNil())
-						Expect(vs.Spec.HTTP[0].Mirror).To(BeNil())
-						Expect(vs.Spec.HTTP[0].DeprecatedAppendHeaders).To(BeNil())
-						Expect(vs.Spec.HTTP[0].Headers).To(BeNil())
-						Expect(vs.Spec.HTTP[0].RemoveResponseHeaders).To(BeNil())
-						//Spec.TCP
-						Expect(vs.Spec.TCP).To(BeNil())
-						//Spec.TLS
-						Expect(vs.Spec.TLS).To(BeNil())
+
+						corsPolicyBuilder := builders.CorsPolicy().
+							AllowHeader("header1", "header2").
+							AllowMethod("GET", "POST", "PUT", "DELETE").
+							AllowOrigin("*")
+
+						expectedSpec := builders.VirtualServiceSpec().
+							Host(testServiceHost).
+							Gateway(testGatewayURL).
+							HTTP(builders.HTTPRoute().
+								Match(builders.MatchRequest().URI().Regex("/img")).
+								Route(builders.RouteDestination().Host(testOathkeeperSvcURL).Port(testOathkeeperPort)).
+								CorsPolicy(corsPolicyBuilder)).
+							HTTP(builders.HTTPRoute().
+								Match(builders.MatchRequest().URI().Regex("/headers")).
+								Route(builders.RouteDestination().Host(testOathkeeperSvcURL).Port(testOathkeeperPort)).
+								CorsPolicy(corsPolicyBuilder))
+
+						Expect(vs.Spec).To(Equal(*expectedSpec.Get()))
 
 						//Verify Rule1
 						expectedRuleMatchURL := fmt.Sprintf("<http|https>://%s<%s>", testServiceHost, "/img")
@@ -530,73 +462,33 @@ var _ = Describe("APIRule Controller", func() {
 
 						//Meta
 						verifyOwnerReference(vs.ObjectMeta, apiRuleName, gatewayv1alpha1.GroupVersion.String(), kind)
-						//Spec.Hosts
-						Expect(vs.Spec.Hosts).To(HaveLen(1))
-						Expect(vs.Spec.Hosts[0]).To(Equal(testServiceHost))
-						//Spec.Gateways
-						Expect(vs.Spec.Gateways).To(HaveLen(1))
-						Expect(vs.Spec.Gateways[0]).To(Equal(testGatewayURL))
-						//Spec.HTTP
-						Expect(vs.Spec.HTTP).To(HaveLen(4))
-						//HTTP.Match[]
-						Expect(vs.Spec.HTTP[0].Match).To(HaveLen(1))
 
-						Expect(vs.Spec.HTTP[0].Match[0].URI.Regex).To(Equal(rule1.Path))
-						Expect(vs.Spec.HTTP[1].Match[0].URI.Regex).To(Equal(rule2.Path))
-						Expect(vs.Spec.HTTP[2].Match[0].URI.Regex).To(Equal(rule3.Path))
-						Expect(vs.Spec.HTTP[3].Match[0].URI.Regex).To(Equal(rule4.Path))
+						corsPolicyBuilder := builders.CorsPolicy().
+							AllowHeader("header1", "header2").
+							AllowMethod("GET", "POST", "PUT", "DELETE").
+							AllowOrigin("*")
 
-						for _, h := range vs.Spec.HTTP {
+						expectedSpec := builders.VirtualServiceSpec().
+							Host(testServiceHost).
+							Gateway(testGatewayURL).
+							HTTP(builders.HTTPRoute().
+								Match(builders.MatchRequest().URI().Regex("/img")).
+								Route(builders.RouteDestination().Host(testOathkeeperSvcURL).Port(testOathkeeperPort)).
+								CorsPolicy(corsPolicyBuilder)).
+							HTTP(builders.HTTPRoute().
+								Match(builders.MatchRequest().URI().Regex("/headers")).
+								Route(builders.RouteDestination().Host(testOathkeeperSvcURL).Port(testOathkeeperPort)).
+								CorsPolicy(corsPolicyBuilder)).
+							HTTP(builders.HTTPRoute().
+								Match(builders.MatchRequest().URI().Regex("/status")).
+								Route(builders.RouteDestination().Host(testOathkeeperSvcURL).Port(testOathkeeperPort)).
+								CorsPolicy(corsPolicyBuilder)).
+							HTTP(builders.HTTPRoute().
+								Match(builders.MatchRequest().URI().Regex("/favicon")).
+								Route(builders.RouteDestination().Host("httpbin.atgo-system.svc.cluster.local").Port(443)). // "allow", no oathkeeper rule!
+								CorsPolicy(corsPolicyBuilder))
 
-							//Match[].URI
-							Expect(h.Match[0].URI).NotTo(BeNil())
-							Expect(h.Match[0].URI.Exact).To(BeEmpty())
-							Expect(h.Match[0].URI.Prefix).To(BeEmpty())
-							Expect(h.Match[0].URI.Suffix).To(BeEmpty())
-							Expect(h.Match[0].Scheme).To(BeNil())
-							Expect(h.Match[0].Method).To(BeNil())
-							Expect(h.Match[0].Authority).To(BeNil())
-							Expect(h.Match[0].Headers).To(BeNil())
-							Expect(h.Match[0].Port).To(BeZero())
-							Expect(h.Match[0].SourceLabels).To(BeNil())
-							Expect(h.Match[0].Gateways).To(BeNil())
-
-							//HTTP.Route[]
-							Expect(h.Route).To(HaveLen(1))
-
-							url, port := testOathkeeperSvcURL, testOathkeeperPort
-							if h.Match[0].URI.Regex == "/favicon" { // allow, no oathkeeper rule
-								url, port = "httpbin.atgo-system.svc.cluster.local", 443
-							}
-							Expect(h.Route[0].Destination.Host).To(Equal(url))
-							Expect(h.Route[0].Destination.Subset).To(Equal(""))
-							Expect(h.Route[0].Destination.Port.Name).To(Equal(""))
-							Expect(h.Route[0].Destination.Port.Number).To(Equal(port))
-							Expect(h.Route[0].Weight).To(BeZero())
-							Expect(h.Route[0].Headers).To(BeNil())
-
-							//CORS
-							Expect(h.CorsPolicy).NotTo(BeNil())
-							Expect(h.CorsPolicy.AllowOrigin).To(Equal(TestAllowOrigin))
-							Expect(h.CorsPolicy.AllowMethods).To(Equal(TestAllowMethods))
-							Expect(h.CorsPolicy.AllowHeaders).To(Equal(TestAllowHeaders))
-
-							//Others
-							Expect(h.Rewrite).To(BeNil())
-							Expect(h.WebsocketUpgrade).To(BeFalse())
-							Expect(h.Timeout).To(BeEmpty())
-							Expect(h.Retries).To(BeNil())
-							Expect(h.Fault).To(BeNil())
-							Expect(h.Mirror).To(BeNil())
-							Expect(h.DeprecatedAppendHeaders).To(BeNil())
-							Expect(h.Headers).To(BeNil())
-							Expect(h.RemoveResponseHeaders).To(BeNil())
-						}
-
-						//Spec.TCP
-						Expect(vs.Spec.TCP).To(BeNil())
-						//Spec.TLS
-						Expect(vs.Spec.TLS).To(BeNil())
+						Expect(vs.Spec).To(Equal(*expectedSpec.Get()))
 
 						//Verify Rules
 						for _, tc := range []struct {
