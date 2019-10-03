@@ -48,40 +48,106 @@ var _ = Describe("APIRule Controller", func() {
 	var testScopes = []string{"foo", "bar"}
 	var testMutators = []*rulev1alpha1.Mutator{
 		{
-			Handler: testHandler("noop"),
+			Handler: noConfigHandler("noop"),
 		},
 		{
-			Handler: testHandler("idToken"),
+			Handler: noConfigHandler("idToken"),
 		},
 	}
 
-	/*
-		Context("when updating the APIRule with multiple paths", func() {
-			It("should create, update and delete rules depending on patch match", func() {
-				rule1 := testRule("/rule1", []string{"GET"}, testMutators, nonEmptyConfig)
-				rule2 := testRule("/rule2", []string{"PUT"}, testMutators, nonEmptyConfig)
-				rule3 := testRule("/rule3", []string{"DELETE"}, testMutators, nonEmptyConfig)
-				instance := testInstance(apiRuleName, testNamespace, testServiceName, testServiceHost, testServicePort, []gatewayv1alpha1.Rule{rule})
-			})
+	Context("when updating the APIRule with multiple paths", func() {
+
+		It("should create, update and delete rules depending on patch match", func() {
+
+			rule1 := testRule("/rule1", []string{"GET"}, testMutators, noConfigHandler("noop"))
+			rule2 := testRule("/rule2", []string{"PUT"}, testMutators, noConfigHandler("unauthorized"))
+			rule3 := testRule("/rule3", []string{"DELETE"}, testMutators, noConfigHandler("anonymous"))
+
+			apiRuleName := generateTestName(testNameBase, testIDLength)
+			testServiceHost := "httpbin5.kyma.local"
+
+			instance := testInstance(apiRuleName, testNamespace, testServiceName, testServiceHost, testServicePort, []gatewayv1alpha1.Rule{rule1, rule2, rule3})
+
+			err := c.Create(context.TODO(), instance)
+			if apierrors.IsInvalid(err) {
+				Fail(fmt.Sprintf("failed to create object, got an invalid object error: %v", err))
+				return
+			}
+			Expect(err).NotTo(HaveOccurred())
+			defer c.Delete(context.TODO(), instance)
+
+			expectedRequest := reconcile.Request{NamespacedName: types.NamespacedName{Name: apiRuleName, Namespace: testNamespace}}
+
+			Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
+
+			labels := make(map[string]string)
+			labels[processing.OwnerLabel] = fmt.Sprintf("%s.%s", apiRuleName, testNamespace)
+			matchingLabelsFunc := client.MatchingLabels(labels)
+			//TODO: Extract to a function
+			{
+				rlList := rulev1alpha1.RuleList{}
+
+				err = c.List(context.TODO(), &rlList, matchingLabelsFunc)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(rlList.Items).To(HaveLen(3))
+
+				rules := make(map[string]rulev1alpha1.Rule)
+
+				for _, rule := range rlList.Items {
+					rules[rule.Spec.Match.URL] = rule
+				}
+
+				//Verify rules before update
+				Expect(rules["<http|https>://httpbin5.kyma.local</rule1>"].Spec.Match.Methods[0]).To(Equal("GET"))
+				Expect(rules["<http|https>://httpbin5.kyma.local</rule2>"].Spec.Match.Methods[0]).To(Equal("PUT"))
+				Expect(rules["<http|https>://httpbin5.kyma.local</rule3>"].Spec.Match.Methods[0]).To(Equal("DELETE"))
+			}
+
+			//Update APIRule
+			created := gatewayv1alpha1.APIRule{}
+			err = c.Get(context.TODO(), client.ObjectKey{Name: apiRuleName, Namespace: testNamespace}, &created)
+			Expect(err).NotTo(HaveOccurred())
+
+			rule4 := testRule("/rule4", []string{"POST"}, testMutators, noConfigHandler("cookie_session"))
+			created.Spec.Rules = []gatewayv1alpha1.Rule{rule1, rule4}
+
+			c.Update(context.TODO(), &created)
+
+			expectedRequest = reconcile.Request{NamespacedName: types.NamespacedName{Name: apiRuleName, Namespace: testNamespace}}
+			Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
+
+			updated := gatewayv1alpha1.APIRule{}
+			err = c.Get(context.TODO(), client.ObjectKey{Name: apiRuleName, Namespace: testNamespace}, &updated)
+			Expect(err).NotTo(HaveOccurred())
+
+			//Otherwise client in test fetches old Rules.
+			time.Sleep(1 * time.Second)
+
+			{
+				rlList2 := rulev1alpha1.RuleList{}
+
+				err = c.List(context.TODO(), &rlList2, matchingLabelsFunc)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(rlList2.Items).To(HaveLen(2))
+
+				rules2 := make(map[string]rulev1alpha1.Rule)
+
+				for _, rule := range rlList2.Items {
+					rules2[rule.Spec.Match.URL] = rule
+				}
+
+				//Verify rules before update
+				Expect(rules2["<http|https>://httpbin5.kyma.local</rule1>"].Spec.Match.Methods[0]).To(Equal("GET"))
+				Expect(rules2["<http|https>://httpbin5.kyma.local</rule4>"].Spec.Match.Methods[0]).To(Equal("POST"))
+			}
 		})
-	*/
+	})
 
 	Context("when creating an APIRule for exposing service", func() {
 
 		It("Should report validation errors in CR status", func() {
-
-			/*
-				configJSON := fmt.Sprintf(`{
-								"required_scope": [%s]
-							}`, toCSVList(testScopes))
-
-				nonEmptyConfig := &rulev1alpha1.Handler{
-					Name: "noop",
-					Config: &runtime.RawExtension{
-						Raw: []byte(configJSON),
-					},
-				}
-			*/
 
 			invalidConfig := testOauthHandler(testScopes)
 			invalidConfig.Name = "noop"
@@ -116,9 +182,13 @@ var _ = Describe("APIRule Controller", func() {
 			Expect(created.Status.APIRuleStatus.Description).To(ContainSubstring("Attribute \".spec.rules[1].accessStrategies[0].config\": strategy: noop does not support configuration"))
 			Expect(created.Status.APIRuleStatus.Description).To(ContainSubstring("1 more error(s)..."))
 
+			labels := make(map[string]string)
+			labels[processing.OwnerLabel] = fmt.Sprintf("%s.%s", apiRuleName, testNamespace)
+			matchingLabelsFunc := client.MatchingLabels(labels)
+
 			//Verify VirtualService is not created
 			vsList := networkingv1alpha3.VirtualServiceList{}
-			err = c.List(context.TODO(), &vsList)
+			err = c.List(context.TODO(), &vsList, matchingLabelsFunc)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(vsList.Items).To(HaveLen(0))
 		})
@@ -274,21 +344,6 @@ var _ = Describe("APIRule Controller", func() {
 			Context("secured with JWT token authentication,", func() {
 				Context("in a happy-path scenario", func() {
 					It("should create a VirtualService and an AccessRules", func() {
-
-						/*
-							configJSON := fmt.Sprintf(`
-								{
-									"trusted_issuers": ["%s"],
-									"jwks": [],
-									"required_scope": [%s]
-							}`, testIssuer, toCSVList(testScopes))
-							jwtConfig := &rulev1alpha1.Handler{
-								Name: "jwt",
-								Config: &runtime.RawExtension{
-									Raw: []byte(configJSON),
-								},
-							}
-						*/
 
 						apiRuleName := generateTestName(testNameBase, testIDLength)
 						testServiceHost := "httpbin3.kyma.local"
@@ -477,41 +532,12 @@ var _ = Describe("APIRule Controller", func() {
 				Context("in the happy path scenario", func() {
 					It("should create a VS with corresponding matchers and access rules for each secured path", func() {
 
-						/*
-								configJWT := fmt.Sprintf(`
-									{
-										"trusted_issuers": ["%s"],
-										"jwks": [],
-										"required_scope": [%s]
-								}`, testIssuer, toCSVList(testScopes))
-
-								jwtHandler := &rulev1alpha1.Handler{
-									Name: "jwt",
-									Config: &runtime.RawExtension{
-										Raw: []byte(configJWT),
-									},
-								}
-
-								configOAuth := fmt.Sprintf(`{
-									"required_scope": [%s]
-								}`, toCSVList(testScopes))
-
-								oauthHandler := &rulev1alpha1.Handler{
-									Name: "oauth2_introspection",
-									Config: &runtime.RawExtension{
-										Raw: []byte(configOAuth),
-									},
-								}
-							noopHandler := &rulev1alpha1.Handler{Name: "noop"}
-							allowHandler := &rulev1alpha1.Handler{Name: "allow"}
-
-						*/
 						jwtHandler := testJWTHandler(testIssuer, testScopes)
 						oauthHandler := testOauthHandler(testScopes)
 						rule1 := testRule("/img", []string{"GET"}, testMutators, jwtHandler)
 						rule2 := testRule("/headers", []string{"GET"}, testMutators, oauthHandler)
-						rule3 := testRule("/status", []string{"GET"}, testMutators, testHandler("noop"))
-						rule4 := testRule("/favicon", []string{"GET"}, nil, testHandler("allow"))
+						rule3 := testRule("/status", []string{"GET"}, testMutators, noConfigHandler("noop"))
+						rule4 := testRule("/favicon", []string{"GET"}, nil, noConfigHandler("allow"))
 
 						apiRuleName := generateTestName(testNameBase, testIDLength)
 						testServiceHost := "httpbin4.kyma.local"
@@ -785,7 +811,7 @@ func testOauthHandler(scopes []string) *rulev1alpha1.Handler {
 	}
 }
 
-func testHandler(name string) *rulev1alpha1.Handler {
+func noConfigHandler(name string) *rulev1alpha1.Handler {
 	return &rulev1alpha1.Handler{
 		Name: name,
 	}

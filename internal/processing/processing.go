@@ -96,12 +96,11 @@ func (f *Factory) GetActualState(ctx context.Context, api *gatewayv1alpha1.APIRu
 	}
 
 	state.accessRules = make(map[string]*rulev1alpha1.Rule)
-	for i, ar := range arList.Items {
-		//Needs to be like that cause address to ar is always the same
-		obj := arList.Items[i]
-		state.accessRules[ar.Spec.Match.URL] = &obj
-	}
 
+	for i := range arList.Items {
+		obj := arList.Items[i]
+		state.accessRules[obj.Spec.Match.URL] = &obj
+	}
 	return &state, nil
 }
 
@@ -157,6 +156,7 @@ func (f *Factory) CalculateDiff(requiredState *State, actualState *State) *Patch
 
 //ApplyDiff method applies computed diff
 func (f *Factory) ApplyDiff(ctx context.Context, patch *Patch) error {
+
 	err := f.applyObjDiff(ctx, patch.virtualService)
 	if err != nil {
 		return err
