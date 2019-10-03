@@ -48,35 +48,47 @@ var _ = Describe("APIRule Controller", func() {
 	var testScopes = []string{"foo", "bar"}
 	var testMutators = []*rulev1alpha1.Mutator{
 		{
-			Handler: &rulev1alpha1.Handler{
-				Name: "noop",
-			},
+			Handler: testHandler("noop"),
 		},
 		{
-			Handler: &rulev1alpha1.Handler{
-				Name: "idtoken",
-			},
+			Handler: testHandler("idToken"),
 		},
 	}
+
+	/*
+		Context("when updating the APIRule with multiple paths", func() {
+			It("should create, update and delete rules depending on patch match", func() {
+				rule1 := testRule("/rule1", []string{"GET"}, testMutators, nonEmptyConfig)
+				rule2 := testRule("/rule2", []string{"PUT"}, testMutators, nonEmptyConfig)
+				rule3 := testRule("/rule3", []string{"DELETE"}, testMutators, nonEmptyConfig)
+				instance := testInstance(apiRuleName, testNamespace, testServiceName, testServiceHost, testServicePort, []gatewayv1alpha1.Rule{rule})
+			})
+		})
+	*/
 
 	Context("when creating an APIRule for exposing service", func() {
 
 		It("Should report validation errors in CR status", func() {
 
-			configJSON := fmt.Sprintf(`{
-							"required_scope": [%s]
-						}`, toCSVList(testScopes))
+			/*
+				configJSON := fmt.Sprintf(`{
+								"required_scope": [%s]
+							}`, toCSVList(testScopes))
 
-			nonEmptyConfig := &rulev1alpha1.Handler{
-				Name: "noop",
-				Config: &runtime.RawExtension{
-					Raw: []byte(configJSON),
-				},
-			}
+				nonEmptyConfig := &rulev1alpha1.Handler{
+					Name: "noop",
+					Config: &runtime.RawExtension{
+						Raw: []byte(configJSON),
+					},
+				}
+			*/
+
+			invalidConfig := testOauthHandler(testScopes)
+			invalidConfig.Name = "noop"
 
 			apiRuleName := generateTestName(testNameBase, testIDLength)
 			testServiceHost := "httpbin.kyma.local"
-			rule := testRule(testPath, testMethods, testMutators, nonEmptyConfig)
+			rule := testRule(testPath, testMethods, testMutators, invalidConfig)
 			instance := testInstance(apiRuleName, testNamespace, testServiceName, testServiceHost, testServicePort, []gatewayv1alpha1.Rule{rule})
 			instance.Spec.Rules = append(instance.Spec.Rules, instance.Spec.Rules[0]) //Duplicate entry
 			instance.Spec.Rules = append(instance.Spec.Rules, instance.Spec.Rules[0]) //Duplicate entry
@@ -115,20 +127,10 @@ var _ = Describe("APIRule Controller", func() {
 			Context("secured with Oauth2 introspection,", func() {
 				Context("in a happy-path scenario", func() {
 					It("should create a VirtualService and an AccessRule", func() {
-						configJSON := fmt.Sprintf(`{
-							"required_scope": [%s]
-						}`, toCSVList(testScopes))
-
-						oauthConfig := &rulev1alpha1.Handler{
-							Name: "oauth2_introspection",
-							Config: &runtime.RawExtension{
-								Raw: []byte(configJSON),
-							},
-						}
 
 						apiRuleName := generateTestName(testNameBase, testIDLength)
 						testServiceHost := "httpbin2.kyma.local"
-						rule := testRule(testPath, testMethods, testMutators, oauthConfig)
+						rule := testRule(testPath, testMethods, testMutators, testOauthHandler(testScopes))
 						instance := testInstance(apiRuleName, testNamespace, testServiceName, testServiceHost, testServicePort, []gatewayv1alpha1.Rule{rule})
 
 						err := c.Create(context.TODO(), instance)
@@ -272,23 +274,26 @@ var _ = Describe("APIRule Controller", func() {
 			Context("secured with JWT token authentication,", func() {
 				Context("in a happy-path scenario", func() {
 					It("should create a VirtualService and an AccessRules", func() {
-						configJSON := fmt.Sprintf(`
-							{
-								"trusted_issuers": ["%s"],
-								"jwks": [],
-								"required_scope": [%s]
-						}`, testIssuer, toCSVList(testScopes))
-						jwtConfig := &rulev1alpha1.Handler{
-							Name: "jwt",
-							Config: &runtime.RawExtension{
-								Raw: []byte(configJSON),
-							},
-						}
+
+						/*
+							configJSON := fmt.Sprintf(`
+								{
+									"trusted_issuers": ["%s"],
+									"jwks": [],
+									"required_scope": [%s]
+							}`, testIssuer, toCSVList(testScopes))
+							jwtConfig := &rulev1alpha1.Handler{
+								Name: "jwt",
+								Config: &runtime.RawExtension{
+									Raw: []byte(configJSON),
+								},
+							}
+						*/
 
 						apiRuleName := generateTestName(testNameBase, testIDLength)
 						testServiceHost := "httpbin3.kyma.local"
-						rule1 := testRule("/img", []string{"GET"}, testMutators, jwtConfig)
-						rule2 := testRule("/headers", []string{"GET"}, testMutators, jwtConfig)
+						rule1 := testRule("/img", []string{"GET"}, testMutators, testJWTHandler(testIssuer, testScopes))
+						rule2 := testRule("/headers", []string{"GET"}, testMutators, testJWTHandler(testIssuer, testScopes))
 						instance := testInstance(apiRuleName, testNamespace, testServiceName, testServiceHost, testServicePort, []gatewayv1alpha1.Rule{rule1, rule2})
 
 						err := c.Create(context.TODO(), instance)
@@ -472,43 +477,41 @@ var _ = Describe("APIRule Controller", func() {
 				Context("in the happy path scenario", func() {
 					It("should create a VS with corresponding matchers and access rules for each secured path", func() {
 
-						configJWT := fmt.Sprintf(`
-							{
-								"trusted_issuers": ["%s"],
-								"jwks": [],
-								"required_scope": [%s]
-						}`, testIssuer, toCSVList(testScopes))
+						/*
+								configJWT := fmt.Sprintf(`
+									{
+										"trusted_issuers": ["%s"],
+										"jwks": [],
+										"required_scope": [%s]
+								}`, testIssuer, toCSVList(testScopes))
 
-						configOAuth := fmt.Sprintf(`{
-							"required_scope": [%s]
-						}`, toCSVList(testScopes))
+								jwtHandler := &rulev1alpha1.Handler{
+									Name: "jwt",
+									Config: &runtime.RawExtension{
+										Raw: []byte(configJWT),
+									},
+								}
 
-						jwtHandler := &rulev1alpha1.Handler{
-							Name: "jwt",
-							Config: &runtime.RawExtension{
-								Raw: []byte(configJWT),
-							},
-						}
+								configOAuth := fmt.Sprintf(`{
+									"required_scope": [%s]
+								}`, toCSVList(testScopes))
 
-						oauthHandler := &rulev1alpha1.Handler{
-							Name: "oauth2_introspection",
-							Config: &runtime.RawExtension{
-								Raw: []byte(configOAuth),
-							},
-						}
+								oauthHandler := &rulev1alpha1.Handler{
+									Name: "oauth2_introspection",
+									Config: &runtime.RawExtension{
+										Raw: []byte(configOAuth),
+									},
+								}
+							noopHandler := &rulev1alpha1.Handler{Name: "noop"}
+							allowHandler := &rulev1alpha1.Handler{Name: "allow"}
 
-						noopHandler := &rulev1alpha1.Handler{
-							Name: "noop",
-						}
-
-						allowHandler := &rulev1alpha1.Handler{
-							Name: "allow",
-						}
-
+						*/
+						jwtHandler := testJWTHandler(testIssuer, testScopes)
+						oauthHandler := testOauthHandler(testScopes)
 						rule1 := testRule("/img", []string{"GET"}, testMutators, jwtHandler)
 						rule2 := testRule("/headers", []string{"GET"}, testMutators, oauthHandler)
-						rule3 := testRule("/status", []string{"GET"}, testMutators, noopHandler)
-						rule4 := testRule("/favicon", []string{"GET"}, nil, allowHandler)
+						rule3 := testRule("/status", []string{"GET"}, testMutators, testHandler("noop"))
+						rule4 := testRule("/favicon", []string{"GET"}, nil, testHandler("allow"))
 
 						apiRuleName := generateTestName(testNameBase, testIDLength)
 						testServiceHost := "httpbin4.kyma.local"
@@ -612,8 +615,8 @@ var _ = Describe("APIRule Controller", func() {
 							handler string
 							config  []byte
 						}{
-							{path: "img", handler: "jwt", config: []byte(configJWT)},
-							{path: "headers", handler: "oauth2_introspection", config: []byte(configOAuth)},
+							{path: "img", handler: "jwt", config: jwtHandler.Config.Raw},
+							{path: "headers", handler: "oauth2_introspection", config: oauthHandler.Config.Raw},
 							{path: "status", handler: "noop", config: nil},
 						} {
 							expectedRuleMatchURL := fmt.Sprintf("<http|https>://%s</%s>", testServiceHost, tc.path)
@@ -709,14 +712,14 @@ func toCSVList(input []string) string {
 	return res
 }
 
-func testRule(path string, methods []string, mutators []*rulev1alpha1.Mutator, config *rulev1alpha1.Handler) gatewayv1alpha1.Rule {
+func testRule(path string, methods []string, mutators []*rulev1alpha1.Mutator, handler *rulev1alpha1.Handler) gatewayv1alpha1.Rule {
 	return gatewayv1alpha1.Rule{
 		Path:     path,
 		Methods:  methods,
 		Mutators: mutators,
 		AccessStrategies: []*rulev1alpha1.Authenticator{
 			{
-				Handler: config,
+				Handler: handler,
 			},
 		},
 	}
@@ -749,6 +752,43 @@ func verifyOwnerReference(m metav1.ObjectMeta, name, version, kind string) {
 	Expect(m.OwnerReferences[0].Name).To(Equal(name))
 	Expect(m.OwnerReferences[0].UID).NotTo(BeEmpty())
 	Expect(*m.OwnerReferences[0].Controller).To(BeTrue())
+}
+
+func testJWTHandler(issuer string, scopes []string) *rulev1alpha1.Handler {
+
+	configJSON := fmt.Sprintf(`
+		{
+			"trusted_issuers": ["%s"],
+			"jwks": [],
+			"required_scope": [%s]
+	}`, issuer, toCSVList(scopes))
+
+	return &rulev1alpha1.Handler{
+		Name: "jwt",
+		Config: &runtime.RawExtension{
+			Raw: []byte(configJSON),
+		},
+	}
+}
+
+func testOauthHandler(scopes []string) *rulev1alpha1.Handler {
+
+	configJSON := fmt.Sprintf(`{
+		"required_scope": [%s]
+	}`, toCSVList(scopes))
+
+	return &rulev1alpha1.Handler{
+		Name: "oauth2_introspection",
+		Config: &runtime.RawExtension{
+			Raw: []byte(configJSON),
+		},
+	}
+}
+
+func testHandler(name string) *rulev1alpha1.Handler {
+	return &rulev1alpha1.Handler{
+		Name: name,
+	}
 }
 
 //Converts a []interface{} to a string slice. Panics if given object is of other type.
