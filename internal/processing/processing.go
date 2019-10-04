@@ -217,9 +217,9 @@ func (f *Factory) generateVirtualService(api *gatewayv1alpha1.APIRule) *networki
 		httpRouteBuilder.Route(builders.RouteDestination().Host(host).Port(port))
 		httpRouteBuilder.Match(builders.MatchRequest().URI().Regex(rule.Path))
 		httpRouteBuilder.CorsPolicy(builders.CorsPolicy().
-			AllowOrigin(f.corsConfig.AllowOrigin...).
-			AllowMethod(f.corsConfig.AllowMethods...).
-			AllowHeader(f.corsConfig.AllowHeaders...))
+			AllowOrigins(f.corsConfig.AllowOrigin...).
+			AllowMethods(f.corsConfig.AllowMethods...).
+			AllowHeaders(f.corsConfig.AllowHeaders...))
 		vsSpecBuilder.HTTP(httpRouteBuilder)
 	}
 

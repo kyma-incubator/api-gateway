@@ -192,7 +192,7 @@ func (cp *corsPolicy) Get() *networkingv1alpha3.CorsPolicy {
 	return cp.value
 }
 
-func (cp *corsPolicy) AllowHeader(val ...string) *corsPolicy {
+func (cp *corsPolicy) AllowHeaders(val ...string) *corsPolicy {
 	if len(val) == 0 {
 		cp.value.AllowHeaders = nil
 	} else {
@@ -201,7 +201,7 @@ func (cp *corsPolicy) AllowHeader(val ...string) *corsPolicy {
 	return cp
 }
 
-func (cp *corsPolicy) AllowMethod(val ...string) *corsPolicy {
+func (cp *corsPolicy) AllowMethods(val ...string) *corsPolicy {
 	if len(val) == 0 {
 		cp.value.AllowMethods = nil
 	} else {
@@ -210,7 +210,7 @@ func (cp *corsPolicy) AllowMethod(val ...string) *corsPolicy {
 	return cp
 }
 
-func (cp *corsPolicy) AllowOrigin(val ...string) *corsPolicy {
+func (cp *corsPolicy) AllowOrigins(val ...string) *corsPolicy {
 	if len(val) == 0 {
 		cp.value.AllowOrigin = nil
 	} else {

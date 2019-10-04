@@ -57,9 +57,9 @@ var _ = Describe("APIRule Controller", func() {
 	}
 
 	var corsPolicyBuilder = builders.CorsPolicy().
-		AllowHeader("header1", "header2").
-		AllowMethod("GET", "POST", "PUT", "DELETE").
-		AllowOrigin("*")
+		AllowHeaders(TestAllowHeaders...).
+		AllowMethods(TestAllowMethods...).
+		AllowOrigins(TestAllowOrigins...)
 
 	Context("when updating the APIRule with multiple paths", func() {
 
