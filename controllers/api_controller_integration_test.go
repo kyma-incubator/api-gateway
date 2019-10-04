@@ -115,7 +115,8 @@ var _ = Describe("APIRule Controller", func() {
 			existingInstance.Spec.Service.Name = &newServiceName
 			existingInstance.Spec.Service.Port = &newServicePort
 
-			c.Update(context.TODO(), &existingInstance)
+			err = c.Update(context.TODO(), &existingInstance)
+			Expect(err).NotTo(HaveOccurred())
 
 			expectedRequest = reconcile.Request{NamespacedName: types.NamespacedName{Name: apiRuleName, Namespace: testNamespace}}
 			Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
@@ -229,14 +230,8 @@ var _ = Describe("APIRule Controller", func() {
 
 						rlList := getRuleList(matchingLabels)
 						Expect(rlList).To(HaveLen(1))
-
-						rules := make(map[string]rulev1alpha1.Rule)
-
-						for _, rule := range rlList {
-							rules[rule.Spec.Match.URL] = rule
-						}
-
-						rl := rules[expectedRuleMatchURL]
+						rl := rlList[0]
+						Expect(rl.Spec.Match.URL).To(Equal(expectedRuleMatchURL))
 
 						//Meta
 						Expect(rl.Name).To(HavePrefix(apiRuleName + "-"))
