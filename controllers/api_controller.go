@@ -66,10 +66,10 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		if apierrs.IsNotFound(err) {
 			//There is no APIRule. Nothing to process, dependent objects will be garbage-collected.
 			return doneReconcile()
-		} else {
-			//Nothing is yet processed: StatusSkipped
-			return r.setStatusForError(ctx, api, err, gatewayv1alpha1.StatusSkipped)
 		}
+
+		//Nothing is yet processed: StatusSkipped
+		return r.setStatusForError(ctx, api, err, gatewayv1alpha1.StatusSkipped)
 	}
 
 	//Prevent reconciliation after status update. It should be solved by controller-runtime implementation but still isn't.
@@ -133,6 +133,8 @@ func (r *APIReconciler) setStatus(ctx context.Context, api *gatewayv1alpha1.APIR
 
 //Sets APIRule status in error condition. Accepts an auxilary status code that is used to report VirtualService and AccessRule status.
 func (r *APIReconciler) setStatusForError(ctx context.Context, api *gatewayv1alpha1.APIRule, err error, auxStatusCode gatewayv1alpha1.StatusCode) (ctrl.Result, error) {
+	r.Log.Error(err, "Error during reconciliation")
+
 	virtualServiceStatus := &gatewayv1alpha1.APIRuleResourceStatus{
 		Code: auxStatusCode,
 	}
@@ -140,12 +142,7 @@ func (r *APIReconciler) setStatusForError(ctx context.Context, api *gatewayv1alp
 		Code: auxStatusCode,
 	}
 
-	res, updateStatusErr := r.updateStatusOrRetry(ctx, api, generateErrorStatus(err), virtualServiceStatus, accessRuleStatus)
-	if updateStatusErr != nil {
-		//Log the original error (it will be silently lost otherwise)
-		r.Log.Error(err, "Error during reconciliation")
-	}
-	return res, updateStatusErr
+	return r.updateStatusOrRetry(ctx, api, generateErrorStatus(err), virtualServiceStatus, accessRuleStatus)
 }
 
 //Updates api status. If there was an error during update, it returns the error so that entire reconcile loop is retried. If there is no error, returns a "reconcile success" value.
@@ -154,7 +151,7 @@ func (r *APIReconciler) updateStatusOrRetry(ctx context.Context, api *gatewayv1a
 	if updateStatusErr != nil {
 		return retryReconcile(updateStatusErr) //controller retries to set the correct status eventually.
 	}
-	//Fail fast: If status is updated, users know about the problem. We don't need to reconcile again.
+	//Fail fast: If status is updated, users are informed about the problem. We don't need to reconcile again.
 	return doneReconcile()
 }
 
