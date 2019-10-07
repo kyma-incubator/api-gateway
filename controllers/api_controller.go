@@ -121,6 +121,7 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return doneReconcile()
 }
 
+//Sets status of APIRule. Accepts an auxilary status code that is used to report VirtualService and AccessRule status.
 func (r *APIReconciler) setStatus(ctx context.Context, api *gatewayv1alpha1.APIRule, apiStatus *gatewayv1alpha1.APIRuleResourceStatus, auxStatusCode gatewayv1alpha1.StatusCode) (ctrl.Result, error) {
 	virtualServiceStatus := &gatewayv1alpha1.APIRuleResourceStatus{
 		Code: auxStatusCode,
@@ -131,7 +132,7 @@ func (r *APIReconciler) setStatus(ctx context.Context, api *gatewayv1alpha1.APIR
 	return r.updateStatusOrRetry(ctx, api, apiStatus, virtualServiceStatus, accessRuleStatus)
 }
 
-//Sets APIRule status in error condition. Accepts an auxilary status code that is used to report VirtualService and AccessRule status.
+//Sets status of APIRule in error condition. Accepts an auxilary status code that is used to report VirtualService and AccessRule status.
 func (r *APIReconciler) setStatusForError(ctx context.Context, api *gatewayv1alpha1.APIRule, err error, auxStatusCode gatewayv1alpha1.StatusCode) (ctrl.Result, error) {
 	r.Log.Error(err, "Error during reconciliation")
 
@@ -145,7 +146,7 @@ func (r *APIReconciler) setStatusForError(ctx context.Context, api *gatewayv1alp
 	return r.updateStatusOrRetry(ctx, api, generateErrorStatus(err), virtualServiceStatus, accessRuleStatus)
 }
 
-//Updates api status. If there was an error during update, it returns the error so that entire reconcile loop is retried. If there is no error, returns a "reconcile success" value.
+//Updates api status. If there was an error during update, returns the error so that entire reconcile loop is retried. If there is no error, returns a "reconcile success" value.
 func (r *APIReconciler) updateStatusOrRetry(ctx context.Context, api *gatewayv1alpha1.APIRule, apiStatus, virtualServiceStatus, accessRuleStatus *gatewayv1alpha1.APIRuleResourceStatus) (ctrl.Result, error) {
 	_, updateStatusErr := r.updateStatus(ctx, api, apiStatus, virtualServiceStatus, accessRuleStatus)
 	if updateStatusErr != nil {
