@@ -148,6 +148,10 @@ func getList(raw string) []string {
 func getNamespaceServiceMap(raw string) map[string][]string {
 	result := make(map[string][]string)
 	for _, s := range getList(raw) {
+		if !validation.ValidateServiceName(s) {
+			setupLog.Error(fmt.Errorf("invalid service in service-blacklist"), "unable to create controller", "controller", "Api")
+			os.Exit(1)
+		}
 		namespacedService := strings.Split(s, ".")
 		namespace := namespacedService[1]
 		service := namespacedService[0]
