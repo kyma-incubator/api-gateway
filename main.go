@@ -63,7 +63,7 @@ func main() {
 	flag.StringVar(&jwksURI, "jwks-uri", "", "URL of the provider's public key set to validate signature of the JWT")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
-	flag.StringVar(&blackListedServices, "service-blacklist", "kubernetes", "List of services to be blacklisted from exposure.")
+	flag.StringVar(&blackListedServices, "service-blacklist", "kubernetes.default,kube-dns.kube-system", "List of services to be blacklisted from exposure.")
 	flag.StringVar(&whiteListedDomains, "domain-whitelist", "", "List of domains to be allowed.")
 	flag.StringVar(&corsAllowOrigin, "cors-allow-origin", "*", "list of allowed origins")
 	flag.StringVar(&corsAllowMethods, "cors-allow-methods", "GET,POST,PUT,DELETE", "list of allowed methods")
