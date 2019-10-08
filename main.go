@@ -153,6 +153,5 @@ func getNamespaceServiceMap(raw string) map[string][]string {
 		service := namespacedService[0]
 		result[namespace] = append(result[namespace], service)
 	}
-	fmt.Println(result)
 	return result
 }
