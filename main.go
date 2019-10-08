@@ -16,7 +16,6 @@ limitations under the License.
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/kyma-incubator/api-gateway/internal/processing"
@@ -148,9 +147,11 @@ func getList(raw string) []string {
 }
 func getNamespaceServiceMap(raw string) map[string][]string {
 	result := make(map[string][]string)
-	err := json.Unmarshal([]byte(raw), &result)
-	if err != nil {
-		panic(err)
+	for _, s := range getList(raw) {
+		namespacedService := strings.Split(s, ".")
+		namespace := namespacedService[1]
+		service := namespacedService[0]
+		result[namespace] = append(result[namespace], service)
 	}
 	fmt.Println(result)
 	return result
