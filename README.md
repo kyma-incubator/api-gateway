@@ -27,8 +27,8 @@ This procedure is the fastest way to run the Controller, useful for development 
 
 - start Minikube or ensure the access to a Kubernetes cluster is configured in `~/.kube/config`
 - `make install` to install necessary Custom Resource Definitions
-- export `OATHKEEPER_SVC_ADDRESS`, `OATHKEEPER_SVC_PORT`, `JWKS_URI`, `SERVICE_BLACKLIST` and `DOMAIN_WHITELIST` variables
-- `go run main.go --jwks-uri="$JWKS_URI" --oathkeeper-svc-address="$OATHKEEPER_SVC_ADDRESS" --oathkeeper-svc-port=$OATHKEEPER_SVC_PORT --service-blacklist=$SERVICE_BLACKLIST --domain-whitelist=$DOMAIN_WHITELIST`
+- export `OATHKEEPER_SVC_ADDRESS`, `OATHKEEPER_SVC_PORT`, `JWKS_URI` and `DOMAIN_WHITELIST` variables
+- `go run main.go --jwks-uri="$JWKS_URI" --oathkeeper-svc-address="$OATHKEEPER_SVC_ADDRESS" --oathkeeper-svc-port=$OATHKEEPER_SVC_PORT --domain-whitelist=$DOMAIN_WHITELIST`
 
 ### Deploy a custom Controller build to the local Minikube cluster
 This procedure is useful to test your own Controller build end-to-end in a local Minikube cluster.
@@ -38,7 +38,7 @@ This procedure is useful to test your own Controller build end-to-end in a local
 - `eval $(minikube docker-env)`
 - `make build-image` to put the docker image inside running Minikube
 - `make install` to install necessary Custom Resource Definitions
-- export `OATHKEEPER_SVC_ADDRESS`, `OATHKEEPER_SVC_PORT`, `JWKS_URI`, `SERVICE_BLACKLIST` and `DOMAIN_WHITELIST` variables
+- export `OATHKEEPER_SVC_ADDRESS`, `OATHKEEPER_SVC_PORT`, `JWKS_URI` and `DOMAIN_WHITELIST` variables
 - `make deploy-dev` to deploy controller
 
 ### Use command-line flags
