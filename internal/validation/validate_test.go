@@ -77,7 +77,7 @@ var _ = Describe("Validate function", func() {
 		//then
 		Expect(problems).To(HaveLen(1))
 		Expect(problems[0].AttributePath).To(Equal(".spec.service.name"))
-		Expect(problems[0].Message).To(Equal("This service has been blacklisted"))
+		Expect(problems[0].Message).To(Equal("Service kubernetes in namespace default is blacklisted"))
 	})
 
 	It("Should fail for not whitelisted domain", func() {
