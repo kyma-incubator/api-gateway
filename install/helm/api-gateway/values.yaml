@@ -28,6 +28,7 @@ config:
   serviceBlackList:
     default:
       - kubernetes
+    kube-system:
       - kube-dns
   domainWhiteList:
     - kyma.local
