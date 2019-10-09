@@ -80,7 +80,7 @@ func (v *APIRule) validateService(attributePath string, vsList v1alpha3.VirtualS
 			if svc == *api.Spec.Service.Name && namespace == api.ObjectMeta.Namespace {
 				problems = append(problems, Failure{
 					AttributePath: attributePath + ".name",
-					Message:       "Service " + svc + " in namespace " + namespace + " is blacklisted",
+					Message:       fmt.Sprintf("Service %s in namespace %s is blacklisted", svc, namespace)
 				})
 			}
 		}
