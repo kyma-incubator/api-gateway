@@ -34,6 +34,6 @@ func ValidateDomainName(domain string) bool {
 }
 
 func ValidateServiceName(service string) bool {
-	RegExp := regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?\.[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
-	return RegExp.MatchString(service)
+	regExp := regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?\.[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
+	return regExp.MatchString(service)
 }
