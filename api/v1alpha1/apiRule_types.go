@@ -39,7 +39,7 @@ type APIRuleSpec struct {
 	// Gateway to be used
 	// +kubebuilder:validation:Pattern=^(?:[_a-z0-9](?:[_a-z0-9-]+[a-z0-9])?\.)+(?:[a-z](?:[a-z0-9-]+[a-z0-9])?)?$
 	Gateway *string `json:"gateway"`
-	//Rules represents collection of Rule to secure
+	//Rules represents collection of Rule to apply
 	// +kubebuilder:validation:MinItems=1
 	Rules []Rule `json:"rules"`
 }
