@@ -273,7 +273,7 @@ var _ = Describe("Validate function", func() {
 		Expect(problems[5].Message).To(Equal("No accessStrategies defined"))
 	})
 
-	It("Should fail  for same path", func() {
+	It("Should fail  for the same path and method", func() {
 		//given
 		testWhiteList := []string{"foo.bar", "bar.foo", "kyma.local"}
 		input := &gatewayv1alpha1.APIRule{
@@ -349,6 +349,49 @@ var _ = Describe("Validate function", func() {
 						AccessStrategies: []*rulev1alpha1.Authenticator{
 							toAuthenticator("allow", nil),
 						},
+					},
+				},
+			},
+		}
+		//when
+		problems := (&APIRule{
+			DomainWhiteList: testWhiteList,
+		}).Validate(input, v1alpha3.VirtualServiceList{Items: []v1alpha3.VirtualService{existingVS}})
+
+		//then
+		Expect(problems).To(HaveLen(0))
+	})
+
+	It("Should succeed for the same path but different methods", func() {
+		//given
+		testWhiteList := []string{"foo.bar", "bar.foo", "kyma.local"}
+
+		existingVS := v1alpha3.VirtualService{}
+		existingVS.OwnerReferences = []v1.OwnerReference{{UID: "12345"}}
+		existingVS.Spec.Hosts = []string{"occupied-host.foo.bar"}
+
+		input := &gatewayv1alpha1.APIRule{
+			ObjectMeta: v1.ObjectMeta{
+				UID: "67890",
+			},
+			Spec: gatewayv1alpha1.APIRuleSpec{
+				Service: getService("foo-service", uint32(8080), "non-occupied-host.foo.bar"),
+				Rules: []gatewayv1alpha1.Rule{
+					{
+						Path: "/abc",
+						AccessStrategies: []*rulev1alpha1.Authenticator{
+							toAuthenticator("jwt", simpleJWTConfig()),
+							toAuthenticator("noop", emptyConfig()),
+						},
+						Methods: []string{"POST"},
+					},
+					{
+						Path: "/abc",
+						AccessStrategies: []*rulev1alpha1.Authenticator{
+							toAuthenticator("jwt", simpleJWTConfig()),
+							toAuthenticator("noop", emptyConfig()),
+						},
+						Methods: []string{"GET"},
 					},
 				},
 			},
