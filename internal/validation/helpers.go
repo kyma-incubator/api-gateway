@@ -8,12 +8,29 @@ import (
 )
 
 func hasDuplicates(rules []gatewayv1alpha1.Rule) bool {
-	encountered := map[string]bool{}
-	// Create a map of all unique elements.
-	for v := range rules {
-		encountered[rules[v].Path] = true
+	duplicates := false
+
+	if len(rules) > 1 {
+		for i, ruleToCheck := range rules {
+			for j, rule := range rules {
+				if i != j && ruleToCheck.Path == rule.Path {
+					if len(ruleToCheck.Methods) > 0 || len(rule.Methods) > 0 {
+						for _, methodToCheck := range ruleToCheck.Methods {
+							for _, method := range rule.Methods {
+								if methodToCheck == method {
+									duplicates = true
+								}
+							}
+						}
+					} else {
+						duplicates = true
+					}
+				}
+			}
+		}
 	}
-	return len(encountered) != len(rules)
+
+	return duplicates
 }
 
 func isValidURL(toTest string) bool {

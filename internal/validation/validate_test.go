@@ -255,7 +255,7 @@ var _ = Describe("Validate function", func() {
 		//then
 		Expect(problems).To(HaveLen(6))
 		Expect(problems[0].AttributePath).To(Equal(".spec.rules"))
-		Expect(problems[0].Message).To(Equal("multiple rules defined for the same path"))
+		Expect(problems[0].Message).To(Equal("multiple rules defined for the same path and method"))
 
 		Expect(problems[1].AttributePath).To(Equal(".spec.rules[0].accessStrategies[0].config"))
 		Expect(problems[1].Message).To(Equal("strategy: noop does not support configuration"))
@@ -271,6 +271,41 @@ var _ = Describe("Validate function", func() {
 
 		Expect(problems[5].AttributePath).To(Equal(".spec.rules[3].accessStrategies"))
 		Expect(problems[5].Message).To(Equal("No accessStrategies defined"))
+	})
+
+	It("Should fail  for same path", func() {
+		//given
+		testWhiteList := []string{"foo.bar", "bar.foo", "kyma.local"}
+		input := &gatewayv1alpha1.APIRule{
+			Spec: gatewayv1alpha1.APIRuleSpec{
+				Service: getService("foo-service", uint32(8080), "non-occupied-host.foo.bar"),
+				Rules: []gatewayv1alpha1.Rule{
+					{
+						Path: "/abc",
+						AccessStrategies: []*rulev1alpha1.Authenticator{
+							toAuthenticator("noop", emptyConfig()),
+						},
+						Methods: []string{"GET"},
+					},
+					{
+						Path: "/abc",
+						AccessStrategies: []*rulev1alpha1.Authenticator{
+							toAuthenticator("anonymous", emptyConfig()),
+						},
+						Methods: []string{"GET", "POST"},
+					},
+				},
+			},
+		}
+		//when
+		problems := (&APIRule{
+			DomainWhiteList: testWhiteList,
+		}).Validate(input, v1alpha3.VirtualServiceList{})
+
+		//then
+		Expect(problems).To(HaveLen(1))
+		Expect(problems[0].AttributePath).To(Equal(".spec.rules"))
+		Expect(problems[0].Message).To(Equal("multiple rules defined for the same path and method"))
 	})
 
 	It("Should succeed for valid input", func() {
@@ -294,6 +329,14 @@ var _ = Describe("Validate function", func() {
 							toAuthenticator("jwt", simpleJWTConfig()),
 							toAuthenticator("noop", emptyConfig()),
 						},
+					},
+					{
+						Path: "/abc",
+						AccessStrategies: []*rulev1alpha1.Authenticator{
+							toAuthenticator("jwt", simpleJWTConfig()),
+							toAuthenticator("noop", emptyConfig()),
+						},
+						Methods: []string{"GET"},
 					},
 					{
 						Path: "/bcd",
