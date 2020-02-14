@@ -3,6 +3,8 @@ package processing
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/kyma-incubator/api-gateway/internal/builders"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -50,12 +52,15 @@ type CorsConfig struct {
 func (f *Factory) CalculateRequiredState(api *gatewayv1alpha1.APIRule) *State {
 	var res State
 
-	res.accessRules = make(map[string]*rulev1alpha1.Rule)
+	res.accessRules = make(map[string][]*rulev1alpha1.Rule)
 
 	for _, rule := range api.Spec.Rules {
 		if isSecured(rule) {
 			ar := generateAccessRule(api, rule, rule.AccessStrategies)
-			res.accessRules[ar.Spec.Match.URL] = ar
+			if len(res.accessRules[ar.Spec.Match.URL]) == 0 {
+				res.accessRules[ar.Spec.Match.URL] = []*rulev1alpha1.Rule{}
+			}
+			res.accessRules[ar.Spec.Match.URL] = append(res.accessRules[ar.Spec.Match.URL], ar)
 		}
 	}
 
@@ -69,7 +74,7 @@ func (f *Factory) CalculateRequiredState(api *gatewayv1alpha1.APIRule) *State {
 //State represents desired or actual state of Istio Virtual Services and Oathkeeper Rules
 type State struct {
 	virtualService *networkingv1alpha3.VirtualService
-	accessRules    map[string]*rulev1alpha1.Rule
+	accessRules    map[string][]*rulev1alpha1.Rule
 }
 
 //GetActualState methods gets actual state of Istio Virtual Services and Oathkeeper Rules
@@ -96,11 +101,14 @@ func (f *Factory) GetActualState(ctx context.Context, api *gatewayv1alpha1.APIRu
 		return nil, err
 	}
 
-	state.accessRules = make(map[string]*rulev1alpha1.Rule)
+	state.accessRules = make(map[string][]*rulev1alpha1.Rule)
 
 	for i := range arList.Items {
 		obj := arList.Items[i]
-		state.accessRules[obj.Spec.Match.URL] = &obj
+		if len(state.accessRules[obj.Spec.Match.URL]) == 0 {
+			state.accessRules[obj.Spec.Match.URL] = []*rulev1alpha1.Rule{}
+		}
+		state.accessRules[obj.Spec.Match.URL] = append(state.accessRules[obj.Spec.Match.URL], &obj)
 	}
 	return &state, nil
 }
@@ -108,7 +116,7 @@ func (f *Factory) GetActualState(ctx context.Context, api *gatewayv1alpha1.APIRu
 //Patch represents diff between desired and actual state
 type Patch struct {
 	virtualService *objToPatch
-	accessRule     map[string]*objToPatch
+	accessRule     map[string][]*objToPatch
 }
 
 type objToPatch struct {
@@ -118,27 +126,84 @@ type objToPatch struct {
 
 //CalculateDiff methods compute diff between desired & actual state
 func (f *Factory) CalculateDiff(requiredState *State, actualState *State) *Patch {
-	arPatch := make(map[string]*objToPatch)
+	arPatch := make(map[string][]*objToPatch)
 
-	for path, rule := range requiredState.accessRules {
-		rulePatch := &objToPatch{}
+	for path, requiredStateRules := range requiredState.accessRules {
 
-		if actualState.accessRules[path] != nil {
-			rulePatch.action = "update"
-			modifyAccessRule(actualState.accessRules[path], rule)
-			rulePatch.obj = actualState.accessRules[path]
-		} else {
-			rulePatch.action = "create"
-			rulePatch.obj = rule
+		if len(arPatch[path]) == 0 {
+			arPatch[path] = []*objToPatch{}
 		}
 
-		arPatch[path] = rulePatch
+		if len(actualState.accessRules[path]) > 0 {
+			for _, requiredStateRule := range requiredStateRules {
+				for _, actualStateRule := range actualState.accessRules[path] {
+					rulePatch := &objToPatch{}
+					sort.Sort(sort.StringSlice(requiredStateRule.Spec.Match.Methods))
+					requiredStateRuleMethods := strings.Join(requiredStateRule.Spec.Match.Methods, ";")
+
+					sort.Sort(sort.StringSlice(actualStateRule.Spec.Match.Methods))
+					actualStateRuleMethods := strings.Join(actualStateRule.Spec.Match.Methods, ";")
+
+					if requiredStateRuleMethods == actualStateRuleMethods {
+						rulePatch.action = "update"
+						modifyAccessRule(actualStateRule, requiredStateRule)
+						rulePatch.obj = actualStateRule
+					} else {
+						rulePatch.action = "create"
+						rulePatch.obj = requiredStateRule
+					}
+
+					arPatch[path] = append(arPatch[path], rulePatch)
+				}
+			}
+		} else {
+			for _, ruleToCreate := range requiredStateRules {
+				rulePatch := &objToPatch{}
+				rulePatch.action = "create"
+				rulePatch.obj = ruleToCreate
+
+				arPatch[path] = append(arPatch[path], rulePatch)
+			}
+		}
 	}
 
-	for path, rule := range actualState.accessRules {
+	for path, actualStateRules := range actualState.accessRules {
+		rulePatch := &objToPatch{}
+		if len(arPatch[path]) == 0 {
+			arPatch[path] = []*objToPatch{}
+		}
+
 		if requiredState.accessRules[path] == nil {
-			objToDelete := &objToPatch{action: "delete", obj: rule}
-			arPatch[path] = objToDelete
+			for _, actualStateRule := range actualStateRules {
+				rulePatch.action = "delete"
+				rulePatch.obj = actualStateRule
+
+				arPatch[path] = append(arPatch[path], rulePatch)
+			}
+		} else {
+			for _, actualStateRule := range actualStateRules {
+				match := false
+
+				for _, requiredStateRule := range requiredState.accessRules[path] {
+					sort.Sort(sort.StringSlice(requiredStateRule.Spec.Match.Methods))
+					requiredStateRuleMethods := strings.Join(requiredStateRule.Spec.Match.Methods, ";")
+
+					sort.Sort(sort.StringSlice(actualStateRule.Spec.Match.Methods))
+					actualStateRuleMethods := strings.Join(actualStateRule.Spec.Match.Methods, ";")
+
+					if requiredStateRuleMethods == actualStateRuleMethods {
+						match = true
+						break
+					}
+				}
+
+				if !match {
+					rulePatch.action = "delete"
+					rulePatch.obj = actualStateRule
+
+					arPatch[path] = append(arPatch[path], rulePatch)
+				}
+			}
 		}
 	}
 
@@ -163,10 +228,12 @@ func (f *Factory) ApplyDiff(ctx context.Context, patch *Patch) error {
 		return err
 	}
 
-	for _, rule := range patch.accessRule {
-		err := f.applyObjDiff(ctx, rule)
-		if err != nil {
-			return err
+	for _, rules := range patch.accessRule {
+		for _, rule := range rules {
+			err := f.applyObjDiff(ctx, rule)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
