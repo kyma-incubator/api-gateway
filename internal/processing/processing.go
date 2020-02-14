@@ -129,7 +129,7 @@ func (f *Factory) CalculateDiff(requiredState *State, actualState *State) *Patch
 	arPatch := make(map[string][]*objToPatch)
 
 	for path, requiredStateRules := range requiredState.accessRules {
-		rulePatch := &objToPatch{}
+
 		if len(arPatch[path]) == 0 {
 			arPatch[path] = []*objToPatch{}
 		}
@@ -137,6 +137,7 @@ func (f *Factory) CalculateDiff(requiredState *State, actualState *State) *Patch
 		if len(actualState.accessRules[path]) > 0 {
 			for _, requiredStateRule := range requiredStateRules {
 				for _, actualStateRule := range actualState.accessRules[path] {
+					rulePatch := &objToPatch{}
 					sort.Sort(sort.StringSlice(requiredStateRule.Spec.Match.Methods))
 					requiredStateRuleMethods := strings.Join(requiredStateRule.Spec.Match.Methods, ";")
 
@@ -157,6 +158,7 @@ func (f *Factory) CalculateDiff(requiredState *State, actualState *State) *Patch
 			}
 		} else {
 			for _, ruleToCreate := range requiredStateRules {
+				rulePatch := &objToPatch{}
 				rulePatch.action = "create"
 				rulePatch.obj = ruleToCreate
 
