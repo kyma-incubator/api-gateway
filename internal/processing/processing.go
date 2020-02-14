@@ -134,7 +134,7 @@ func (f *Factory) CalculateDiff(requiredState *State, actualState *State) *Patch
 			arPatch[path] = []*objToPatch{}
 		}
 
-		if actualState.accessRules[path] != nil {
+		if len(actualState.accessRules[path]) > 0 {
 			for _, requiredStateRule := range requiredStateRules {
 				for _, actualStateRule := range actualState.accessRules[path] {
 					sort.Sort(sort.StringSlice(requiredStateRule.Spec.Match.Methods))

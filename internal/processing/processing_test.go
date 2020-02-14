@@ -47,11 +47,11 @@ var (
 		AllowMethods: testAllowMethods,
 		AllowHeaders: testAllowHeaders,
 	}
-	expectedCorsPolicy = networkingv1alpha3.CorsPolicy{
-		AllowOrigin:  testAllowOrigin,
-		AllowMethods: testAllowMethods,
-		AllowHeaders: testAllowHeaders,
-	}
+	//expectedCorsPolicy = networkingv1alpha3.CorsPolicy{
+	//	AllowOrigin:  testAllowOrigin,
+	//	AllowMethods: testAllowMethods,
+	//	AllowHeaders: testAllowHeaders,
+	//}
 )
 
 func TestProcessing(t *testing.T) {
@@ -209,7 +209,9 @@ var _ = Describe("Factory", func() {
 				Expect(len(accessRules)).To(Equal(2))
 
 				//Verify rules
-				noopAccessRule := accessRules[expectedNoopRuleMatchURL]
+				Expect(len(accessRules[expectedNoopRuleMatchURL])).To(Equal(1))
+
+				noopAccessRule := accessRules[expectedNoopRuleMatchURL][0]
 
 				Expect(len(accessRules)).To(Equal(2))
 				Expect(len(noopAccessRule.Spec.Authenticators)).To(Equal(1))
@@ -235,7 +237,9 @@ var _ = Describe("Factory", func() {
 				Expect(noopAccessRule.ObjectMeta.OwnerReferences[0].Name).To(Equal(apiName))
 				Expect(noopAccessRule.ObjectMeta.OwnerReferences[0].UID).To(Equal(apiUID))
 
-				jwtAccessRule := accessRules[expectedJwtRuleMatchURL]
+				Expect(len(accessRules[expectedJwtRuleMatchURL])).To(Equal(1))
+
+				jwtAccessRule := accessRules[expectedJwtRuleMatchURL][0]
 
 				Expect(len(jwtAccessRule.Spec.Authenticators)).To(Equal(1))
 
@@ -337,7 +341,9 @@ var _ = Describe("Factory", func() {
 				Expect(vs.ObjectMeta.OwnerReferences[0].Name).To(Equal(apiName))
 				Expect(vs.ObjectMeta.OwnerReferences[0].UID).To(Equal(apiUID))
 
-				rule := accessRules[expectedRuleMatchURL]
+				Expect(len(accessRules[expectedRuleMatchURL])).To(Equal(1))
+
+				rule := accessRules[expectedRuleMatchURL][0]
 
 				//Verify AR
 				Expect(len(accessRules)).To(Equal(1))
@@ -403,9 +409,10 @@ var _ = Describe("Factory", func() {
 				Expect(patch.virtualService.obj).To(Equal(desiredState.virtualService))
 
 				Expect(patch.accessRule).NotTo(BeNil())
+				Expect(len(patch.accessRule[expectedNoopRuleMatchURL])).To(Equal(1))
 				Expect(len(patch.accessRule)).To(Equal(len(desiredState.accessRules)))
-				Expect(patch.accessRule[expectedNoopRuleMatchURL].action).To(Equal("create"))
-				Expect(patch.accessRule[expectedNoopRuleMatchURL].obj).To(Equal(desiredState.accessRules[expectedNoopRuleMatchURL]))
+				Expect(patch.accessRule[expectedNoopRuleMatchURL][0].action).To(Equal("create"))
+				Expect(patch.accessRule[expectedNoopRuleMatchURL][0].obj).To(Equal(desiredState.accessRules[expectedNoopRuleMatchURL][0]))
 
 			})
 
@@ -461,7 +468,8 @@ var _ = Describe("Factory", func() {
 					},
 					Spec: rulev1alpha1.RuleSpec{
 						Match: &rulev1alpha1.Match{
-							URL: expectedNoopRuleMatchURL,
+							URL:     expectedNoopRuleMatchURL,
+							Methods: []string{"GET"},
 						},
 					},
 				}
@@ -478,9 +486,11 @@ var _ = Describe("Factory", func() {
 					},
 				}
 
-				accessRules := make(map[string]*rulev1alpha1.Rule)
-				accessRules[expectedNoopRuleMatchURL] = noopExistingRule
-				accessRules[notDesiredRuleMatchURL] = deleteExistingRule
+				accessRules := make(map[string][]*rulev1alpha1.Rule)
+				accessRules[expectedNoopRuleMatchURL] = []*rulev1alpha1.Rule{}
+				accessRules[expectedNoopRuleMatchURL] = append(accessRules[expectedNoopRuleMatchURL], noopExistingRule)
+				accessRules[notDesiredRuleMatchURL] = []*rulev1alpha1.Rule{}
+				accessRules[notDesiredRuleMatchURL] = append(accessRules[notDesiredRuleMatchURL], deleteExistingRule)
 
 				actualState := &State{virtualService: vs, accessRules: accessRules}
 
@@ -496,17 +506,23 @@ var _ = Describe("Factory", func() {
 
 				Expect(len(patch.accessRule)).To(Equal(3))
 
-				noopPatchRule := patch.accessRule[expectedNoopRuleMatchURL]
+				Expect(len(patch.accessRule[expectedNoopRuleMatchURL])).To(Equal(1))
+
+				noopPatchRule := patch.accessRule[expectedNoopRuleMatchURL][0]
 				Expect(noopPatchRule).NotTo(BeNil())
 				Expect(noopPatchRule.action).To(Equal("update"))
 
 				//TODO verify ar spec
 
-				notDesiredPatchRule := patch.accessRule[notDesiredRuleMatchURL]
+				Expect(len(patch.accessRule[notDesiredRuleMatchURL])).To(Equal(1))
+
+				notDesiredPatchRule := patch.accessRule[notDesiredRuleMatchURL][0]
 				Expect(notDesiredPatchRule).NotTo(BeNil())
 				Expect(notDesiredPatchRule.action).To(Equal("delete"))
 
-				oauthPatchRule := patch.accessRule[oauthNoopRuleMatchURL]
+				Expect(len(patch.accessRule[oauthNoopRuleMatchURL])).To(Equal(1))
+
+				oauthPatchRule := patch.accessRule[oauthNoopRuleMatchURL][0]
 				Expect(oauthPatchRule).NotTo(BeNil())
 				Expect(oauthPatchRule.action).To(Equal("create"))
 
