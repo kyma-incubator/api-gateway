@@ -208,6 +208,7 @@ var _ = Describe("Factory", func() {
 				//Verify ARs
 				Expect(len(accessRules)).To(Equal(2))
 
+				//Verify rules
 				noopAccessRule := accessRules[expectedNoopRuleMatchURL]
 
 				Expect(len(accessRules)).To(Equal(2))
