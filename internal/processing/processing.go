@@ -3,6 +3,7 @@ package processing
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/kyma-incubator/api-gateway/internal/builders"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -14,8 +15,15 @@ import (
 	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 )
 
-//OwnerLabel .
-var OwnerLabel = fmt.Sprintf("%s.%s", "apirule", gatewayv1alpha1.GroupVersion.String())
+const (
+	excludeFromBackupKey = "velero.io/exclude-from-backup"
+)
+
+var (
+	//OwnerLabel .
+	OwnerLabel             = fmt.Sprintf("%s.%s", "apirule", gatewayv1alpha1.GroupVersion.String())
+	excludeFromBackupValue = strconv.FormatBool(true)
+)
 
 //Factory .
 type Factory struct {
@@ -227,7 +235,8 @@ func (f *Factory) generateVirtualService(api *gatewayv1alpha1.APIRule) *networki
 		GenerateName(virtualServiceNamePrefix).
 		Namespace(api.ObjectMeta.Namespace).
 		Owner(builders.OwnerReference().From(&ownerRef)).
-		Label(OwnerLabel, fmt.Sprintf("%s.%s", api.ObjectMeta.Name, api.ObjectMeta.Namespace))
+		Label(OwnerLabel, fmt.Sprintf("%s.%s", api.ObjectMeta.Name, api.ObjectMeta.Namespace)).
+		Label(excludeFromBackupKey, excludeFromBackupValue) // do not backup generated objects to avoid duplicates
 
 	vsBuilder.Spec(vsSpecBuilder)
 

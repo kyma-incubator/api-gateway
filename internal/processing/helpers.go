@@ -24,6 +24,7 @@ func generateAccessRule(api *gatewayv1alpha1.APIRule, rule gatewayv1alpha1.Rule,
 		Owner(builders.OwnerReference().From(&ownerRef)).
 		Spec(builders.AccessRuleSpec().From(generateAccessRuleSpec(api, rule, accessStrategies))).
 		Label(OwnerLabel, fmt.Sprintf("%s.%s", api.ObjectMeta.Name, api.ObjectMeta.Namespace)).
+		Label(excludeFromBackupKey, excludeFromBackupValue). // do not backup generated objects to avoid duplicates
 		Get()
 }
 
