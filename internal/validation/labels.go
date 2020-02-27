@@ -1,26 +1,27 @@
 package validation
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 )
 
 const (
-	labelKeyRegexpString   = "^[a-zA-Z0-9][-A-Za-z0-9_./]{0,61}[a-zA-Z0-9]$"
-	labelValueRegexpString = "^[a-zA-Z0-9][-A-Za-z0-9_.]{0,61}[a-zA-Z0-9]$"
+	labelKeyPrefixRegexDef = "^[a-z]{1,}(([.][a-z]){0,}([-]?[a-z0-9]{1,}){0,}){0,}$" //"prefix" part of k8s label key (before "/")
+	labelKeyNameRegexDef   = "^[a-zA-Z0-9]([-A-Za-z0-9_.]{0,61}[a-zA-Z0-9]){0,}$"    //"name" part of k8s label key (after "/")
+	labelValueRegexpDef    = "^[a-zA-Z0-9][-A-Za-z0-9_.]{0,61}[a-zA-Z0-9]$"          //value of k8s label
 )
 
 var (
-	labelKeyRegexp   = regexp.MustCompile(labelKeyRegexpString)
-	labelValueRegexp = regexp.MustCompile(labelValueRegexpString)
+	labelKeyPrefixRegexp = regexp.MustCompile(labelKeyPrefixRegexDef)
+	labelKeyNameRegexp   = regexp.MustCompile(labelKeyNameRegexDef)
+	labelValueRegexp     = regexp.MustCompile(labelValueRegexpDef)
 )
 
 //VerifyLabelKey returns error if the provided string is not a proper k8s label key
 func VerifyLabelKey(key string) error {
-	if !labelKeyRegexp.MatchString(key) {
-		return fmt.Errorf("key '%s' is not a proper k8s label key", key)
-	}
-	return nil
+	return validateLabelKey(key)
 }
 
 //VerifyLabelValue returns error if the provided string is not a proper k8s label value
@@ -29,4 +30,60 @@ func VerifyLabelValue(value string) error {
 		return fmt.Errorf("value '%s' is not a proper k8s label value", value)
 	}
 	return nil
+}
+
+func validateLabelKey(value string) error {
+
+	var labelKey = strings.TrimSpace(value)
+
+	//max: 253 + 1 + 63
+	if (len(labelKey) < 1) || (len(labelKey) > 317) {
+		return errors.New(fmt.Sprintf("Invalid label key length: %d", len(labelKey)))
+	}
+
+	// "/" can be only in the middle
+	if strings.HasSuffix(labelKey, "/") || strings.HasPrefix(labelKey, "/") {
+		return errors.New("Invalid position of '/' character")
+	}
+
+	prefixAndName := strings.Split(labelKey, "/")
+
+	if len(prefixAndName) == 1 {
+		return validateLabelKeyName(prefixAndName[0])
+	} else if len(prefixAndName) == 2 {
+		if err := validateLabelKeyPrefix(prefixAndName[0]); err != nil {
+			return err
+		}
+		if err := validateLabelKeyName(prefixAndName[1]); err != nil {
+			return err
+		}
+		return nil
+	} else {
+		return errors.New("Too many '/' characters")
+	}
+}
+
+func validateLabelKeyPrefix(value string) error {
+
+	if len(value) > 253 {
+		return errors.New(fmt.Sprintf("label key prefix too long: %d", len(value)))
+	}
+
+	if labelKeyPrefixRegexp.MatchString(value) {
+		return nil
+	}
+
+	return errors.New(fmt.Sprintf("Invalid label key prefix: \"%s\"", value))
+}
+
+func validateLabelKeyName(value string) error {
+	if len(value) > 63 {
+		return errors.New(fmt.Sprintf("label key name too long: %d", len(value)))
+	}
+
+	if labelKeyNameRegexp.MatchString(value) {
+		return nil
+	}
+
+	return errors.New(fmt.Sprintf("Invalid label key name: \"%s\"", value))
 }
