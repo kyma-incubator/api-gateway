@@ -2,33 +2,33 @@ package processing
 
 import (
 	"fmt"
-	"strconv"
-
 	gatewayv1alpha1 "github.com/kyma-incubator/api-gateway/api/v1alpha1"
 	"github.com/kyma-incubator/api-gateway/internal/builders"
 	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
 	k8sMeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const excludeFromBackupKey = "velero.io/exclude-from-backup"
-
 func modifyAccessRule(existing, required *rulev1alpha1.Rule) {
 	existing.Spec = required.Spec
 }
 
-func generateAccessRule(api *gatewayv1alpha1.APIRule, rule gatewayv1alpha1.Rule, accessStrategies []*rulev1alpha1.Authenticator, allowVeleroBackup bool) *rulev1alpha1.Rule {
+func generateAccessRule(api *gatewayv1alpha1.APIRule, rule gatewayv1alpha1.Rule, accessStrategies []*rulev1alpha1.Authenticator, additionalLabels map[string]string) *rulev1alpha1.Rule {
 	namePrefix := fmt.Sprintf("%s-", api.ObjectMeta.Name)
 	namespace := api.ObjectMeta.Namespace
 	ownerRef := generateOwnerRef(api)
 
-	return builders.AccessRule().
+	arBuilder := builders.AccessRule().
 		GenerateName(namePrefix).
 		Namespace(namespace).
 		Owner(builders.OwnerReference().From(&ownerRef)).
 		Spec(builders.AccessRuleSpec().From(generateAccessRuleSpec(api, rule, accessStrategies))).
-		Label(OwnerLabel, fmt.Sprintf("%s.%s", api.ObjectMeta.Name, api.ObjectMeta.Namespace)).
-		Label(excludeFromBackupKey, strconv.FormatBool(!allowVeleroBackup)).
-		Get()
+		Label(OwnerLabel, fmt.Sprintf("%s.%s", api.ObjectMeta.Name, api.ObjectMeta.Namespace))
+
+	for k, v := range additionalLabels {
+		arBuilder.Label(k, v)
+	}
+
+	return arBuilder.Get()
 }
 
 func generateAccessRuleSpec(api *gatewayv1alpha1.APIRule, rule gatewayv1alpha1.Rule, accessStrategies []*rulev1alpha1.Authenticator) *rulev1alpha1.RuleSpec {

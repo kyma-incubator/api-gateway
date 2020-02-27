@@ -3,8 +3,6 @@ package processing
 import (
 	"context"
 	"fmt"
-	"strconv"
-
 	"github.com/kyma-incubator/api-gateway/internal/builders"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -28,11 +26,11 @@ type Factory struct {
 	oathkeeperSvcPort uint32
 	JWKSURI           string
 	corsConfig        *CorsConfig
-	allowVeleroBackup bool
+	additionalLabels  map[string]string
 }
 
 //NewFactory .
-func NewFactory(client client.Client, logger logr.Logger, oathkeeperSvc string, oathkeeperSvcPort uint32, jwksURI string, corsConfig *CorsConfig, allowVeleroBackup bool) *Factory {
+func NewFactory(client client.Client, logger logr.Logger, oathkeeperSvc string, oathkeeperSvcPort uint32, jwksURI string, corsConfig *CorsConfig, additionalLabels map[string]string) *Factory {
 	return &Factory{
 		client:            client,
 		Log:               logger,
@@ -40,7 +38,7 @@ func NewFactory(client client.Client, logger logr.Logger, oathkeeperSvc string, 
 		oathkeeperSvcPort: oathkeeperSvcPort,
 		JWKSURI:           jwksURI,
 		corsConfig:        corsConfig,
-		allowVeleroBackup: allowVeleroBackup,
+		additionalLabels:  additionalLabels,
 	}
 }
 
@@ -59,7 +57,7 @@ func (f *Factory) CalculateRequiredState(api *gatewayv1alpha1.APIRule) *State {
 
 	for _, rule := range api.Spec.Rules {
 		if isSecured(rule) {
-			ar := generateAccessRule(api, rule, rule.AccessStrategies, f.allowVeleroBackup)
+			ar := generateAccessRule(api, rule, rule.AccessStrategies, f.additionalLabels)
 			res.accessRules[ar.Spec.Match.URL] = ar
 		}
 	}
@@ -232,8 +230,11 @@ func (f *Factory) generateVirtualService(api *gatewayv1alpha1.APIRule) *networki
 		GenerateName(virtualServiceNamePrefix).
 		Namespace(api.ObjectMeta.Namespace).
 		Owner(builders.OwnerReference().From(&ownerRef)).
-		Label(OwnerLabel, fmt.Sprintf("%s.%s", api.ObjectMeta.Name, api.ObjectMeta.Namespace)).
-		Label(excludeFromBackupKey, strconv.FormatBool(!f.allowVeleroBackup))
+		Label(OwnerLabel, fmt.Sprintf("%s.%s", api.ObjectMeta.Name, api.ObjectMeta.Namespace))
+
+	for k, v := range f.additionalLabels {
+		vsBuilder.Label(k, v)
+	}
 
 	vsBuilder.Spec(vsSpecBuilder)
 

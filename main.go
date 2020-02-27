@@ -18,6 +18,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"gopkg.in/errgo.v2/errors"
 	"os"
 	"strings"
 
@@ -57,7 +58,7 @@ func main() {
 	var blackListedServices string
 	var whiteListedDomains string
 	var corsAllowOrigin, corsAllowMethods, corsAllowHeaders string
-	var allowVeleroBackup bool
+	var generatedObjectsLabels string
 
 	flag.StringVar(&oathkeeperSvcAddr, "oathkeeper-svc-address", "", "Oathkeeper proxy service")
 	flag.UintVar(&oathkeeperSvcPort, "oathkeeper-svc-port", 0, "Oathkeeper proxy service port")
@@ -70,7 +71,7 @@ func main() {
 	flag.StringVar(&corsAllowOrigin, "cors-allow-origin", "*", "list of allowed origins")
 	flag.StringVar(&corsAllowMethods, "cors-allow-methods", "GET,POST,PUT,DELETE", "list of allowed methods")
 	flag.StringVar(&corsAllowHeaders, "cors-allow-headers", "Authorization,Content-Type,*", "list of allowed headers")
-	flag.BoolVar(&allowVeleroBackup, "allow-velero-backup", false, "determines whether Velero(https://velero.io/) should backup generated objects of type networkingv1alpha3.VirtualService and rulev1alpha1.Rule.")
+	flag.StringVar(&generatedObjectsLabels, "generated-objects-labels", "", "Comma-separated list of key=value pairs used to label generated objects")
 
 	flag.Parse()
 
@@ -110,6 +111,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	additionalLabels, err := parseLabels(generatedObjectsLabels)
+	if err != nil {
+		setupLog.Error(err, "parsing labels failed")
+		os.Exit(1)
+	}
+
 	if err = (&controllers.APIReconciler{
 		Client:            mgr.GetClient(),
 		Log:               ctrl.Log.WithName("controllers").WithName("Api"),
@@ -125,7 +132,7 @@ func main() {
 			AllowMethods: getList(corsAllowMethods),
 			AllowOrigin:  getList(corsAllowOrigin),
 		},
-		AllowVeleroBackup: allowVeleroBackup,
+		GeneratedObjectsLabels: additionalLabels,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Api")
 		os.Exit(1)
@@ -149,6 +156,7 @@ func getList(raw string) []string {
 	}
 	return result
 }
+
 func getNamespaceServiceMap(raw string) map[string][]string {
 	result := make(map[string][]string)
 	for _, s := range getList(raw) {
@@ -162,4 +170,44 @@ func getNamespaceServiceMap(raw string) map[string][]string {
 		result[namespace] = append(result[namespace], service)
 	}
 	return result
+}
+
+func parseLabels(labelsString string) (map[string]string, error) {
+
+	output := make(map[string]string)
+
+	if labelsString == "" {
+		return output, nil
+	}
+
+	var err error
+
+	for _, labelString := range strings.Split(labelsString, ",") {
+		trim := strings.TrimSpace(labelString)
+		if trim != "" {
+			label := strings.Split(trim, "=")
+			if len(label) != 2 {
+				return nil, errors.New("invalid label format")
+			}
+
+			key, value := label[0], label[1]
+
+			if err = validation.VerifyLabelKey(key); err != nil {
+				return nil, fmt.Errorf("invalid label key: %s", key)
+			}
+
+			if err = validation.VerifyLabelValue(value); err != nil {
+				return nil, fmt.Errorf("invalid label value: %s", value)
+			}
+
+			_, exists := output[key]
+			if exists {
+				return nil, fmt.Errorf("duplicated label: %s", key)
+			}
+
+			output[key] = value
+		}
+	}
+
+	return output, nil
 }
