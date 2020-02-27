@@ -78,7 +78,7 @@ func validateLabelKeyPrefix(value string) error {
 
 func validateLabelKeyName(value string) error {
 	if len(value) > 63 {
-		return errors.New(fmt.Sprintf("label key name too long: %d", len(value)))
+		return fmt.Errorf("label key name too long: %d", len(value))
 	}
 
 	if labelKeyNameRegexp.MatchString(value) {
