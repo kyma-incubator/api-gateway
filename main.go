@@ -193,11 +193,11 @@ func parseLabels(labelsString string) (map[string]string, error) {
 			key, value := label[0], label[1]
 
 			if err = validation.VerifyLabelKey(key); err != nil {
-				return nil, errors.Wrapf(err, "invalid label key: %s", key)
+				return nil, errors.Wrap(err, "invalid label key")
 			}
 
 			if err = validation.VerifyLabelValue(value); err != nil {
-				return nil, errors.Wrapf(err, "invalid label value: %s", value)
+				return nil, errors.Wrap(err, "invalid label value")
 			}
 
 			_, exists := output[key]
