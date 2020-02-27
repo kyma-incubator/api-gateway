@@ -38,12 +38,12 @@ func validateLabelKey(value string) error {
 
 	//max: 253 + 1 + 63
 	if (len(labelKey) < 1) || (len(labelKey) > 317) {
-		return errors.New(fmt.Sprintf("Invalid label key length: %d", len(labelKey)))
+		return fmt.Errorf("invalid label key length: %d", len(labelKey))
 	}
 
 	// "/" can be only in the middle
 	if strings.HasSuffix(labelKey, "/") || strings.HasPrefix(labelKey, "/") {
-		return errors.New("Invalid position of '/' character")
+		return errors.New("invalid position of '/' character")
 	}
 
 	prefixAndName := strings.Split(labelKey, "/")
@@ -59,21 +59,21 @@ func validateLabelKey(value string) error {
 		}
 		return nil
 	} else {
-		return errors.New("Too many '/' characters")
+		return errors.New("too many '/' characters")
 	}
 }
 
 func validateLabelKeyPrefix(value string) error {
 
 	if len(value) > 253 {
-		return errors.New(fmt.Sprintf("label key prefix too long: %d", len(value)))
+		return fmt.Errorf("label key prefix too long: %d", len(value))
 	}
 
 	if labelKeyPrefixRegexp.MatchString(value) {
 		return nil
 	}
 
-	return errors.New(fmt.Sprintf("Invalid label key prefix: \"%s\"", value))
+	return fmt.Errorf("invalid label key prefix: \"%s\"", value)
 }
 
 func validateLabelKeyName(value string) error {
@@ -85,5 +85,5 @@ func validateLabelKeyName(value string) error {
 		return nil
 	}
 
-	return errors.New(fmt.Sprintf("Invalid label key name: \"%s\"", value))
+	return fmt.Errorf("invalid label key name: \"%s\"", value)
 }
