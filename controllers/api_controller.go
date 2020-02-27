@@ -43,6 +43,10 @@ type APIReconciler struct {
 	JWKSURI           string
 	Validator         APIRuleValidator
 	CorsConfig        *processing.CorsConfig
+	//AllowVeleroBackup determines whether Velero(https://velero.io/) should backup generated objects of type networkingv1alpha3.VirtualService and rulev1alpha1.Rule.
+	//If set to "true", objects of those types will be duplicated after restoring the cluster.
+	//See https://github.com/kyma-project/kyma/issues/7038 for further reference.
+	AllowVeleroBackup bool
 }
 
 //APIRuleValidator allows to validate APIRule instances created by the user.
@@ -90,7 +94,7 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 
 		//2) Compute list of required objects (the set of objects required to satisfy our contract on apiRule.Spec, not yet applied)
-		factory := processing.NewFactory(r.Client, r.Log, r.OathkeeperSvc, r.OathkeeperSvcPort, r.JWKSURI, r.CorsConfig)
+		factory := processing.NewFactory(r.Client, r.Log, r.OathkeeperSvc, r.OathkeeperSvcPort, r.JWKSURI, r.CorsConfig, r.AllowVeleroBackup)
 		requiredObjects := factory.CalculateRequiredState(api)
 
 		//3.1 Fetch all existing objects related to _this_ apiRule from the cluster (VS, Rules)

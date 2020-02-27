@@ -18,9 +18,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/kyma-incubator/api-gateway/internal/processing"
 	"os"
 	"strings"
+
+	"github.com/kyma-incubator/api-gateway/internal/processing"
 
 	gatewayv1alpha1 "github.com/kyma-incubator/api-gateway/api/v1alpha1"
 	"github.com/kyma-incubator/api-gateway/controllers"
@@ -56,6 +57,7 @@ func main() {
 	var blackListedServices string
 	var whiteListedDomains string
 	var corsAllowOrigin, corsAllowMethods, corsAllowHeaders string
+	var allowVeleroBackup bool
 
 	flag.StringVar(&oathkeeperSvcAddr, "oathkeeper-svc-address", "", "Oathkeeper proxy service")
 	flag.UintVar(&oathkeeperSvcPort, "oathkeeper-svc-port", 0, "Oathkeeper proxy service port")
@@ -68,6 +70,7 @@ func main() {
 	flag.StringVar(&corsAllowOrigin, "cors-allow-origin", "*", "list of allowed origins")
 	flag.StringVar(&corsAllowMethods, "cors-allow-methods", "GET,POST,PUT,DELETE", "list of allowed methods")
 	flag.StringVar(&corsAllowHeaders, "cors-allow-headers", "Authorization,Content-Type,*", "list of allowed headers")
+	flag.BoolVar(&allowVeleroBackup, "allow-velero-backup", false, "determines whether Velero(https://velero.io/) should backup generated objects of type networkingv1alpha3.VirtualService and rulev1alpha1.Rule.")
 
 	flag.Parse()
 
@@ -122,6 +125,7 @@ func main() {
 			AllowMethods: getList(corsAllowMethods),
 			AllowOrigin:  getList(corsAllowOrigin),
 		},
+		AllowVeleroBackup: allowVeleroBackup,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Api")
 		os.Exit(1)

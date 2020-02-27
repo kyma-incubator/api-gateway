@@ -76,7 +76,7 @@ var _ = Describe("Factory", func() {
 
 				apiRule := getAPIRuleFor(rules)
 
-				f := NewFactory(nil, ctrl.Log.WithName("test"), oathkeeperSvc, oathkeeperSvcPort, "https://example.com/.well-known/jwks.json", testCors)
+				f := NewFactory(nil, ctrl.Log.WithName("test"), oathkeeperSvc, oathkeeperSvcPort, "https://example.com/.well-known/jwks.json", testCors, false)
 
 				desiredState := f.CalculateRequiredState(apiRule)
 				vs := desiredState.virtualService
@@ -163,7 +163,7 @@ var _ = Describe("Factory", func() {
 
 				apiRule := getAPIRuleFor(rules)
 
-				f := NewFactory(nil, ctrl.Log.WithName("test"), oathkeeperSvc, oathkeeperSvcPort, "https://example.com/.well-known/jwks.json", testCors)
+				f := NewFactory(nil, ctrl.Log.WithName("test"), oathkeeperSvc, oathkeeperSvcPort, "https://example.com/.well-known/jwks.json", testCors, false)
 
 				desiredState := f.CalculateRequiredState(apiRule)
 				vs := desiredState.virtualService
@@ -303,7 +303,7 @@ var _ = Describe("Factory", func() {
 
 				apiRule := getAPIRuleFor(rules)
 
-				f := NewFactory(nil, ctrl.Log.WithName("test"), oathkeeperSvc, oathkeeperSvcPort, "https://example.com/.well-known/jwks.json", testCors)
+				f := NewFactory(nil, ctrl.Log.WithName("test"), oathkeeperSvc, oathkeeperSvcPort, "https://example.com/.well-known/jwks.json", testCors, false)
 
 				desiredState := f.CalculateRequiredState(apiRule)
 				vs := desiredState.virtualService
@@ -389,7 +389,7 @@ var _ = Describe("Factory", func() {
 				apiRule := getAPIRuleFor(rules)
 				expectedNoopRuleMatchURL := fmt.Sprintf("<http|https>://%s<%s>", serviceHost, apiPath)
 
-				f := NewFactory(nil, ctrl.Log.WithName("test"), oathkeeperSvc, oathkeeperSvcPort, "https://example.com/.well-known/jwks.json", testCors)
+				f := NewFactory(nil, ctrl.Log.WithName("test"), oathkeeperSvc, oathkeeperSvcPort, "https://example.com/.well-known/jwks.json", testCors, false)
 
 				desiredState := f.CalculateRequiredState(apiRule)
 				actualState := &State{}
@@ -436,7 +436,7 @@ var _ = Describe("Factory", func() {
 
 				apiRule := getAPIRuleFor(rules)
 
-				f := NewFactory(nil, ctrl.Log.WithName("test"), oathkeeperSvc, oathkeeperSvcPort, "https://example.com/.well-known/jwks.json", testCors)
+				f := NewFactory(nil, ctrl.Log.WithName("test"), oathkeeperSvc, oathkeeperSvcPort, "https://example.com/.well-known/jwks.json", testCors, false)
 
 				desiredState := f.CalculateRequiredState(apiRule)
 				oauthNoopRuleMatchURL := fmt.Sprintf("<http|https>://%s<%s>", serviceHost, oauthAPIPath)
