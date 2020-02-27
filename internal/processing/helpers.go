@@ -2,6 +2,7 @@ package processing
 
 import (
 	"fmt"
+
 	gatewayv1alpha1 "github.com/kyma-incubator/api-gateway/api/v1alpha1"
 	"github.com/kyma-incubator/api-gateway/internal/builders"
 	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"

@@ -18,9 +18,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/pkg/errors"
 	"os"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/kyma-incubator/api-gateway/internal/processing"
 
