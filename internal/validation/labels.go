@@ -10,13 +10,13 @@ import (
 const (
 	labelKeyPrefixRegexDef = "^[a-z]{1,}(([.][a-z]){0,}([-]?[a-z0-9]{1,}){0,}){0,}$" //"prefix" part of k8s label key (before "/")
 	labelKeyNameRegexDef   = "^[a-zA-Z0-9]([-A-Za-z0-9_.]{0,61}[a-zA-Z0-9]){0,}$"    //"name" part of k8s label key (after "/")
-	labelValueRegexpDef    = "^[a-zA-Z0-9][-A-Za-z0-9_.]{0,61}[a-zA-Z0-9]$"          //value of k8s label
+	labelValueRegexpDef    = labelKeyNameRegexDef                                    //value of k8s label. The only difference is this one can be empty
 )
 
 var (
 	labelKeyPrefixRegexp = regexp.MustCompile(labelKeyPrefixRegexDef)
 	labelKeyNameRegexp   = regexp.MustCompile(labelKeyNameRegexDef)
-	labelValueRegexp     = regexp.MustCompile(labelValueRegexpDef)
+	labelValueRegexp     = labelKeyNameRegexp
 )
 
 //VerifyLabelKey returns error if the provided string is not a proper k8s label key
@@ -26,10 +26,25 @@ func VerifyLabelKey(key string) error {
 
 //VerifyLabelValue returns error if the provided string is not a proper k8s label value
 func VerifyLabelValue(value string) error {
-	if !labelValueRegexp.MatchString(value) {
-		return fmt.Errorf("value '%s' is not a proper k8s label value", value)
+	return validateLabelValue(value)
+}
+
+func validateLabelValue(value string) error {
+	var labelValue = strings.TrimSpace(value)
+
+	if len(labelValue) == 0 {
+		return nil
 	}
-	return nil
+
+	if len(labelValue) > 63 {
+		return fmt.Errorf("label value too long: %d", len(labelValue))
+	}
+
+	if labelValueRegexp.MatchString(labelValue) {
+		return nil
+	}
+
+	return fmt.Errorf("invalid label value: \"%s\"", labelValue)
 }
 
 func validateLabelKey(value string) error {
@@ -54,10 +69,7 @@ func validateLabelKey(value string) error {
 		if err := validateLabelKeyPrefix(prefixAndName[0]); err != nil {
 			return err
 		}
-		if err := validateLabelKeyName(prefixAndName[1]); err != nil {
-			return err
-		}
-		return nil
+		return validateLabelKeyName(prefixAndName[1])
 	} else {
 		return errors.New("too many '/' characters")
 	}
