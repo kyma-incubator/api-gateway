@@ -97,6 +97,7 @@ var _ = Describe("Label validation function", func() {
 			entry("a.b/a-THIS-IS-OK", true),
 			entry("a.b.c/a", true),
 			entry("a-b.c/a", true),
+			entry("velero.io/exclude-from-backup", true),
 			entry("a..b/a-DOUBLE-DOT-IN-PREFIX", false),
 			entry("a-b-.c/a-DASH-DOT-SEQUENCE-IN-PREFIX", false),
 			entry("a.b.c-/a-DASH-AS-LAST-CHARACTER-IN-PREFIX", false),
