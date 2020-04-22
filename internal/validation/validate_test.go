@@ -112,6 +112,101 @@ var _ = Describe("Validate function", func() {
 		Expect(problems[0].Message).To(Equal("Host is not whitelisted"))
 	})
 
+	It("Should fail for not whitelisted domain containing whitelisted domain", func() {
+		//given
+		testBlackList := map[string][]string{
+			"default": []string{"kubernetes", "kube-dns"},
+			"example": []string{"service"}}
+		testWhiteList := []string{"foo.bar", "bar.foo", "kyma.local"}
+		input := &gatewayv1alpha1.APIRule{
+			Spec: gatewayv1alpha1.APIRuleSpec{
+				Service: getService("some-service", uint32(8080), "some-service.foo.bar.myDomain.xyz"),
+				Rules: []gatewayv1alpha1.Rule{
+					{
+						Path: "/abc",
+						AccessStrategies: []*rulev1alpha1.Authenticator{
+							toAuthenticator("jwt", simpleJWTConfig()),
+							toAuthenticator("noop", emptyConfig()),
+						},
+					},
+				},
+			}}
+
+		//when
+		problems := (&APIRule{
+			ServiceBlackList: testBlackList,
+			DomainWhiteList:  testWhiteList,
+		}).Validate(input, v1alpha3.VirtualServiceList{})
+
+		//then
+		Expect(problems).To(HaveLen(1))
+		Expect(problems[0].AttributePath).To(Equal(".spec.service.host"))
+		Expect(problems[0].Message).To(Equal("Host is not whitelisted"))
+	})
+
+	It("Should fail for no domain when default domain is not configured", func() {
+		//given
+		testBlackList := map[string][]string{
+			"default": []string{"kubernetes", "kube-dns"},
+			"example": []string{"service"}}
+		testWhiteList := []string{"foo.bar", "bar.foo", "kyma.local"}
+		input := &gatewayv1alpha1.APIRule{
+			Spec: gatewayv1alpha1.APIRuleSpec{
+				Service: getService("some-service", uint32(8080), "some-service"),
+				Rules: []gatewayv1alpha1.Rule{
+					{
+						Path: "/abc",
+						AccessStrategies: []*rulev1alpha1.Authenticator{
+							toAuthenticator("jwt", simpleJWTConfig()),
+							toAuthenticator("noop", emptyConfig()),
+						},
+					},
+				},
+			}}
+
+		//when
+		problems := (&APIRule{
+			ServiceBlackList: testBlackList,
+			DomainWhiteList:  testWhiteList,
+		}).Validate(input, v1alpha3.VirtualServiceList{})
+
+		//then
+		Expect(problems).To(HaveLen(1))
+		Expect(problems[0].AttributePath).To(Equal(".spec.service.host"))
+		Expect(problems[0].Message).To(Equal("Host does not contain a domain name and no default domain name is configured"))
+	})
+
+	It("Should NOT fail for no domain when default domain is configured", func() {
+		//given
+		testBlackList := map[string][]string{
+			"default": []string{"kubernetes", "kube-dns"},
+			"example": []string{"service"}}
+		testWhiteList := []string{"foo.bar", "bar.foo", "kyma.local"}
+		input := &gatewayv1alpha1.APIRule{
+			Spec: gatewayv1alpha1.APIRuleSpec{
+				Service: getService("some-service", uint32(8080), "some-service"),
+				Rules: []gatewayv1alpha1.Rule{
+					{
+						Path: "/abc",
+						AccessStrategies: []*rulev1alpha1.Authenticator{
+							toAuthenticator("jwt", simpleJWTConfig()),
+							toAuthenticator("noop", emptyConfig()),
+						},
+					},
+				},
+			}}
+
+		//when
+		problems := (&APIRule{
+			ServiceBlackList:  testBlackList,
+			DomainWhiteList:   testWhiteList,
+			DefaultDomainName: "foo.bar",
+		}).Validate(input, v1alpha3.VirtualServiceList{})
+
+		//then
+		Expect(problems).To(HaveLen(0))
+	})
+
 	It("Should fail for serviceHost containing duplicated whitelisted domain", func() {
 		//given
 		testBlackList := map[string][]string{
