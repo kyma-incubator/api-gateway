@@ -21,6 +21,18 @@ func TestValidators(t *testing.T) {
 	RunSpecs(t, "Validators Suite")
 }
 
+const (
+	sampleServiceName    = "some-service"
+	whitelistedDomain    = "foo.bar"
+	notWhitelistedDomain = "myDomain.xyz"
+	testDefaultDomain    = whitelistedDomain
+	sampleValidHost      = sampleServiceName + "." + whitelistedDomain
+)
+
+var (
+	testDomainWhitelist = []string{"foo.bar", "bar.foo", "kyma.local"}
+)
+
 var _ = Describe("Validate function", func() {
 
 	It("Should fail for empty rules", func() {
@@ -30,7 +42,7 @@ var _ = Describe("Validate function", func() {
 		input := &gatewayv1alpha1.APIRule{
 			Spec: gatewayv1alpha1.APIRuleSpec{
 				Rules:   nil,
-				Service: getService("foo-service", uint32(8080), "foo.bar"),
+				Service: getService(sampleServiceName, uint32(8080), sampleValidHost),
 			},
 		}
 
@@ -47,16 +59,17 @@ var _ = Describe("Validate function", func() {
 
 	It("Should fail for blacklisted service", func() {
 		//given
+		sampleBlacklistedService := "kubernetes"
+		validHost := sampleBlacklistedService + "." + whitelistedDomain
 		testBlackList := map[string][]string{
-			"default": []string{"kubernetes", "kube-dns"},
+			"default": []string{sampleBlacklistedService, "kube-dns"},
 			"example": []string{"service"}}
-		testWhiteList := []string{"foo.bar", "bar.foo", "kyma.local"}
 		input := &gatewayv1alpha1.APIRule{
 			ObjectMeta: v1.ObjectMeta{
 				Namespace: "default",
 			},
 			Spec: gatewayv1alpha1.APIRuleSpec{
-				Service: getService("kubernetes", uint32(443), "kubernetes.foo.bar"),
+				Service: getService(sampleBlacklistedService, uint32(443), validHost),
 				Rules: []gatewayv1alpha1.Rule{
 					{
 						Path: "/abc",
@@ -71,7 +84,7 @@ var _ = Describe("Validate function", func() {
 		//when
 		problems := (&APIRule{
 			ServiceBlackList: testBlackList,
-			DomainWhiteList:  testWhiteList,
+			DomainWhiteList:  testDomainWhitelist,
 		}).Validate(input, v1alpha3.VirtualServiceList{})
 
 		//then
@@ -82,13 +95,13 @@ var _ = Describe("Validate function", func() {
 
 	It("Should fail for not whitelisted domain", func() {
 		//given
+		invalidHost := sampleServiceName + "." + notWhitelistedDomain
 		testBlackList := map[string][]string{
 			"default": []string{"kubernetes", "kube-dns"},
 			"example": []string{"service"}}
-		testWhiteList := []string{"foo.bar", "bar.foo", "kyma.local"}
 		input := &gatewayv1alpha1.APIRule{
 			Spec: gatewayv1alpha1.APIRuleSpec{
-				Service: getService("some-service", uint32(8080), "some-service.myDomain.xyz"),
+				Service: getService(sampleServiceName, uint32(8080), invalidHost),
 				Rules: []gatewayv1alpha1.Rule{
 					{
 						Path: "/abc",
@@ -103,7 +116,7 @@ var _ = Describe("Validate function", func() {
 		//when
 		problems := (&APIRule{
 			ServiceBlackList: testBlackList,
-			DomainWhiteList:  testWhiteList,
+			DomainWhiteList:  testDomainWhitelist,
 		}).Validate(input, v1alpha3.VirtualServiceList{})
 
 		//then
@@ -114,13 +127,13 @@ var _ = Describe("Validate function", func() {
 
 	It("Should fail for not whitelisted domain containing whitelisted domain", func() {
 		//given
+		invalidHost := sampleServiceName + "." + whitelistedDomain + "." + notWhitelistedDomain
 		testBlackList := map[string][]string{
 			"default": []string{"kubernetes", "kube-dns"},
 			"example": []string{"service"}}
-		testWhiteList := []string{"foo.bar", "bar.foo", "kyma.local"}
 		input := &gatewayv1alpha1.APIRule{
 			Spec: gatewayv1alpha1.APIRuleSpec{
-				Service: getService("some-service", uint32(8080), "some-service.foo.bar.myDomain.xyz"),
+				Service: getService(sampleServiceName, uint32(8080), invalidHost),
 				Rules: []gatewayv1alpha1.Rule{
 					{
 						Path: "/abc",
@@ -135,7 +148,7 @@ var _ = Describe("Validate function", func() {
 		//when
 		problems := (&APIRule{
 			ServiceBlackList: testBlackList,
-			DomainWhiteList:  testWhiteList,
+			DomainWhiteList:  testDomainWhitelist,
 		}).Validate(input, v1alpha3.VirtualServiceList{})
 
 		//then
@@ -146,13 +159,13 @@ var _ = Describe("Validate function", func() {
 
 	It("Should fail for no domain when default domain is not configured", func() {
 		//given
+		hostWithoutDomain := sampleServiceName
 		testBlackList := map[string][]string{
 			"default": []string{"kubernetes", "kube-dns"},
 			"example": []string{"service"}}
-		testWhiteList := []string{"foo.bar", "bar.foo", "kyma.local"}
 		input := &gatewayv1alpha1.APIRule{
 			Spec: gatewayv1alpha1.APIRuleSpec{
-				Service: getService("some-service", uint32(8080), "some-service"),
+				Service: getService(sampleServiceName, uint32(8080), hostWithoutDomain),
 				Rules: []gatewayv1alpha1.Rule{
 					{
 						Path: "/abc",
@@ -167,7 +180,7 @@ var _ = Describe("Validate function", func() {
 		//when
 		problems := (&APIRule{
 			ServiceBlackList: testBlackList,
-			DomainWhiteList:  testWhiteList,
+			DomainWhiteList:  testDomainWhitelist,
 		}).Validate(input, v1alpha3.VirtualServiceList{})
 
 		//then
@@ -178,13 +191,13 @@ var _ = Describe("Validate function", func() {
 
 	It("Should NOT fail for no domain when default domain is configured", func() {
 		//given
+		hostWithoutDomain := sampleServiceName
 		testBlackList := map[string][]string{
 			"default": []string{"kubernetes", "kube-dns"},
 			"example": []string{"service"}}
-		testWhiteList := []string{"foo.bar", "bar.foo", "kyma.local"}
 		input := &gatewayv1alpha1.APIRule{
 			Spec: gatewayv1alpha1.APIRuleSpec{
-				Service: getService("some-service", uint32(8080), "some-service"),
+				Service: getService(sampleServiceName, uint32(8080), hostWithoutDomain),
 				Rules: []gatewayv1alpha1.Rule{
 					{
 						Path: "/abc",
@@ -199,8 +212,8 @@ var _ = Describe("Validate function", func() {
 		//when
 		problems := (&APIRule{
 			ServiceBlackList:  testBlackList,
-			DomainWhiteList:   testWhiteList,
-			DefaultDomainName: "foo.bar",
+			DomainWhiteList:   testDomainWhitelist,
+			DefaultDomainName: testDefaultDomain,
 		}).Validate(input, v1alpha3.VirtualServiceList{})
 
 		//then
@@ -209,13 +222,13 @@ var _ = Describe("Validate function", func() {
 
 	It("Should fail for serviceHost containing duplicated whitelisted domain", func() {
 		//given
+		invalidHost := sampleServiceName + "." + whitelistedDomain + "." + whitelistedDomain
 		testBlackList := map[string][]string{
 			"default": []string{"kubernetes", "kube-dns"},
 			"example": []string{"service"}}
-		testWhiteList := []string{"foo.bar", "bar.foo", "kyma.local"}
 		input := &gatewayv1alpha1.APIRule{
 			Spec: gatewayv1alpha1.APIRuleSpec{
-				Service: getService("some-service", uint32(8080), "some-service.kyma.local.kyma.local"),
+				Service: getService(sampleServiceName, uint32(8080), invalidHost),
 				Rules: []gatewayv1alpha1.Rule{
 					{
 						Path: "/abc",
@@ -230,7 +243,7 @@ var _ = Describe("Validate function", func() {
 		//when
 		problems := (&APIRule{
 			ServiceBlackList: testBlackList,
-			DomainWhiteList:  testWhiteList,
+			DomainWhiteList:  testDomainWhitelist,
 		}).Validate(input, v1alpha3.VirtualServiceList{})
 
 		//then
@@ -241,18 +254,17 @@ var _ = Describe("Validate function", func() {
 
 	It("Should fail for a host that is occupied by a VS exposed by another resource", func() {
 		//given
-		testWhiteList := []string{"foo.bar"}
-
+		occupiedHost := "occupied-host" + whitelistedDomain
 		existingVS := v1alpha3.VirtualService{}
 		existingVS.OwnerReferences = []v1.OwnerReference{{UID: "12345"}}
-		existingVS.Spec.Hosts = []string{"occupied-host.foo.bar"}
+		existingVS.Spec.Hosts = []string{occupiedHost}
 
 		input := &gatewayv1alpha1.APIRule{
 			ObjectMeta: v1.ObjectMeta{
 				UID: "67890",
 			},
 			Spec: gatewayv1alpha1.APIRuleSpec{
-				Service: getService("some-service", uint32(8080), "occupied-host.foo.bar"),
+				Service: getService(sampleServiceName, uint32(8080), occupiedHost),
 				Rules: []gatewayv1alpha1.Rule{
 					{
 						Path: "/abc",
@@ -267,7 +279,7 @@ var _ = Describe("Validate function", func() {
 
 		//when
 		problems := (&APIRule{
-			DomainWhiteList: testWhiteList,
+			DomainWhiteList: testDomainWhitelist,
 		}).Validate(input, v1alpha3.VirtualServiceList{Items: []v1alpha3.VirtualService{existingVS}})
 
 		Expect(problems).To(HaveLen(1))
@@ -277,18 +289,17 @@ var _ = Describe("Validate function", func() {
 
 	It("Should NOT fail for a host that is occupied by a VS exposed by this resource", func() {
 		//given
-		testWhiteList := []string{"foo.bar"}
-
+		occupiedHost := "occupied-host" + whitelistedDomain
 		existingVS := v1alpha3.VirtualService{}
 		existingVS.OwnerReferences = []v1.OwnerReference{{UID: "12345"}}
-		existingVS.Spec.Hosts = []string{"occupied-host.foo.bar"}
+		existingVS.Spec.Hosts = []string{occupiedHost}
 
 		input := &gatewayv1alpha1.APIRule{
 			ObjectMeta: v1.ObjectMeta{
 				UID: "12345",
 			},
 			Spec: gatewayv1alpha1.APIRuleSpec{
-				Service: getService("some-service", uint32(8080), "occupied-host.foo.bar"),
+				Service: getService(sampleServiceName, uint32(8080), occupiedHost),
 				Rules: []gatewayv1alpha1.Rule{
 					{
 						Path: "/abc",
@@ -303,7 +314,7 @@ var _ = Describe("Validate function", func() {
 
 		//when
 		problems := (&APIRule{
-			DomainWhiteList: testWhiteList,
+			DomainWhiteList: testDomainWhitelist,
 		}).Validate(input, v1alpha3.VirtualServiceList{Items: []v1alpha3.VirtualService{existingVS}})
 
 		Expect(problems).To(HaveLen(0))
@@ -311,10 +322,9 @@ var _ = Describe("Validate function", func() {
 
 	It("Should detect several problems", func() {
 		//given
-		testWhiteList := []string{"foo.bar", "bar.foo", "kyma.local"}
 		input := &gatewayv1alpha1.APIRule{
 			Spec: gatewayv1alpha1.APIRuleSpec{
-				Service: getService("foo-service", uint32(8080), "foo.bar"),
+				Service: getService(sampleServiceName, uint32(8080), sampleValidHost),
 				Rules: []gatewayv1alpha1.Rule{
 					{
 						Path: "/abc",
@@ -344,7 +354,7 @@ var _ = Describe("Validate function", func() {
 		}
 		//when
 		problems := (&APIRule{
-			DomainWhiteList: testWhiteList,
+			DomainWhiteList: testDomainWhitelist,
 		}).Validate(input, v1alpha3.VirtualServiceList{})
 
 		//then
@@ -370,18 +380,18 @@ var _ = Describe("Validate function", func() {
 
 	It("Should succeed for valid input", func() {
 		//given
-		testWhiteList := []string{"foo.bar", "bar.foo", "kyma.local"}
-
+		occupiedHost := "occupied-host" + whitelistedDomain
+		notOccupiedHost := "not-occupied-host" + whitelistedDomain
 		existingVS := v1alpha3.VirtualService{}
 		existingVS.OwnerReferences = []v1.OwnerReference{{UID: "12345"}}
-		existingVS.Spec.Hosts = []string{"occupied-host.foo.bar"}
+		existingVS.Spec.Hosts = []string{occupiedHost}
 
 		input := &gatewayv1alpha1.APIRule{
 			ObjectMeta: v1.ObjectMeta{
 				UID: "67890",
 			},
 			Spec: gatewayv1alpha1.APIRuleSpec{
-				Service: getService("foo-service", uint32(8080), "non-occupied-host.foo.bar"),
+				Service: getService(sampleServiceName, uint32(8080), notOccupiedHost),
 				Rules: []gatewayv1alpha1.Rule{
 					{
 						Path: "/abc",
@@ -407,7 +417,7 @@ var _ = Describe("Validate function", func() {
 		}
 		//when
 		problems := (&APIRule{
-			DomainWhiteList: testWhiteList,
+			DomainWhiteList: testDomainWhitelist,
 		}).Validate(input, v1alpha3.VirtualServiceList{Items: []v1alpha3.VirtualService{existingVS}})
 
 		//then
