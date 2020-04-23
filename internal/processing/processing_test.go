@@ -442,102 +442,19 @@ var _ = Describe("Factory", func() {
 
 					//verify VS
 					Expect(vs).NotTo(BeNil())
-					Expect(len(vs.Spec.Gateways)).To(Equal(1))
 					Expect(len(vs.Spec.Hosts)).To(Equal(1))
 					Expect(vs.Spec.Hosts[0]).To(Equal(serviceHost))
-					Expect(len(vs.Spec.HTTP)).To(Equal(2))
-
-					Expect(len(vs.Spec.HTTP[0].Route)).To(Equal(1))
-					Expect(vs.Spec.HTTP[0].Route[0].Destination.Host).To(Equal(oathkeeperSvc))
-					Expect(vs.Spec.HTTP[0].Route[0].Destination.Port.Number).To(Equal(oathkeeperSvcPort))
-					Expect(len(vs.Spec.HTTP[0].Match)).To(Equal(1))
-					Expect(vs.Spec.HTTP[0].Match[0].URI.Regex).To(Equal(apiRule.Spec.Rules[0].Path))
-
-					Expect(vs.Spec.HTTP[0].CorsPolicy.AllowOrigin).To(Equal(testCors.AllowOrigin))
-					Expect(vs.Spec.HTTP[0].CorsPolicy.AllowMethods).To(Equal(testCors.AllowMethods))
-					Expect(vs.Spec.HTTP[0].CorsPolicy.AllowHeaders).To(Equal(testCors.AllowHeaders))
-
-					Expect(len(vs.Spec.HTTP[1].Route)).To(Equal(1))
-					Expect(vs.Spec.HTTP[1].Route[0].Destination.Host).To(Equal(oathkeeperSvc))
-					Expect(vs.Spec.HTTP[1].Route[0].Destination.Port.Number).To(Equal(oathkeeperSvcPort))
-					Expect(len(vs.Spec.HTTP[1].Match)).To(Equal(1))
-					Expect(vs.Spec.HTTP[1].Match[0].URI.Regex).To(Equal(apiRule.Spec.Rules[1].Path))
-
-					Expect(vs.Spec.HTTP[1].CorsPolicy.AllowOrigin).To(Equal(testCors.AllowOrigin))
-					Expect(vs.Spec.HTTP[1].CorsPolicy.AllowMethods).To(Equal(testCors.AllowMethods))
-					Expect(vs.Spec.HTTP[1].CorsPolicy.AllowHeaders).To(Equal(testCors.AllowHeaders))
-
-					Expect(vs.ObjectMeta.Name).To(BeEmpty())
-					Expect(vs.ObjectMeta.GenerateName).To(Equal(apiName + "-"))
-					Expect(vs.ObjectMeta.Namespace).To(Equal(apiNamespace))
-					Expect(vs.ObjectMeta.Labels[testLabelKey]).To(Equal(testLabelValue))
-
-					Expect(vs.ObjectMeta.OwnerReferences[0].APIVersion).To(Equal(apiAPIVersion))
-					Expect(vs.ObjectMeta.OwnerReferences[0].Kind).To(Equal(apiKind))
-					Expect(vs.ObjectMeta.OwnerReferences[0].Name).To(Equal(apiName))
-					Expect(vs.ObjectMeta.OwnerReferences[0].UID).To(Equal(apiUID))
 
 					//Verify ARs
 					Expect(len(accessRules)).To(Equal(2))
 
 					noopAccessRule := accessRules[expectedNoopRuleMatchURL]
 
-					Expect(len(accessRules)).To(Equal(2))
-					Expect(len(noopAccessRule.Spec.Authenticators)).To(Equal(1))
-
-					Expect(noopAccessRule.Spec.Authorizer.Name).To(Equal("allow"))
-					Expect(noopAccessRule.Spec.Authorizer.Config).To(BeNil())
-
-					Expect(noopAccessRule.Spec.Authenticators[0].Handler.Name).To(Equal("noop"))
-					Expect(noopAccessRule.Spec.Authenticators[0].Handler.Config).To(BeNil())
-
-					Expect(len(noopAccessRule.Spec.Match.Methods)).To(Equal(len(apiMethods)))
-					Expect(noopAccessRule.Spec.Match.Methods).To(Equal(apiMethods))
 					Expect(noopAccessRule.Spec.Match.URL).To(Equal(expectedNoopRuleMatchURL))
-
-					Expect(noopAccessRule.Spec.Upstream.URL).To(Equal(expectedRuleUpstreamURL))
-
-					Expect(noopAccessRule.ObjectMeta.Name).To(BeEmpty())
-					Expect(noopAccessRule.ObjectMeta.GenerateName).To(Equal(apiName + "-"))
-					Expect(noopAccessRule.ObjectMeta.Namespace).To(Equal(apiNamespace))
-					Expect(noopAccessRule.ObjectMeta.Labels[testLabelKey]).To(Equal(testLabelValue))
-
-					Expect(noopAccessRule.ObjectMeta.OwnerReferences[0].APIVersion).To(Equal(apiAPIVersion))
-					Expect(noopAccessRule.ObjectMeta.OwnerReferences[0].Kind).To(Equal(apiKind))
-					Expect(noopAccessRule.ObjectMeta.OwnerReferences[0].Name).To(Equal(apiName))
-					Expect(noopAccessRule.ObjectMeta.OwnerReferences[0].UID).To(Equal(apiUID))
 
 					jwtAccessRule := accessRules[expectedJwtRuleMatchURL]
 
-					Expect(len(jwtAccessRule.Spec.Authenticators)).To(Equal(1))
-
-					Expect(jwtAccessRule.Spec.Authorizer.Name).To(Equal("allow"))
-					Expect(jwtAccessRule.Spec.Authorizer.Config).To(BeNil())
-
-					Expect(jwtAccessRule.Spec.Authenticators[0].Handler.Name).To(Equal("jwt"))
-					Expect(jwtAccessRule.Spec.Authenticators[0].Handler.Config).NotTo(BeNil())
-					Expect(string(jwtAccessRule.Spec.Authenticators[0].Handler.Config.Raw)).To(Equal(jwtConfigJSON))
-
-					Expect(len(jwtAccessRule.Spec.Match.Methods)).To(Equal(len(apiMethods)))
-					Expect(jwtAccessRule.Spec.Match.Methods).To(Equal(apiMethods))
 					Expect(jwtAccessRule.Spec.Match.URL).To(Equal(expectedJwtRuleMatchURL))
-
-					Expect(jwtAccessRule.Spec.Upstream.URL).To(Equal(expectedRuleUpstreamURL))
-
-					Expect(jwtAccessRule.Spec.Mutators).NotTo(BeNil())
-					Expect(len(jwtAccessRule.Spec.Mutators)).To(Equal(len(testMutators)))
-					Expect(jwtAccessRule.Spec.Mutators[0].Handler.Name).To(Equal(testMutators[0].Name))
-					Expect(jwtAccessRule.Spec.Mutators[1].Handler.Name).To(Equal(testMutators[1].Name))
-
-					Expect(jwtAccessRule.ObjectMeta.Name).To(BeEmpty())
-					Expect(jwtAccessRule.ObjectMeta.GenerateName).To(Equal(apiName + "-"))
-					Expect(jwtAccessRule.ObjectMeta.Namespace).To(Equal(apiNamespace))
-					Expect(jwtAccessRule.ObjectMeta.Labels[testLabelKey]).To(Equal(testLabelValue))
-
-					Expect(jwtAccessRule.ObjectMeta.OwnerReferences[0].APIVersion).To(Equal(apiAPIVersion))
-					Expect(jwtAccessRule.ObjectMeta.OwnerReferences[0].Kind).To(Equal(apiKind))
-					Expect(jwtAccessRule.ObjectMeta.OwnerReferences[0].Name).To(Equal(apiName))
-					Expect(jwtAccessRule.ObjectMeta.OwnerReferences[0].UID).To(Equal(apiUID))
 				})
 			})
 		})
