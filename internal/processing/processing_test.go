@@ -429,7 +429,6 @@ var _ = Describe("Factory", func() {
 
 					expectedNoopRuleMatchURL := fmt.Sprintf("<http|https>://%s<%s>", serviceHost, apiPath)
 					expectedJwtRuleMatchURL := fmt.Sprintf("<http|https>://%s<%s>", serviceHost, headersAPIPath)
-					expectedRuleUpstreamURL := fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", serviceName, apiNamespace, servicePort)
 
 					apiRule := getAPIRuleFor(rules)
 					apiRule.Spec.Service.Host = &serviceHostWithNoDomain
