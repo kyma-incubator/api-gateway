@@ -44,19 +44,19 @@ This procedure is useful to test your own Controller build end-to-end in a local
 ### Use command-line flags
 
 | Name | Required | Description | Example values |
-|------|----------|-------------|-----------------|
-| **oathkeeper-svc-address** | yes | Ory oathkeeper-proxy service address. | `ory-oathkeeper-proxy.kyma-system.svc.cluster.local` |
-| **oathkeeper-svc-port** | yes | Ory oathkeeper-proxy service port. | `4455` |
-| **metrics-addr** | no | The address the metric endpoint binds to. | `:8080` |
-| **jwks-uri** | yes | Default jwksUri in the Policy. | any string |
-| **enable-leader-election** | yes | Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager. | any string |
-| **service-blacklist** | no | List of services to be blacklisted. | `kubernetes.default` <br> `kube-dns.kube-system` |
-| **domain-whitelist** | yes | List of domains that can be exposed. | `kyma.local` <br> `foo.bar` |
-| **default-domain-name** | no | A default domain name for hostnames with no domain provided. | `kyma.local` <br> `foo.bar` |
-| **cors-allow-origin**  | no | Comma-separated list of allowed origins. | `*`, `https://developer.org` |
-| **cors-allow-methods** | no | Comma-separated list of allowed methods. | `GET,POST,DELETE` |
-| **cors-allow-headers** | no | Comma-separated list of allowed headers. | `Authorization,Content-Type` |
-| **generated-objects-labels** | no | Comma-separated list of key=value pairs used to label generated objects. | `managed-by=api-gateway` |
+|------|:----------:|-------------|-----------------|
+| **oathkeeper-svc-address** | YES | Ory oathkeeper-proxy service address. | `ory-oathkeeper-proxy.kyma-system.svc.cluster.local` |
+| **oathkeeper-svc-port** | YES | Ory oathkeeper-proxy service port. | `4455` |
+| **metrics-addr** | NO | The address the metric endpoint binds to. | `:8080` |
+| **jwks-uri** | YES | Default jwksUri in the Policy. | any string |
+| **enable-leader-election** | YES | Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager. | any string |
+| **service-blacklist** | NO | List of services to be blacklisted. | `kubernetes.default` <br> `kube-dns.kube-system` |
+| **domain-whitelist** | YES | List of domains that can be exposed. | `kyma.local` <br> `foo.bar` |
+| **default-domain-name** | NO | A default domain name for hostnames with no domain provided. | `kyma.local` <br> `foo.bar` |
+| **cors-allow-origin**  | NO | Comma-separated list of allowed origins. | `*`, `https://developer.org` |
+| **cors-allow-methods** | NO | Comma-separated list of allowed methods. | `GET,POST,DELETE` |
+| **cors-allow-headers** | NO | Comma-separated list of allowed headers. | `Authorization,Content-Type` |
+| **generated-objects-labels** | NO | Comma-separated list of key-value pairs used to label generated objects. | `managed-by=api-gateway` |
 
 ## Custom Resource
 
