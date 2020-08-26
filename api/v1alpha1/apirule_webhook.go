@@ -122,7 +122,7 @@ func getSvc(name, namespace string) (*v1.Service, error) {
 
 func validateSvcType(k8sSvc *v1.Service, svc *Service, fldPath *field.Path) *field.Error {
 	if k8sSvc.Spec.Type == v1.ServiceTypeExternalName {
-		return field.Invalid(fldPath, svc, fmt.Sprintf("service can't be type of %s", v1.ServiceTypeExternalName))
+		return field.Invalid(fldPath, svc.Name, fmt.Sprintf("service can't be type of %s", v1.ServiceTypeExternalName))
 	}
 	return nil
 }
