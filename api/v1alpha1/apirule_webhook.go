@@ -17,6 +17,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
 
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -33,6 +34,7 @@ import (
 
 // log is for logging in this package.
 var apirulelog = logf.Log.WithName("apirule-resource")
+var supportedHandlers = []string{"allow", "noop", "oauth2_introspection", "jwt"}
 
 // SetupWebhookWithManager .
 func (r *APIRule) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -49,28 +51,40 @@ var _ webhook.Validator = &APIRule{}
 func (r *APIRule) ValidateCreate() error {
 	apirulelog.Info("validate create", "name", r.Name)
 
-	var allErrs field.ErrorList
-	if err := r.validateAPIRuleSpec(); err != nil {
-		allErrs = append(allErrs, err)
-	}
-	if len(allErrs) == 0 {
+	errs := r.validateAPIRuleSpec()
+
+	if len(errs) == 0 {
 		return nil
 	}
 
 	return apierrors.NewInvalid(
 		schema.GroupKind{Group: "gateway.kyma-project.io", Kind: "APIRule"},
-		r.Name, allErrs)
+		r.Name, errs)
 
 	return nil
 }
 
-func (r *APIRule) validateAPIRuleSpec() *field.Error {
+func (r *APIRule) validateAPIRuleSpec() field.ErrorList {
 	// The field helpers from the kubernetes API machinery help us return nicely
 	// structured validation errors.
-	return validateService(
+	var allErrs field.ErrorList
+
+	err := validateService(
 		r.Spec.Service,
 		r.Namespace,
 		field.NewPath("spec").Child("service"))
+	if err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := validateRules(r.Spec.Rules, field.NewPath("spec").Child("rules")); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if len(allErrs) == 0 {
+		return nil
+	}
+	return allErrs
 }
 
 func validateService(svc *Service, namespace string, fldPath *field.Path) *field.Error {
@@ -80,6 +94,27 @@ func validateService(svc *Service, namespace string, fldPath *field.Path) *field
 	}
 
 	return validateSvcType(k8sSvc, svc, fldPath)
+}
+
+func validateRules(rules []Rule, fldPath *field.Path) *field.Error {
+
+	for _, rule := range rules {
+		err := validateAccessStrategies(rule.AccessStrategies)
+		if err != nil {
+			return field.Invalid(fldPath, rule.AccessStrategies, err.Error())
+		}
+	}
+
+	return nil
+}
+
+func validateAccessStrategies(accStrategies []*rulev1alpha1.Authenticator) error {
+	for _, accStrategy := range accStrategies {
+		if !includedIn(accStrategy.Handler.Name, supportedHandlers) {
+			return fmt.Errorf("handler %s is not supported", accStrategy.Handler.Name)
+		}
+	}
+	return nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
@@ -125,4 +160,13 @@ func validateSvcType(k8sSvc *v1.Service, svc *Service, fldPath *field.Path) *fie
 		return field.Invalid(fldPath, svc.Name, fmt.Sprintf("service can't be type of %s", v1.ServiceTypeExternalName))
 	}
 	return nil
+}
+
+func includedIn(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
 }
