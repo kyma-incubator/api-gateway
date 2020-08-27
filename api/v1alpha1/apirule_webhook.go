@@ -51,6 +51,10 @@ var _ webhook.Validator = &APIRule{}
 func (r *APIRule) ValidateCreate() error {
 	apirulelog.Info("validate create", "name", r.Name)
 
+	return r.validateAPIRule()
+}
+
+func (r *APIRule) validateAPIRule() error {
 	errs := r.validateAPIRuleSpec()
 
 	if len(errs) == 0 {
@@ -121,8 +125,7 @@ func validateAccessStrategies(fldPath *field.Path, accStrategies []*rulev1alpha1
 func (r *APIRule) ValidateUpdate(old runtime.Object) error {
 	apirulelog.Info("validate update", "name", r.Name)
 
-	// TODO(user): fill in your validation logic upon object update.
-	return nil
+	return r.validateAPIRule()
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
