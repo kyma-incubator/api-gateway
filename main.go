@@ -25,9 +25,6 @@ import (
 
 	"github.com/kyma-incubator/api-gateway/internal/processing"
 
-	gatewayv1alpha1 "github.com/kyma-incubator/api-gateway/api/v1alpha1"
-	"github.com/kyma-incubator/api-gateway/controllers"
-	"github.com/kyma-incubator/api-gateway/internal/validation"
 	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -35,6 +32,10 @@ import (
 	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	gatewayv1alpha1 "github.com/kyma-incubator/api-gateway/api/v1alpha1"
+	"github.com/kyma-incubator/api-gateway/controllers"
+	"github.com/kyma-incubator/api-gateway/internal/validation"
 )
 
 var (
@@ -137,6 +138,10 @@ func main() {
 		GeneratedObjectsLabels: additionalLabels,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Api")
+		os.Exit(1)
+	}
+	if err = (&gatewayv1alpha1.APIRule{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "APIRule")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
