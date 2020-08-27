@@ -99,19 +99,19 @@ func validateService(svc *Service, namespace string, fldPath *field.Path) *field
 func validateRules(rules []Rule, fldPath *field.Path) *field.Error {
 
 	for _, rule := range rules {
-		err := validateAccessStrategies(rule.AccessStrategies)
+		err := validateAccessStrategies(fldPath, rule.AccessStrategies)
 		if err != nil {
-			return field.Invalid(fldPath, rule.AccessStrategies, err.Error())
+			return err
 		}
 	}
 
 	return nil
 }
 
-func validateAccessStrategies(accStrategies []*rulev1alpha1.Authenticator) error {
+func validateAccessStrategies(fldPath *field.Path, accStrategies []*rulev1alpha1.Authenticator) *field.Error {
 	for _, accStrategy := range accStrategies {
 		if !includedIn(accStrategy.Handler.Name, supportedHandlers) {
-			return fmt.Errorf("handler %s is not supported", accStrategy.Handler.Name)
+			return field.NotSupported(fldPath.Child("handler"), accStrategy.Handler, supportedHandlers)
 		}
 	}
 	return nil
