@@ -3,17 +3,18 @@ module github.com/kyma-incubator/api-gateway
 go 1.13
 
 require (
+	github.com/appscode/jsonpatch v0.0.0-20190108182946-7c0e3b262f30 // indirect
 	github.com/go-logr/logr v0.1.0
-	github.com/onsi/ginkgo v1.10.1
-	github.com/onsi/gomega v1.5.0
-	github.com/ory/oathkeeper-maester v0.0.2-beta.1
-	github.com/pkg/errors v0.8.1
-	golang.org/x/crypto v0.0.0-20200220183623-bac4c82f6975 // indirect
-	golang.org/x/net v0.0.0-20190918130420-a8b05e9114ab // indirect
-	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
-	golang.org/x/sys v0.0.0-20190919044723-0c1ff786ef13 // indirect
-	k8s.io/apimachinery v0.0.0-20190404173353-6a84e37a896d
-	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
+	github.com/onsi/ginkgo v1.14.0
+	github.com/onsi/gomega v1.10.1
+	github.com/ory/oathkeeper-maester v0.1.0
+	github.com/pkg/errors v0.9.0
+	istio.io/api v0.0.0-20200812202721-24be265d41c3
+	istio.io/client-go v0.0.0-20200916161914-94f0e83444ca
+	k8s.io/apimachinery v0.18.2
+	k8s.io/client-go v0.18.2
 	knative.dev/pkg v0.0.0-20190807140856-4707aad818fe
-	sigs.k8s.io/controller-runtime v0.2.0-beta.4
+	sigs.k8s.io/controller-runtime v0.6.0
+	sigs.k8s.io/kustomize v2.0.3+incompatible // indirect
+	sigs.k8s.io/testing_frameworks v0.1.1 // indirect
 )

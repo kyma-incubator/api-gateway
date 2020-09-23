@@ -18,6 +18,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"istio.io/api/networking/v1beta1"
 	"os"
 	"strings"
 
@@ -33,6 +34,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
+	networkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
@@ -46,6 +48,7 @@ func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = gatewayv1alpha1.AddToScheme(scheme)
 	_ = networkingv1alpha3.AddToScheme(scheme)
+	_ = networkingv1beta1.AddToScheme(scheme)
 	_ = rulev1alpha1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
@@ -120,6 +123,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	corsAllowOrigins := []*v1beta1.StringMatch{
+		{
+			MatchType: &v1beta1.StringMatch_Regex{Regex: ".*"},
+		},
+	}
+
 	if err = (&controllers.APIReconciler{
 		Client:            mgr.GetClient(),
 		Log:               ctrl.Log.WithName("controllers").WithName("Api"),
@@ -132,7 +141,7 @@ func main() {
 		CorsConfig: &processing.CorsConfig{
 			AllowHeaders: getList(corsAllowHeaders),
 			AllowMethods: getList(corsAllowMethods),
-			AllowOrigin:  getList(corsAllowOrigin),
+			AllowOrigin:  corsAllowOrigins,
 		},
 		GeneratedObjectsLabels: additionalLabels,
 	}).SetupWithManager(mgr); err != nil {
