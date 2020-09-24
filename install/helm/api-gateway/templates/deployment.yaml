@@ -40,7 +40,7 @@ spec:
             - --domain-whitelist={{ . | join ", " }}
             {{- end }}
             {{- with .Values.config.cors.allowOrigin }}
-            - --cors-allow-origin={{ . | join ", " }}
+            - --cors-allow-origins={{ include "api-gateway.cors.allowOrigins" . | trimAll "," }}
             {{- end }}
             {{- with .Values.config.cors.allowMethods }}
             - --cors-allow-methods={{ . | join ", " }}

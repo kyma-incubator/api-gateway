@@ -60,7 +60,7 @@ func main() {
 	var blackListedServices string
 	var whiteListedDomains string
 	var domainName string
-	var corsAllowOrigin, corsAllowMethods, corsAllowHeaders string
+	var corsAllowOrigins, corsAllowMethods, corsAllowHeaders string
 	var generatedObjectsLabels string
 
 	flag.StringVar(&oathkeeperSvcAddr, "oathkeeper-svc-address", "", "Oathkeeper proxy service")
@@ -72,7 +72,7 @@ func main() {
 	flag.StringVar(&blackListedServices, "service-blacklist", "kubernetes.default,kube-dns.kube-system", "List of services to be blacklisted from exposure.")
 	flag.StringVar(&whiteListedDomains, "domain-whitelist", "", "List of domains to be allowed.")
 	flag.StringVar(&domainName, "default-domain-name", "", "A default domain name for hostnames with no domain provided. Optional.")
-	flag.StringVar(&corsAllowOrigin, "cors-allow-origin", "*", "list of allowed origins")
+	flag.StringVar(&corsAllowOrigins, "cors-allow-origins", "regex:.*", "list of allowed origins")
 	flag.StringVar(&corsAllowMethods, "cors-allow-methods", "GET,POST,PUT,DELETE", "list of allowed methods")
 	flag.StringVar(&corsAllowHeaders, "cors-allow-headers", "Authorization,Content-Type,*", "list of allowed headers")
 	flag.StringVar(&generatedObjectsLabels, "generated-objects-labels", "", "Comma-separated list of key=value pairs used to label generated objects")
@@ -121,11 +121,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	corsAllowOrigins := []*v1beta1.StringMatch{
-		{
-			MatchType: &v1beta1.StringMatch_Regex{Regex: ".*"},
-		},
-	}
+	fmt.Println(corsAllowOrigins)
 
 	if err = (&controllers.APIReconciler{
 		Client:            mgr.GetClient(),
@@ -139,7 +135,7 @@ func main() {
 		CorsConfig: &processing.CorsConfig{
 			AllowHeaders: getList(corsAllowHeaders),
 			AllowMethods: getList(corsAllowMethods),
-			AllowOrigins: corsAllowOrigins,
+			AllowOrigins: getStringMatch(corsAllowOrigins),
 		},
 		GeneratedObjectsLabels: additionalLabels,
 	}).SetupWithManager(mgr); err != nil {
@@ -161,6 +157,24 @@ func getList(raw string) []string {
 		trim := strings.TrimSpace(s)
 		if trim != "" {
 			result = append(result, trim)
+		}
+	}
+	return result
+}
+
+func getStringMatch(raw string) []*v1beta1.StringMatch {
+	var result []*v1beta1.StringMatch
+	for _, s := range getList(raw) {
+		matchTypePair := strings.Split(s, ":")
+		matchType := matchTypePair[0]
+		value := matchTypePair[1]
+		switch {
+			case matchType == "regex":
+				result = append(result, regex(value))
+			case matchType == "prefix":
+				result = append(result, prefix(value))
+			case matchType == "exact":
+				result = append(result, exact(value))
 		}
 	}
 	return result
@@ -219,4 +233,22 @@ func parseLabels(labelsString string) (map[string]string, error) {
 	}
 
 	return output, nil
+}
+
+func regex(val string) *v1beta1.StringMatch {
+	return &v1beta1.StringMatch{
+		MatchType:            &v1beta1.StringMatch_Regex{Regex: val},
+	}
+}
+
+func prefix(val string) *v1beta1.StringMatch {
+	return &v1beta1.StringMatch{
+		MatchType:            &v1beta1.StringMatch_Prefix{Prefix: val},
+	}
+}
+
+func exact(val string) *v1beta1.StringMatch {
+	return &v1beta1.StringMatch{
+		MatchType:            &v1beta1.StringMatch_Exact{Exact: val},
+	}
 }

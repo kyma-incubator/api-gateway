@@ -93,7 +93,7 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(err).NotTo(HaveOccurred())
 
 	ns := &corev1.Namespace{
-		ObjectMeta: v1.ObjectMeta{Name: "atgo-system"},
+		ObjectMeta: v1.ObjectMeta{Name: testNamespace},
 		Spec:       corev1.NamespaceSpec{},
 	}
 	err = c.Create(context.TODO(), ns)
