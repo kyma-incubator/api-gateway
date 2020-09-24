@@ -12,8 +12,8 @@ spec:
           - --oathkeeper-svc-address=change-me
           - --oathkeeper-svc-port=change-me
           - --jwks-uri=change-me
-          - --service-blacklist=kubernetes.default,service.namespace
-          - --domain-whitelist=kyma.local
+          - --service-blacklist=kubernetes.default,kube-dns.kube-system
+          - --domain-whitelist=change-me
           - --cors-allow-origin=*
           - --cors-allow-methods=GET,POST,PUT,DELETE
           - --cors-allow-headers=Authorization,Content-Type,*
