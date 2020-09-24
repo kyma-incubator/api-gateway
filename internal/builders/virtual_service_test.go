@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 	networkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	k8sTypes "k8s.io/apimachinery/pkg/types"
-	//networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 )
 
 var _ = Describe("Builder for", func() {

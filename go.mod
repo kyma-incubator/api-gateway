@@ -12,6 +12,5 @@ require (
 	istio.io/client-go v0.0.0-20200916161914-94f0e83444ca
 	k8s.io/apimachinery v0.18.2
 	k8s.io/client-go v0.18.2
-	knative.dev/pkg v0.0.0-20190807140856-4707aad818fe
 	sigs.k8s.io/controller-runtime v0.6.0
 )

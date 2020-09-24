@@ -6,8 +6,6 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	//"knative.dev/pkg/apis/istio/v1alpha3"
-
 	"testing"
 
 	gatewayv1alpha1 "github.com/kyma-incubator/api-gateway/api/v1alpha1"

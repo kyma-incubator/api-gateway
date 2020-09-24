@@ -2,12 +2,10 @@ package builders
 
 import (
 	"istio.io/api/networking/v1beta1"
-	//networkingv1alpha1 "knative.dev/pkg/apis/istio/common/v1alpha1"
-	//networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 	networkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 )
 
-// VirtualService returns builder for knative.dev/pkg/apis/istio/v1alpha3/VirtualService type
+// VirtualService returns builder for istio.io/client-go/pkg/apis/networking/v1beta1/VirtualService type
 func VirtualService() *virtualService {
 	return &virtualService{
 		value: &networkingv1beta1.VirtualService{},
@@ -61,7 +59,7 @@ func (vs *virtualService) Spec(val *virtualServiceSpec) *virtualService {
 	return vs
 }
 
-// VirtualServiceSpec returns builder for knative.dev/pkg/apis/istio/v1alpha3/VirtualServiceSpec type
+// VirtualServiceSpec returns builder for istio.io/api/networking/v1beta1/VirtualServiceSpec type
 func VirtualServiceSpec() *virtualServiceSpec {
 	return &virtualServiceSpec{
 		value: &v1beta1.VirtualService{},
@@ -96,7 +94,7 @@ func (vss *virtualServiceSpec) HTTP(hr *httpRoute) *virtualServiceSpec {
 	return vss
 }
 
-// HTTPRoute returns builder for knative.dev/pkg/apis/istio/v1alpha3/HTTPRoute type
+// HTTPRoute returns builder for istio.io/api/networking/v1beta1/HTTPRoute type
 func HTTPRoute() *httpRoute {
 	return &httpRoute{
 		value: &v1beta1.HTTPRoute{},
@@ -126,7 +124,7 @@ func (hr *httpRoute) CorsPolicy(cc *corsPolicy) *httpRoute {
 	return hr
 }
 
-// MatchRequest returns builder for knative.dev/pkg/apis/istio/v1alpha3/HTTPMatchRequest type
+// MatchRequest returns builder for istio.io/api/networking/v1beta1/HTTPMatchRequest type
 func MatchRequest() *matchRequest {
 	return &matchRequest{
 		value: &v1beta1.HTTPMatchRequest{},
@@ -156,7 +154,7 @@ func (st *stringMatch) Regex(val string) *matchRequest {
 	return st.parent()
 }
 
-// RouteDestination returns builder for knative.dev/pkg/apis/istio/v1alpha3/HTTPRouteDestination type
+// RouteDestination returns builder for istio.io/api/networking/v1beta1/HTTPRouteDestination type
 func RouteDestination() *routeDestination {
 	return &routeDestination{&v1beta1.HTTPRouteDestination{
 		Destination:          &v1beta1.Destination{
@@ -184,7 +182,7 @@ func (rd *routeDestination) Port(val uint32) *routeDestination {
 	return rd
 }
 
-// CorsPolicy returns builder for knative.dev/pkg/apis/istio/v1alpha3/CorsPolicy type
+// CorsPolicy returns builder for istio.io/api/networking/v1beta1/CorsPolicy type
 func CorsPolicy() *corsPolicy {
 	return &corsPolicy{
 		value: &v1beta1.CorsPolicy{},
