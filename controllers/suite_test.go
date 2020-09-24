@@ -1,8 +1,10 @@
 package controllers_test
 
 import (
+	"context"
 	"istio.io/api/networking/v1beta1"
 	networkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"path/filepath"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 	"sync"
@@ -10,6 +12,7 @@ import (
 
 	"github.com/kyma-incubator/api-gateway/internal/processing"
 
+	corev1 "k8s.io/api/core/v1"
 	gatewayv1alpha1 "github.com/kyma-incubator/api-gateway/api/v1alpha1"
 	"github.com/kyma-incubator/api-gateway/controllers"
 	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
@@ -80,9 +83,21 @@ var _ = BeforeSuite(func(done Done) {
 	err = networkingv1beta1.AddToScheme(s)
 	Expect(err).NotTo(HaveOccurred())
 
+	err = corev1.AddToScheme(s)
+	Expect(err).NotTo(HaveOccurred())
+
 	mgr, err := manager.New(cfg, manager.Options{Scheme: s, MetricsBindAddress: "0"})
 	Expect(err).NotTo(HaveOccurred())
-	c = mgr.GetClient()
+
+	c, err= client.New(cfg, client.Options{Scheme: s})
+	Expect(err).NotTo(HaveOccurred())
+
+	ns := &corev1.Namespace{
+		ObjectMeta: v1.ObjectMeta{Name: "atgo-system"},
+		Spec:       corev1.NamespaceSpec{},
+	}
+	err = c.Create(context.TODO(), ns)
+	Expect(err).NotTo(HaveOccurred())
 
 	reconciler := &controllers.APIReconciler{
 		Client:            mgr.GetClient(),

@@ -107,7 +107,6 @@ var _ = Describe("APIRule Controller", func() {
 			existingInstance := gatewayv1alpha1.APIRule{}
 			err = c.Get(context.TODO(), client.ObjectKey{Name: apiRuleName, Namespace: testNamespace}, &existingInstance)
 			Expect(err).NotTo(HaveOccurred())
-
 			rule4 := testRule("/rule4", []string{"POST"}, testMutators, noConfigHandler("cookie_session"))
 			existingInstance.Spec.Rules = []gatewayv1alpha1.Rule{rule1, rule4}
 			newServiceName := testServiceName + "new"
@@ -117,7 +116,6 @@ var _ = Describe("APIRule Controller", func() {
 
 			err = c.Update(context.TODO(), &existingInstance)
 			Expect(err).NotTo(HaveOccurred())
-
 			expectedRequest = reconcile.Request{NamespacedName: types.NamespacedName{Name: apiRuleName, Namespace: testNamespace}}
 			Eventually(requests, timeout).Should(Receive(Equal(expectedRequest)))
 
