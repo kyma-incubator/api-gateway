@@ -1,7 +1,10 @@
 package controllers_test
 
 import (
+	"istio.io/api/networking/v1beta1"
+	networkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	"path/filepath"
+	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 	"sync"
 	"testing"
 
@@ -11,7 +14,7 @@ import (
 	"github.com/kyma-incubator/api-gateway/controllers"
 	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
-	networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
+	//networkingv1alpha3 "knative.dev/pkg/apis/istio/v1alpha3"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	. "github.com/onsi/ginkgo"
@@ -37,7 +40,7 @@ var (
 	requests   chan reconcile.Request
 	c          client.Client
 
-	TestAllowOrigins = []string{"*"}
+	TestAllowOrigins = []*v1beta1.StringMatch{{MatchType: &v1beta1.StringMatch_Regex{Regex: ".*"}}}
 	TestAllowMethods = []string{"GET", "POST", "PUT", "DELETE"}
 	TestAllowHeaders = []string{"header1", "header2"}
 )
@@ -47,7 +50,7 @@ func TestAPIs(t *testing.T) {
 
 	RunSpecsWithDefaultAndCustomReporters(t,
 		"Controller Suite",
-		[]Reporter{envtest.NewlineReporter{}})
+		[]Reporter{printer.NewlineReporter{}})
 }
 
 var _ = BeforeSuite(func(done Done) {
@@ -75,7 +78,7 @@ var _ = BeforeSuite(func(done Done) {
 	err = gatewayv1alpha1.AddToScheme(s)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = networkingv1alpha3.AddToScheme(s)
+	err = networkingv1beta1.AddToScheme(s)
 	Expect(err).NotTo(HaveOccurred())
 
 	mgr, err := manager.New(cfg, manager.Options{Scheme: s, MetricsBindAddress: "0"})
@@ -89,7 +92,7 @@ var _ = BeforeSuite(func(done Done) {
 		OathkeeperSvcPort: testOathkeeperPort,
 		DomainWhiteList:   []string{"bar", "kyma.local"},
 		CorsConfig: &processing.CorsConfig{
-			AllowOrigin:  TestAllowOrigins,
+			AllowOrigins: TestAllowOrigins,
 			AllowMethods: TestAllowMethods,
 			AllowHeaders: TestAllowHeaders,
 		},

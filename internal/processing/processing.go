@@ -50,7 +50,7 @@ func NewFactory(client client.Client, logger logr.Logger, oathkeeperSvc string, 
 
 //CorsConfig is an internal representation of v1alpha3.CorsPolicy object
 type CorsConfig struct {
-	AllowOrigin  []*v1beta1.StringMatch
+	AllowOrigins []*v1beta1.StringMatch
 	AllowMethods []string
 	AllowHeaders []string
 }
@@ -226,7 +226,7 @@ func (f *Factory) generateVirtualService(api *gatewayv1alpha1.APIRule) *networki
 		httpRouteBuilder.Route(builders.RouteDestination().Host(host).Port(port))
 		httpRouteBuilder.Match(builders.MatchRequest().Uri().Regex(rule.Path))
 		httpRouteBuilder.CorsPolicy(builders.CorsPolicy().
-			AllowOrigins(f.corsConfig.AllowOrigin...).
+			AllowOrigins(f.corsConfig.AllowOrigins...).
 			AllowMethods(f.corsConfig.AllowMethods...).
 			AllowHeaders(f.corsConfig.AllowHeaders...))
 		vsSpecBuilder.HTTP(httpRouteBuilder)
