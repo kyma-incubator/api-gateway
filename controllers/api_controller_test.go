@@ -204,7 +204,6 @@ func (fakeManager) GetRESTMapper() meta.RESTMapper {
 	return nil
 }
 
-
 func getFakeManager(cli client.Client, sch *runtime.Scheme) manager.Manager {
 	return &fakeManager{
 		client: cli,

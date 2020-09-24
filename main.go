@@ -169,12 +169,12 @@ func getStringMatch(raw string) []*v1beta1.StringMatch {
 		matchType := matchTypePair[0]
 		value := matchTypePair[1]
 		switch {
-			case matchType == "regex":
-				result = append(result, regex(value))
-			case matchType == "prefix":
-				result = append(result, prefix(value))
-			case matchType == "exact":
-				result = append(result, exact(value))
+		case matchType == "regex":
+			result = append(result, regex(value))
+		case matchType == "prefix":
+			result = append(result, prefix(value))
+		case matchType == "exact":
+			result = append(result, exact(value))
 		}
 	}
 	return result
@@ -237,18 +237,18 @@ func parseLabels(labelsString string) (map[string]string, error) {
 
 func regex(val string) *v1beta1.StringMatch {
 	return &v1beta1.StringMatch{
-		MatchType:            &v1beta1.StringMatch_Regex{Regex: val},
+		MatchType: &v1beta1.StringMatch_Regex{Regex: val},
 	}
 }
 
 func prefix(val string) *v1beta1.StringMatch {
 	return &v1beta1.StringMatch{
-		MatchType:            &v1beta1.StringMatch_Prefix{Prefix: val},
+		MatchType: &v1beta1.StringMatch_Prefix{Prefix: val},
 	}
 }
 
 func exact(val string) *v1beta1.StringMatch {
 	return &v1beta1.StringMatch{
-		MatchType:            &v1beta1.StringMatch_Exact{Exact: val},
+		MatchType: &v1beta1.StringMatch_Exact{Exact: val},
 	}
 }

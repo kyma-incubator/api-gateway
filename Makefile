@@ -31,7 +31,7 @@ endif
 
 # CORS
 ifndef CORS_ALLOW_ORIGIN
-override CORS_ALLOW_ORIGIN = *
+override CORS_ALLOW_ORIGIN = regex:.*
 endif
 
 ifndef CORS_ALLOW_METHODS

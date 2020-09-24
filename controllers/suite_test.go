@@ -12,10 +12,10 @@ import (
 
 	"github.com/kyma-incubator/api-gateway/internal/processing"
 
-	corev1 "k8s.io/api/core/v1"
 	gatewayv1alpha1 "github.com/kyma-incubator/api-gateway/api/v1alpha1"
 	"github.com/kyma-incubator/api-gateway/controllers"
 	rulev1alpha1 "github.com/ory/oathkeeper-maester/api/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -89,7 +89,7 @@ var _ = BeforeSuite(func(done Done) {
 	mgr, err := manager.New(cfg, manager.Options{Scheme: s, MetricsBindAddress: "0"})
 	Expect(err).NotTo(HaveOccurred())
 
-	c, err= client.New(cfg, client.Options{Scheme: s})
+	c, err = client.New(cfg, client.Options{Scheme: s})
 	Expect(err).NotTo(HaveOccurred())
 
 	ns := &corev1.Namespace{

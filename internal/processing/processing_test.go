@@ -53,7 +53,7 @@ var (
 		AllowHeaders: testAllowHeaders,
 	}
 	expectedCorsPolicy = v1beta1.CorsPolicy{
-		AllowOrigins:  testAllowOrigin,
+		AllowOrigins: testAllowOrigin,
 		AllowMethods: testAllowMethods,
 		AllowHeaders: testAllowHeaders,
 	}

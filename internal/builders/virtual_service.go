@@ -150,17 +150,17 @@ type stringMatch struct {
 }
 
 func (st *stringMatch) Regex(val string) *matchRequest {
-	st.value.MatchType =  &v1beta1.StringMatch_Regex{Regex: val}
+	st.value.MatchType = &v1beta1.StringMatch_Regex{Regex: val}
 	return st.parent()
 }
 
 // RouteDestination returns builder for istio.io/api/networking/v1beta1/HTTPRouteDestination type
 func RouteDestination() *routeDestination {
 	return &routeDestination{&v1beta1.HTTPRouteDestination{
-		Destination:          &v1beta1.Destination{
+		Destination: &v1beta1.Destination{
 			Port: &v1beta1.PortSelector{},
 		},
-		Weight: 			  100,
+		Weight: 100,
 	}}
 }
 
