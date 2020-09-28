@@ -121,8 +121,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println(corsAllowOrigins)
-
 	if err = (&controllers.APIReconciler{
 		Client:            mgr.GetClient(),
 		Log:               ctrl.Log.WithName("controllers").WithName("Api"),

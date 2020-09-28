@@ -281,13 +281,11 @@ var _ = Describe("APIRule Controller", func() {
 						rule2 := testRule("/headers", []string{"GET"}, testMutators, testJWTHandler(testIssuer, testScopes))
 						instance := testInstance(apiRuleName, testNamespace, testServiceName, testServiceHost, testServicePort, []gatewayv1alpha1.Rule{rule1, rule2})
 
-						fmt.Println("Creating apirule")
 						err := c.Create(context.TODO(), instance)
 						if apierrors.IsInvalid(err) {
 							Fail(fmt.Sprintf("failed to create object, got an invalid object error: %v", err))
 							return
 						}
-						fmt.Println("Created apirule")
 						Expect(err).NotTo(HaveOccurred())
 						defer c.Delete(context.TODO(), instance)
 
