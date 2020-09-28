@@ -30,8 +30,8 @@ override DOMAIN_WHITELIST = change-me
 endif
 
 # CORS
-ifndef CORS_ALLOW_ORIGIN
-override CORS_ALLOW_ORIGIN = regex:.*
+ifndef CORS_ALLOW_ORIGINS
+override CORS_ALLOW_ORIGINS = regex:.*
 endif
 
 ifndef CORS_ALLOW_METHODS
@@ -94,7 +94,7 @@ patch-gen:
 		sed -e 's|SERVICE_BLACKLIST|${SERVICE_BLACKLIST}|g' |\
 		sed -e 's|DOMAIN_WHITELIST|${DOMAIN_WHITELIST}|g' |\
 		sed -e 's|JWKS_URI|${JWKS_URI}|g' |\
-		sed -e 's|CORS_ALLOW_ORIGIN|${CORS_ALLOW_ORIGIN}|g' |\
+		sed -e 's|CORS_ALLOW_ORIGINS|${CORS_ALLOW_ORIGINS}|g' |\
 		sed -e 's|CORS_ALLOW_METHODS|${CORS_ALLOW_METHODS}|g' |\
 		sed -e 's|CORS_ALLOW_HEADERS|${CORS_ALLOW_HEADERS}|g' > config/default/manager_args_patch.yaml
 
