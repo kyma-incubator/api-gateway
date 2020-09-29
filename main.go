@@ -166,14 +166,16 @@ func getStringMatch(raw string) []*v1beta1.StringMatch {
 		matchTypePair := strings.SplitN(s, ":", 2)
 		matchType := matchTypePair[0]
 		value := matchTypePair[1]
+		var stringMatch *v1beta1.StringMatch
 		switch {
 		case matchType == "regex":
-			result = append(result, regex(value))
+			stringMatch = regex(value)
 		case matchType == "prefix":
-			result = append(result, prefix(value))
+			stringMatch = prefix(value)
 		case matchType == "exact":
-			result = append(result, exact(value))
+			stringMatch = exact(value)
 		}
+		result = append(result, stringMatch)
 	}
 	return result
 }
