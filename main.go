@@ -163,7 +163,7 @@ func getList(raw string) []string {
 func getStringMatch(raw string) []*v1beta1.StringMatch {
 	var result []*v1beta1.StringMatch
 	for _, s := range getList(raw) {
-		matchTypePair := strings.Split(s, ":")
+		matchTypePair := strings.SplitN(s, ":", 2)
 		matchType := matchTypePair[0]
 		value := matchTypePair[1]
 		switch {
