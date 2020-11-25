@@ -271,6 +271,7 @@ spec:
                     description: Set of allowed HTTP methods
                     items:
                       type: string
+                    minItems: 1
                     type: array
                   mutators:
                     description: Mutators to be used
