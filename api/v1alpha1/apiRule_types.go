@@ -118,21 +118,17 @@ func init() {
 	SchemeBuilder.Register(&APIRule{}, &APIRuleList{})
 }
 
-//////////////////////////////////////////
-// Copied from Oathkeeper-maester project!
-//////////////////////////////////////////
-
-// Authenticator represents a handler that authenticates provided credentials.
+// Authenticator represents a handler that authenticates provided credentials. See the corresponding type in the oathkeeper-maester project.
 type Authenticator struct {
 	*Handler `json:",inline"`
 }
 
-// Mutator represents a handler that transforms the HTTP request before forwarding it.
+// Mutator represents a handler that transforms the HTTP request before forwarding it. See the corresponding in the oathkeeper-maester project.
 type Mutator struct {
 	*Handler `json:",inline"`
 }
 
-// Handler represents an Oathkeeper routine that operates on incoming requests. It is used to either validate a request (Authenticator, Authorizer) or modify it (Mutator).
+// Handler provides configuration for different Oathkeeper objects. It is used to either validate a request (Authenticator, Authorizer) or modify it (Mutator). See the corresponding type in the oathkeeper-maester project.
 type Handler struct {
 	// Name is the name of a handler
 	Name string `json:"handler"`
