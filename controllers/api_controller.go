@@ -18,8 +18,9 @@ package controllers
 import (
 	"context"
 	"fmt"
-	networkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	"time"
+
+	networkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 
 	"github.com/kyma-incubator/api-gateway/internal/processing"
 	"github.com/kyma-incubator/api-gateway/internal/validation"
@@ -42,8 +43,8 @@ type APIReconciler struct {
 	JWKSURI                string
 	CorsConfig             *processing.CorsConfig
 	GeneratedObjectsLabels map[string]string
-	ServiceBlackList       map[string][]string
-	DomainWhiteList        []string
+	ServiceBlockList       map[string][]string
+	DomainAllowList        []string
 	DefaultDomainName      string
 }
 
@@ -57,8 +58,7 @@ type APIRuleValidator interface {
 // +kubebuilder:rbac:groups=gateway.kyma-project.io,resources=apirules/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=networking.istio.io,resources=virtualservices,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=oathkeeper.ory.sh,resources=rules,verbs=get;list;watch;create;update;patch;delete
-func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
+func (r *APIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = r.Log.WithValues("Api", req.NamespacedName)
 
 	api := &gatewayv1alpha1.APIRule{}
@@ -86,8 +86,8 @@ func (r *APIReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 		//1.2) Validate input including host
 		validator := validation.APIRule{
-			ServiceBlackList:  r.ServiceBlackList,
-			DomainWhiteList:   r.DomainWhiteList,
+			ServiceBlockList:  r.ServiceBlockList,
+			DomainAllowList:   r.DomainAllowList,
 			DefaultDomainName: r.DefaultDomainName,
 		}
 		validationFailures := validator.Validate(api, vsList)

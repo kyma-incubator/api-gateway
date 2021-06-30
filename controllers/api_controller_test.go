@@ -3,6 +3,8 @@ package controllers_test
 import (
 	"context"
 	"net/http"
+
+	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
 	"github.com/kyma-incubator/api-gateway/internal/processing"
@@ -44,8 +46,9 @@ var _ = Describe("Controller", func() {
 
 				ts = getTestSuite(testAPI)
 				reconciler := getAPIReconciler(ts.mgr)
+				ctx := context.Background()
 
-				result, err := reconciler.Reconcile(reconcile.Request{NamespacedName: types.NamespacedName{Name: testAPI.Name}})
+				result, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: types.NamespacedName{Name: testAPI.Name}})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(result.Requeue).To(BeFalse())
 
@@ -85,9 +88,9 @@ func fixAPI() *gatewayv1alpha1.APIRule {
 				{
 					Path:    "/.*",
 					Methods: []string{"GET"},
-					AccessStrategies: []*rulev1alpha1.Authenticator{
+					AccessStrategies: []*gatewayv1alpha1.Authenticator{
 						{
-							Handler: &rulev1alpha1.Handler{
+							Handler: &gatewayv1alpha1.Handler{
 								Name:   authStrategy,
 								Config: nil,
 							},
@@ -103,7 +106,7 @@ func getAPIReconciler(mgr manager.Manager) reconcile.Reconciler {
 	return &controllers.APIReconciler{
 		Client:          mgr.GetClient(),
 		Log:             ctrl.Log.WithName("controllers").WithName("Api"),
-		DomainWhiteList: []string{"bar", "kyma.local"},
+		DomainAllowList: []string{"bar", "kyma.local"},
 		CorsConfig: &processing.CorsConfig{
 			AllowOrigins: TestAllowOrigins,
 			AllowMethods: TestAllowMethods,
@@ -159,7 +162,7 @@ func (fakeManager) SetFields(interface{}) error {
 	return nil
 }
 
-func (fakeManager) Start(<-chan struct{}) error {
+func (fakeManager) Start(ctx context.Context) error {
 	return nil
 }
 
@@ -201,6 +204,14 @@ func (fakeManager) GetWebhookServer() *webhook.Server {
 }
 
 func (fakeManager) GetRESTMapper() meta.RESTMapper {
+	return nil
+}
+
+func (fakeManager) GetLogger() logr.Logger {
+	return nil
+}
+
+func (fakeManager) Stop() meta.RESTMapper {
 	return nil
 }
 

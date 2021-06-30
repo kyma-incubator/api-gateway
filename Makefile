@@ -1,7 +1,7 @@
 APP_NAME = api-gateway-controller
 IMG = $(DOCKER_PUSH_REPOSITORY)$(DOCKER_PUSH_DIRECTORY)/$(APP_NAME)
 TAG = $(DOCKER_TAG)
-CRD_OPTIONS ?= "crd:trivialVersions=true"
+CRD_OPTIONS ?= "crd:trivialVersions=true,crdVersions=v1"
 SHELL = /bin/bash
 
 # Example ory-oathkeeper
@@ -20,13 +20,13 @@ override JWKS_URI = change-me
 endif
 
 # kubernetes.default service.namespace
-ifndef SERVICE_BLACKLIST
-override SERVICE_BLACKLIST = kubernetes.default,kube-dns.kube-system
+ifndef SERVICE_BLOCKLIST
+override SERVICE_BLOCKLIST = kubernetes.default,kube-dns.kube-system
 endif
 
 # kyma.local foo.bar bar
-ifndef DOMAIN_WHITELIST
-override DOMAIN_WHITELIST = change-me
+ifndef DOMAIN_ALLOWLIST
+override DOMAIN_ALLOWLIST = change-me
 endif
 
 # CORS
@@ -70,8 +70,8 @@ push-image:
 .PHONY: ci-pr
 ci-pr: build build-image push-image
 
-.PHONY: ci-master
-ci-master: build build-image push-image
+.PHONY: ci-main
+ci-main: build build-image push-image
 
 .PHONY: ci-release
 ci-release: build build-image push-image
@@ -91,8 +91,8 @@ patch-gen:
 	@cat config/default/manager_args_patch.yaml.tmpl |\
 		sed -e 's|OATHKEEPER_SVC_ADDRESS|${OATHKEEPER_SVC_ADDRESS}|g' |\
 		sed -e 's|OATHKEEPER_SVC_PORT|${OATHKEEPER_SVC_PORT}|g' |\
-		sed -e 's|SERVICE_BLACKLIST|${SERVICE_BLACKLIST}|g' |\
-		sed -e 's|DOMAIN_WHITELIST|${DOMAIN_WHITELIST}|g' |\
+		sed -e 's|SERVICE_BLOCKLIST|${SERVICE_BLOCKLIST}|g' |\
+		sed -e 's|DOMAIN_ALLOWLIST|${DOMAIN_ALLOWLIST}|g' |\
 		sed -e 's|JWKS_URI|${JWKS_URI}|g' |\
 		sed -e 's|CORS_ALLOW_ORIGINS|${CORS_ALLOW_ORIGINS}|g' |\
 		sed -e 's|CORS_ALLOW_METHODS|${CORS_ALLOW_METHODS}|g' |\
@@ -122,14 +122,14 @@ generate: controller-gen
 # download controller-gen if necessary
 controller-gen:
 ifeq (, $(shell which controller-gen))
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.0
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.5.0
 CONTROLLER_GEN=$(shell go env GOPATH)/bin/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
 
 run: build
-	go run . --oathkeeper-svc-address=${OATHKEEPER_SVC_ADDRESS} --oathkeeper-svc-port=${OATHKEEPER_SVC_PORT} --jwks-uri=${JWKS_URI} --service-blacklist=${SERVICE_BLACKLIST} --domain-whitelist=${DOMAIN_WHITELIST}
+	go run . --oathkeeper-svc-address=${OATHKEEPER_SVC_ADDRESS} --oathkeeper-svc-port=${OATHKEEPER_SVC_PORT} --jwks-uri=${JWKS_URI} --service-blocklist=${SERVICE_BLOCKLIST} --domain-allowlist=${DOMAIN_ALLOWLIST}
 
 samples-clean:
 	kubectl delete -f config/samples/valid.yaml --ignore-not-found=true
